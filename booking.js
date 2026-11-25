@@ -175,7 +175,7 @@
     const TABS = [['Spa', 'Spa day', 'Day Spa, Spa Access or the Private Spa'], ['Stay', 'Overnight stay', 'Ensuite rooms, Sunday to Thursday'], ['House', 'Exclusive use', 'The whole house & spa, from £1,840 a night'], ['Treat', 'Treatments only', 'Massage, facials & head spa']];
     if (!S.cat) S.cat = S.p ? P[S.p].group : S.pending ? 'Treat' : 'Spa';
     const tabs = `<div class="bk-tabs" role="tablist">${TABS.map(([g, t, d]) => `<button role="tab" aria-selected="${S.cat === g}" class="bk-tab ${S.cat === g ? 'sel' : ''}" data-cat="${g}"><b>${t}</b><small>${d}</small></button>`).join('')}</div>`;
-    return `<h2>What would you like to <em>book</em>?</h2><p class="bk-sub"><b class="howto"><i>1</i> Choose a type</b> <b class="howto"><i>2</i> Tap an option to continue</b></p>${pend}${tabs}
+    return `<h2>What would you like to <em>book</em>?</h2>${pend}${tabs}
       <div class="bk-opts ${S.cat === 'House' || S.cat === 'Treat' ? 'one' : ''}">${grp(S.cat)}</div>`;
   }
 

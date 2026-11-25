@@ -688,3 +688,9 @@ body.bk-open .yc-chat{display:none}
 .bk-x:hover{background:var(--forest);color:var(--cream)}
 .bk-x:hover i{background:var(--clay)}
 .bk-saved{font-size:12.5px;color:var(--muted);margin-left:auto;margin-right:12px}
+/* Select buttons sit on one line at the bottom of every card */
+.bk-opts{align-items:stretch}
+.bk-opt{height:100%}
+.bk-opt em{margin-bottom:12px}
+.bk-opt .opt-cta{margin-top:auto}
+.bk-body > h2:first-child + .bk-tabs,.bk-body > h2:first-child + .notice{margin-top:14px}
