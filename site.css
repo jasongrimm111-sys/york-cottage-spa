@@ -530,3 +530,4 @@ svg.g{width:22px;height:22px;flex:none}
 .g-rev p{font-size:15px;color:var(--ink);display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden}
 .g-attr{grid-column:1/-1;font-size:13px;color:var(--muted);text-align:center}
 .g-attr a{color:var(--forest);font-weight:600}
+.stars .st .st-bg svg{fill:rgba(245,179,1,.3)}
