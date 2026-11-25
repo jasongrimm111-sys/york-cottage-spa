@@ -5,25 +5,51 @@ window.YC_CHAT = Object.assign({ endpoint: '', email: 'info@yorkcottagespa.com',
 
 (() => {
   const C = window.YC_CHAT;
+  // Every answer below comes from the York Cottage Spa website (pages, FAQs and terms).
   const KB = [
-    { k: ['time', 'session', 'when', 'open', 'hours', 'start', 'morning', 'afternoon', 'evening'], a: 'Day Spa sessions are 4 hours: morning 09:30–13:30 or afternoon 13:00–17:00. Spa Access sessions start at 09:30 or 14:00, with evening sessions on some days. On spa breaks, check-in is from 13:30 with the spa 14:00–18:00 (Monday to Thursday), or from 14:00 with the spa 18:00–22:30 on Sundays. Check-out is 11:00.' },
-    { k: ['day spa', 'spa day', 'package'], a: 'The Day Spa is £100 per person for a 4-hour session. It includes a 20-minute aromatherapy massage or facial, afternoon tea or a sweet & savoury grazing board, hot and cold drinks, and the spa pool, sauna and lounge with a towel and robe.', book: 'day' },
-    { k: ['access', 'hot tub only', 'just the spa', 'spa only'], a: 'Spa Access is £50 per person for a 4-hour session: the spa pool, sauna and lounge, with hot and cold drinks, towel and robe.', book: 'access' },
-    { k: ['private', 'exclusive spa', 'just us', 'party', 'hen', 'birthday', 'celebration'], a: 'The Private Spa is from £100 per person (the rate depends on group size), with a minimum of 4 guests, or 6 on Sundays (from 11:30). It includes the spa just for your group, food, drinks and a 20-minute massage or luxury facial each. For the whole house with overnight stays, ask me about exclusive use.', book: 'private' },
-    { k: ['overnight', 'stay', 'room', 'night', 'break', 'sleep', 'accommodation', 'bedroom'], a: 'Overnight Spa Breaks are £145 per person for 1 night or £220 per person for 2 nights, based on 2 sharing a king ensuite room. They run Sunday to Thursday (2-night stays arrive Sunday to Wednesday) and include a grazing board, a 20-minute aromatherapy massage each, drinks and spa time. Continental breakfast is £10 per person.', book: 'break' },
-    { k: ['group', '7', 'eight', 'friends', 'team'], a: 'Group Spa Breaks are for 7 or more guests, Sunday to Thursday, from £145 per person. You get up to 8 rooms, the spa just for your group, a grazing board or afternoon tea and a 20-minute massage each. Group breaks are booked by enquiry.', book: 'group' },
-    { k: ['whole house', 'exclusive', 'house', 'weekend', '16', 'everyone'], a: 'The whole house and spa is from £1,840 per night for up to 16 guests, with a 2-night minimum (up to 30 nights). That includes 8 bedrooms, a full kitchen, 2 living rooms, outdoor space and exclusive use of the spa pool, hot tub and sauna. Check-in is from 16:00 and check-out is 11:00. A 50% deposit is taken, with the balance due 6 weeks before arrival.', book: 'house' },
-    { k: ['treatment', 'massage', 'facial', 'menu'], a: 'Treatments start at £50: Back to Basics Facial (30 min, £50), Recipe for Radiance Facial (45 min, £70), Tension Melt or Scalp, Neck & Shoulder massage (30 min, £50), Recipe for Relaxation Massage (45 min, £70) and a Full Body Massage (60 min, £80). You can add them to any booking or book them on their own.', link: ['See the treatment menu', 'treatments.html'] },
-    { k: ['head spa', 'japanese', 'scalp', 'zen', 'radiance ritual', 'classic renewal'], a: 'Our Japanese Head Spa rituals are The Classic Renewal (60 min, £90), The Radiance Ritual (70 min, £115) and The Ultimate Zen Experience (80 min, £145). They’re 10% off when booked with a spa session or stay.', link: ['See the head spa', 'treatments.html#head-spa'] },
-    { k: ['cancel', 'refund', 'reschedule', 'change', 'move my'], a: 'Spa days are non-refundable, but you can move your visit (subject to availability) by emailing at least 30 days before. Spa breaks can be refunded with at least 30 days’ notice. Whole-house bookings: 6+ months’ notice and you can move your dates; 6+ weeks, the deposit is kept; under 6 weeks, the full cost is kept.' },
-    { k: ['age', 'child', 'kid', 'under 18', 'teen', 'baby'], a: 'Guests need to be 18 or over to book. Under-16s can use the spa only during a Private Spa session or a whole-house booking, and under-18s can’t join spa breaks.' },
-    { k: ['dog', 'pet', 'animal'], a: 'We can only welcome working animals, so pets can’t come along.' },
-    { k: ['voucher', 'gift'], a: 'Gift vouchers include a Day Spa (£90, usually £100), Day Spa for Two (£181, usually £200) and an Ensuite Spa Break for 2 (£290). Vouchers can’t be refunded or exchanged for cash, and please bring yours on arrival.', link: ['See gift vouchers', 'index.html#gifts'] },
-    { k: ['bring', 'wear', 'swim', 'towel', 'robe', 'pack'], a: 'Just bring swimwear. Towels and robes are provided. Each guest having a treatment fills in a short consultation form first.' },
-    { k: ['food', 'eat', 'tea', 'grazing', 'breakfast', 'diet', 'vegan', 'gluten', 'allerg'], a: 'Day spa guests choose afternoon tea or a sweet & savoury grazing board. Stays include a grazing board, and continental breakfast is £10 per person. Let us know any dietary needs in the notes when you book.' },
-    { k: ['where', 'address', 'find', 'direction', 'location', 'park'], a: 'We’re on Easton Lane, Bozeat, NN29 7NN, just after the national speed limit signs as you leave Bozeat towards Easton Maudit. what3words: ///names.answers.fulfilled', link: ['Get directions', 'https://g.page/YorkCottageSpa?share'] },
-    { k: ['pay', 'klarna', 'deposit', 'card', 'instal'], a: 'You can pay by card or with Klarna in 3 interest-free instalments. Spa days and breaks are paid in full; the whole house takes a 50% deposit if you book more than 6 weeks ahead.' },
-    { k: ['contact', 'phone', 'call', 'email', 'human', 'person', 'someone', 'speak', 'talk'], a: `You can call us on ${C.phone}, message us on WhatsApp, or email ${C.email}. Use the email button below and I’ll include our chat so the team has the details.`, human: true }
+    { k: ['day spa time', 'session time', 'what time', 'when are', 'sessions', 'opening', 'open'], a: 'Day Spa sessions are 4 hours: morning 09:30–13:30 or afternoon 13:00–17:00. Spa Access sessions start at 09:30 or 14:00, with evening sessions on some days. On spa breaks, spa time is usually 14:00–18:00 (Monday to Thursday) and 18:00–22:30 on Sundays.', book: 'day' },
+    { k: ['day spa', 'spa day', 'package'], a: 'The Day Spa is £100 per person for a 4-hour session. It includes a 20-minute aromatherapy massage or facial, afternoon tea or a sweet & savoury grazing board, hot and cold drinks, and the spa pool, sauna and lounge with towel and robe.', book: 'day' },
+    { k: ['spa access', 'access only', 'just the spa', 'spa only', 'hot tub only'], a: 'Spa Access is £50 per person for a 4-hour session: the spa pool, sauna and lounge, with hot and cold drinks, towel and robe.', book: 'access' },
+    { k: ['private spa', 'just us', 'exclusive spa', 'private session'], a: 'The Private Spa is from £100 per person, for a minimum of 4 guests (6 on Sundays, from 11:30). You get the spa to yourselves for the session, with food, drinks and a 20-minute massage or luxury facial each.', book: 'private' },
+    { k: ['how many people', 'busy', 'capacity', 'other guests', 'share the spa'], a: 'On Day Spa sessions we aim for a maximum of 6 people in the spa. Capacity is 12, but we limit shared sessions so you have plenty of space.' },
+    { k: ['overnight', 'spa break', 'stay the night', 'room', 'one night', '2 night', 'two night', 'accommodation'], a: 'Overnight Spa Breaks are £145 per person for 1 night (Sunday to Thursday) or £220 per person for 2 nights (arriving Sunday to Wednesday), based on 2 sharing a king ensuite room. They include a grazing board, a 20-minute aromatherapy massage each, drinks and spa time. Check-out is 11:00.', book: 'break' },
+    { k: ['check-in', 'check in', 'check-out', 'check out', 'arrive', 'arrival'], a: 'On spa breaks, check-in is from 13:30 Monday to Thursday, and check-out is 11:00. Whole-house stays check in from 16:00 and check out by 11:00. You’re welcome to enjoy the house and gardens after checking out of a spa break.' },
+    { k: ['group', '7 ', 'seven', 'friends', 'team'], a: 'Group Spa Breaks are for 7 to 16 guests, Sunday to Thursday, from £145 per person. You get up to 8 rooms, the spa just for your group, a grazing board or afternoon tea and a 20-minute massage each.', book: 'group' },
+    { k: ['whole house', 'exclusive use', 'the house', 'weekend', '16 guests', 'hire'], a: 'The whole house and spa is from £1,840 per night for up to 16 guests, with a 2-night minimum on Friday and Saturday. It has 8 bedrooms, a full kitchen, 2 living rooms and exclusive use of the spa pool, hot tub and sauna. A 50% deposit is taken, with the balance due 6 weeks before.', book: 'house' },
+    { k: ['1 night', 'one night house', 'midweek', 'mid-week'], a: 'The whole house has a 2-night minimum on Fridays and Saturdays. Midweek (Sunday to Thursday) stays may be possible; please email the team.', human: true },
+    { k: ['damage deposit', 'deposit'], a: 'For whole-house stays, a £500 card pre-authorisation is taken via a link sent within 48 hours of check-in, and released within 48 hours of check-out after the property check.' },
+    { k: ['treatment', 'massage', 'facial', 'menu'], a: 'Treatments: Back to Basics Facial (30 min, £50), Recipe for Radiance Facial (45 min, £70), Tension Melt or Scalp, Neck & Shoulder massage (30 min, £50 each), Recipe for Relaxation Massage (45 min, £70) and Relax & Unwind Full Body Massage (60 min, £80). Add them to any booking or book them on their own.', link: ['See the treatments', 'treatments.html'] },
+    { k: ['head spa', 'japanese', 'scalp', 'zen', 'ritual', 'renewal'], a: 'Japanese Head Spa: The Classic Renewal (60 min, £90), The Radiance Ritual (70 min, £115) and The Ultimate Zen Experience (80 min, £145). They’re 10% off when booked with a spa session or stay.', link: ['See the head spa', 'treatments.html#head-spa'] },
+    { k: ['pregnan'], a: 'Yes. Our therapists are trained in pregnancy massage. Just tell us you’re pregnant at your consultation on arrival.' },
+    { k: ['blue light', 'nhs', 'discount'], a: 'Blue Light Card holders get their included treatments upgraded to 30 minutes.' },
+    { k: ['parking', 'park', 'car park'], a: 'Yes, there’s plenty of free parking.' },
+    { k: ['charger', 'electric car', 'ev '], a: 'We have one electric car charger, available on a first come, first served basis.' },
+    { k: ['wifi', 'wi-fi', 'internet'], a: 'Yes, free Wi-Fi is available throughout the property.' },
+    { k: ['vat', 'receipt', 'invoice'], a: 'Yes. Send us a message and we’ll arrange a VAT receipt.', human: true },
+    { k: ['luggage', 'bags', 'suitcase'], a: 'Yes, we’re happy to store your luggage before or after your check-in.' },
+    { k: ['kitchen', 'cook', 'cooking'], a: 'Spa break guests can use the communal guest kitchen, with an oven and cooking equipment. Whole-house stays have a full kitchen.' },
+    { k: ['takeaway', 'take away', 'deliver'], a: 'Yes, many guests order a takeaway. Indian, Chinese, Italian and Turkish takeaways deliver to us, and the menus are in the house guide.' },
+    { k: ['own food', 'own drink', 'bring food', 'bring drink', 'alcohol', 'wine'], a: 'You’re welcome to bring your own snacks and drinks. We can supply bowls, cutlery and glassware.' },
+    { k: ['food', 'eat', 'afternoon tea', 'grazing', 'vegan', 'veggie', 'vegetarian', 'allerg', 'gluten', 'nut'], a: 'Day spa guests choose afternoon tea or a sweet & savoury grazing board, made by Desired Desserts. We cater for all dietary needs, including vegan, vegetarian and allergies. Just tell us when you book.' },
+    { k: ['breakfast'], a: 'Continental breakfast is £10 per person and needs to be pre-ordered with your stay.' },
+    { k: ['age', 'child', 'kid', 'teen', 'under 18', '16', 'baby'], a: '16 and 17-year-olds are welcome at Day Spa sessions with an adult. Under-16s can use the spa only during a Private Spa session or a whole-house booking. Under-18s can’t join spa breaks, and the person booking must be 18 or over.' },
+    { k: ['dog', 'dogs', 'my dog', 'bring my dog', 'pet', 'pets', 'animal'], a: 'Pets aren’t allowed, but working animals are welcome.' },
+    { k: ['cancel', 'refund', 'reschedule', 'change my', 'move my'], a: 'Spa days are non-refundable, but you can move your visit (subject to availability) by emailing at least 30 days before. Spa breaks are refundable with 30+ days’ notice. Whole house: 6+ months’ notice and you can move your dates; 6+ weeks, the deposit is kept; under 6 weeks, the full cost is kept.' },
+    { k: ['expire', 'expiry', 'valid', 'vouchers expire', 'voucher expire', 'voucher last'], a: 'Gift vouchers must be used within 12 months of issue.' },
+    { k: ['redeem', 'voucher code', 'use my voucher', 'use a voucher'], a: 'Enter the code on your voucher in the gift voucher box when you pay, and bring the voucher with you on arrival.' },
+    { k: ['voucher', 'gift'], a: 'Gift vouchers: Day Spa £90 (usually £100), Day Spa for Two £181 (usually £200) and an Ensuite Spa Break for 2 with grazing platter and massages, £290. They’re valid for 12 months.', link: ['Gift vouchers', 'gift-vouchers.html'] },
+    { k: ['yoga'], a: 'Private yoga sessions are from £15 per person for 45 minutes, for groups of 6 or more, in the gardens or the yoga space.', link: ['Yoga', 'yoga.html'] },
+    { k: ['chef'], a: 'We can put you in touch with a private chef, from relaxed family meals to tasting menus, for one night or a whole weekend. Please email the team.', human: true },
+    { k: ['wedding', 'marquee', 'tipi'], a: 'For weddings and special occasions there’s room for a marquee or tipi for up to 60, accommodation for 16 (including a bridal suite), exclusive spa use and free parking for 20 cars. Please email the team to plan.', human: true, link: ['Parties & events', 'events.html'] },
+    { k: ['hen', 'party', 'birthday', 'celebrat'], a: 'For hen parties and celebrations, the whole house sleeps 16 with exclusive spa use, plus options like yoga, BBQs, a private chef and cocktail making. External catering is allowed.', link: ['Parties & events', 'events.html'], book: 'house' },
+    { k: ['corporate', 'meeting', 'business', 'retreat', 'work'], a: 'For corporate retreats and meetings there’s a boardroom seating 16, marquee space for up to 100, free parking and wellness sessions. Please email the team for day delegate rates.', human: true, link: ['Corporate', 'corporate.html'] },
+    { k: ['things to do', 'activities', 'vineyard', 'horse', 'riding', 'watersport', 'wakeboard'], a: 'Nearby: wine tasting at a vineyard about 10 minutes away, horse riding a 10-minute walk away, and wakeboarding and paddleboarding at Xtreme Wake, Grendon Lakes (about 3 miles).', link: ['Recommendations', 'recommendations.html'] },
+    { k: ['pub', 'restaurant', 'dinner', 'eat out'], a: 'The Red Lion is a walk away in Bozeat. About 10 minutes’ drive in Olney are The Bull, Capadocia (Turkish) and Gabriella’s (Italian).', link: ['Local pubs & restaurants', 'local-dining.html'] },
+    { k: ['taxi', 'cab'], a: 'Lee Cabs of Wellingborough is our recommended taxi firm, with an app for booking and paying.' },
+    { k: ['bring', 'wear', 'swim', 'towel', 'robe', 'pack'], a: 'Just bring swimwear. Towels and robes are provided.' },
+    { k: ['where', 'address', 'find you', 'direction', 'location', 'postcode'], a: 'We’re on Easton Lane, Bozeat, NN29 7NN, just after the national speed limit signs as you leave Bozeat towards Easton Maudit. what3words: ///names.answers.fulfilled', link: ['Find us', 'contact.html'] },
+    { k: ['pay', 'klarna', 'card', 'instal'], a: 'You can pay by card or with Klarna in 3 interest-free instalments.' },
+    { k: ['contact', 'phone', 'call', 'email', 'human', 'person', 'someone', 'speak', 'talk'], a: `You can call ${C.phone}, message us on WhatsApp, or email ${C.email}. Use “Email the team” below and I’ll include our chat.`, human: true }
   ];
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -52,7 +78,7 @@ window.YC_CHAT = Object.assign({ endpoint: '', email: 'info@yorkcottagespa.com',
   const fab = root.querySelector('.ycc-fab'), panel = root.querySelector('.ycc-panel'), logEl = root.querySelector('.ycc-log'),
         form = root.querySelector('.ycc-form'), input = form.querySelector('input'), sugg = root.querySelector('.ycc-sugg'), mail = root.querySelector('.ycc-mail');
 
-  const SUGG = ['What are the session times?', 'How much is the whole house?', 'Do you do overnight stays?', 'Can I bring my dog?'];
+  const SUGG = ['What time are Day Spa sessions?', 'How much is the whole house?', 'Is there free parking?', 'Do gift vouchers expire?'];
   function say(role, html, extra){
     const m = document.createElement('div'); m.className = 'ycc-msg ' + role; m.innerHTML = html;
     if (extra) m.appendChild(extra);
@@ -69,7 +95,7 @@ window.YC_CHAT = Object.assign({ endpoint: '', email: 'info@yorkcottagespa.com',
     const body = 'Hello York Cottage,\n\n[Your question]\n\n--- Chat so far ---\n' + log.map(m => (m.role === 'user' ? 'Me: ' : 'Assistant: ') + m.content).join('\n') + '\n';
     return 'mailto:' + C.email + '?subject=' + encodeURIComponent('Question from the website') + '&body=' + encodeURIComponent(body.slice(0, 1800));
   }
-  function showSugg(){ sugg.innerHTML = SUGG.map(s => `<button type="button">${esc(s)}</button>`).join(''); sugg.querySelectorAll('button').forEach(b => b.onclick = () => ask(b.textContent)); }
+  function showSugg(){ sugg.innerHTML = '<small>Popular questions</small>' + SUGG.map(s => `<button type="button">${esc(s)}</button>`).join(''); sugg.querySelectorAll('button').forEach(b => b.onclick = () => ask(b.textContent)); }
 
   async function ask(q){
     q = q.trim(); if (!q) return;
@@ -91,7 +117,7 @@ window.YC_CHAT = Object.assign({ endpoint: '', email: 'info@yorkcottagespa.com',
 
   function open(){
     panel.hidden = false; root.classList.add('on'); input.focus();
-    if (!logEl.children.length){ say('assistant', 'Hi! Ask me about times, prices, stays, treatments or booking.'); logEl.appendChild(sugg); showSugg(); }
+    if (!logEl.children.length){ const w = document.createElement('div'); w.className = 'ycc-welcome'; w.innerHTML = '<b>Hi, how can we help?</b><span>Ask about times, prices, stays, treatments or booking.</span>'; logEl.appendChild(w); logEl.appendChild(sugg); showSugg(); }
   }
   function close(){ panel.hidden = true; root.classList.remove('on'); fab.focus(); }
   fab.onclick = () => panel.hidden ? open() : close();

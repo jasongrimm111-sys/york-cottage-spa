@@ -89,11 +89,11 @@
   }
 
   const S = { step:0 };
-  const reset = k => Object.assign(S, { p:k || null, step:k ? 1 : 0, date:null, nights:k && P[k].nights ? P[k].nights[0] : 1, session:null,
+  const reset = k => Object.assign(S, { p:k || null, step:0, date:null, nights:k && P[k].nights ? P[k].nights[0] : 1, session:null,
     guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, gOK:false, end:null, bfast:false, picks:[], adds:[], pending:null, tg:0, cat:undefined, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
 
-  const steps = () => ['Choose', 'Guests', 'Date', 'Treatments', 'Details', S.p && P[S.p].kind === 'ask' ? 'Send' : 'Pay'];
-  const LAST = 5, DETAILS = 4;
+  const steps = () => ['Type', 'Option', 'Guests', 'Date', 'Guest choices', 'Details', S.p && P[S.p].kind === 'ask' ? 'Send' : 'Pay'];
+  const LAST = 6, DETAILS = 5, CHOICES = 4, DATE = 3, GUESTS = 2;
   function syncAdds(){
     while (S.adds.length < S.guests) S.adds.push([]); S.adds.length = S.guests;
     if (S.pending){ if (!S.adds[0].includes(S.pending)) S.adds[0].push(S.pending); S.pending = null; }
@@ -138,7 +138,7 @@
     try {
       const o = JSON.parse(sessionStorage.getItem(SKEY) || 'null'); if (!o || !P[o.p]) return false;
       DATES.forEach(k => o[k] = o[k] ? new Date(o[k]) : null);
-      if (o.date && o.date < first){ o.date = null; o.end = null; if (o.step > 2) o.step = 2; }
+      if (o.date && o.date < first){ o.date = null; o.end = null; if (o.step > 3) o.step = 3; }
       Object.assign(S, o); return true;
     } catch (e) { return false; }
   }
@@ -147,7 +147,7 @@
     if (!started){ started = true; if (!S.p) restore(); }
     const keep = S.p && !S.ref && (!P[k] || k === S.p);
     if (!keep){ reset(P[k] ? k : null); }
-    if (TRi[tr]){ S.pending = tr; if (keep && S.step > 3) S.step = 3; }
+    if (TRi[tr]){ S.pending = tr; if (keep && S.step > CHOICES) S.step = CHOICES; }
     if (S.p) syncAdds();
     box.classList.add('on'); document.body.classList.add('bk-open'); draw(); const fb = $('.bk-close', nav); if (fb) fb.focus({ preventScroll:true });
   }
@@ -164,25 +164,35 @@
     const st = steps();
     stepsEl.innerHTML = S.ref ? '' : st.map((t, i) => `<li class="${i === S.step ? 'now' : i < S.step ? 'done' : ''}">${i < S.step ? `<button data-goto="${i}" title="Back to ${t}">` : '<span>'}<i>${i < S.step ? '✓' : i + 1}</i><b>${t}</b>${i < S.step ? '</button>' : '</span>'}</li>`).join('');
     stepsEl.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => { S.step = +b.dataset.goto; draw(); });
-    body.innerHTML = S.ref ? doneView() : [chooseView, guestView, dateView, treatView, detailView, payView][S.step]();
-    navView(); sideView(); wire(); save();
-    $('.bk-main', box).scrollTop = 0; box.scrollTop = 0;
+    const bar = S.step > 1 && !S.ref ? selBar() : '';
+    body.innerHTML = bar + (S.ref ? doneView() : [typeView, optionView, guestView, dateView, treatView, detailView, payView][S.step]());
+    body.querySelectorAll('.sel-bar [data-goto]').forEach(b => b.onclick = () => { S.step = +b.dataset.goto; draw(); });
+    navView(); sideView(); sideWire(); wire(); save();
+    body.scrollTop = 0; $('.bk-main', box).scrollTop = 0; box.scrollTop = 0; side.scrollTop = 0;
   }
 
+  const TYPE_NAMES = { Spa:'Spa day', Treat:'Treatments only', Stay:'Overnight stay', House:'Exclusive use' };
+  function selBar(){
+    if (!S.cat) return '';
+    const p = S.p && P[S.p] && P[S.p].group === S.cat ? P[S.p] : null;
+    return `<div class="sel-bar"><span>Your selection</span><button data-goto="0" title="Change booking type">${TYPE_NAMES[S.cat]} <i>✎</i></button>${p && S.step > 1 ? `<button data-goto="1" title="Change option">${p.name} <i>✎</i></button>` : ''}</div>`;
+  }
+  const typeView = () => chooseView(), optionView = () => chooseView();
   function chooseView(){
-    const grp = g => Object.entries(P).filter(([, p]) => p.group === g).map(([k, p]) => `<button class="bk-opt ${S.p === k ? 'sel' : ''}" data-p="${k}"><small>${k === 'break' ? '1 night Sun – Thu · 2 nights Sun – Wed' : k === 'group' ? 'Sun – Thu · 7+ guests' : k === 'house' ? '2 – 30 nights' : p.only ? 'No spa session' : k === 'private' ? '4+ guests (6+ on Sundays)' : '4-hour sessions'}</small><b>${p.name}</b><span>${p.blurb}</span><em>${p.from[0] === 'f' ? 'F' + p.from.slice(1) : p.from}</em><span class="opt-cta">${S.p === k ? '✓ Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('');
+    const cost = p => p.price || (p.priceN && p.priceN[1]) || p.night || 0;
+    const grp = g => Object.entries(P).filter(([, p]) => p.group === g).sort((a, b) => cost(a[1]) - cost(b[1])).map(([k, p]) => `<button class="bk-opt ${S.p === k ? 'sel' : ''}" data-p="${k}"><small>${k === 'break' ? '1 night Sun – Thu · 2 nights Sun – Wed' : k === 'group' ? 'Sun – Thu · 7+ guests' : k === 'house' ? '2 – 30 nights' : p.only ? 'No spa session' : k === 'private' ? '4+ guests (6+ on Sundays)' : '4-hour sessions'}</small><b>${p.name}</b><span>${p.blurb}</span><em>${p.from[0] === 'f' ? 'F' + p.from.slice(1) : p.from}</em><span class="opt-cta">${S.p === k ? '✓ Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('');
     const pend = S.pending ? `<div class="notice"><b>${TRi[S.pending].name}</b> is ready to add. Book it on its own, or add it to a spa day or a stay (Japanese head spa is 10% off with a spa session or stay).</div>` : '';
     const TYPES = [
-      ['Spa', 'Spa day', 'Day Spa, Spa Access or the Private Spa', 'From £50 pp', '<path d="M3 15c2 2 4 2 6 0s4-2 6 0 4 2 6 0M3 19c2 2 4 2 6 0s4-2 6 0 4 2 6 0M7 11V5a2 2 0 0 1 4 0M13 11V5a2 2 0 0 1 4 0"/>'],
-      ['Stay', 'Overnight stay', 'Spa breaks for 2 or groups of 7+', 'From £145 pp', '<path d="M3 18V8M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5M7 11.5a1.5 1.5 0 1 0 0-.01"/>'],
-      ['House', 'Exclusive use', 'The whole house & spa, up to 16 guests', 'From £1,840 / night', '<path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6"/>'],
-      ['Treat', 'Treatments only', 'Massage, facials & Japanese head spa', 'From £50', '<path d="M12 21c-4-3-7-6-7-10a7 7 0 0 1 14 0c0 4-3 7-7 10Z"/><path d="M12 8v6M9 11h6"/>']];
+      ['Spa', 'Spa day', 'Day Spa, Spa Access or the Private Spa', 'From £50 pp', 'https://static.wixstatic.com/media/7a9273_c527bfae78d645c096615f66806d3b0f~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_c527bfae78d645c096615f66806d3b0f~mv2.jpg'],
+      ['Treat', 'Treatments only', 'Massage, facials & Japanese head spa', 'From £50', 'https://static.wixstatic.com/media/7a9273_0fed7351ea044db299d21524d0244378~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_0fed7351ea044db299d21524d0244378~mv2.jpg'],
+      ['Stay', 'Overnight stay', 'Spa breaks for 2 or groups of 7+', 'From £145 pp', 'https://static.wixstatic.com/media/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg'],
+      ['House', 'Exclusive use', 'The whole house & spa, up to 16 guests', 'From £1,840 / night', 'https://static.wixstatic.com/media/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg']];
     if (S.cat === undefined) S.cat = S.p ? P[S.p].group : null;
-    if (!S.cat){
-      return `<h2>What would you like to <em>book</em>?</h2>${pend}<div class="bk-types">${TYPES.map(([g, t, d, f, ico]) => `<button class="bk-type" data-cat="${g}"><span class="bt-ico"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6">${ico}</svg></span><b>${t}</b><span>${d}</span><em>${f}</em><span class="opt-cta">Choose <span class="arrow">→</span></span></button>`).join('')}</div>`;
+    if (S.step === 0){
+      return `<h2>What would you like to <em>book</em>?</h2>${pend}<div class="bk-types">${TYPES.map(([g, t, d, f, img]) => `<button class="bk-type ${S.cat === g ? 'sel' : ''}" data-cat="${g}"><span class="bt-img" style="background-image:url('${img}')"></span><b>${t}</b><span>${d}</span><em>${f}</em><span class="opt-cta">${S.cat === g ? '✓ Selected' : 'Choose'} <span class="arrow">→</span></span></button>`).join('')}</div>`;
     }
     const T = TYPES.find(t => t[0] === S.cat);
-    return `<button class="bk-backlink" data-cat="">← All booking types</button><h2>${T[1]}: choose an <em>option</em></h2>${pend}
+    return `${selBar()}<h2>${T[1]}: choose an <em>option</em></h2>${pend}
       <div class="bk-opts">${grp(S.cat)}</div>`;
   }
 
@@ -228,56 +238,79 @@
   }
 
   const gMin = () => P[S.p].min;
-  const pricePart = () => '';
   function guestView(){
-    const p = P[S.p];
-    if (S.guests < gMin()) S.guests = gMin();
+    const p = P[S.p], minG = gMin();
+    if (S.guests < minG) S.guests = minG;
     while (S.picks.length < S.guests) S.picks.push({ treat:'Aromatherapy massage', food:(p.foods || ['Afternoon tea'])[0] });
     S.picks.length = S.guests; syncAdds();
-    const minG = gMin();
-    let h = `<h2>Who’s <em>coming</em>?</h2><p class="bk-sub">${p.name} · ${minG}–${p.max} guests${S.p === 'break' ? ' · prices are based on 2 sharing a room' : ''}${S.p === 'private' ? ' · Sundays need 6 or more' : ''}${S.p === 'house' ? ' · the price is for the whole house' : ''}</p>
-      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap"><div class="stepper"><button data-g="-1" ${S.guests <= minG ? 'disabled' : ''} aria-label="Fewer guests">−</button><output>${S.guests}</output><button data-g="1" ${S.guests >= p.max ? 'disabled' : ''} aria-label="More guests">+</button></div>
-      <span style="color:var(--muted)">guest${S.guests > 1 ? 's' : ''}${S.p === 'break' ? ' · ' + Math.ceil(S.guests / 2) + ' room' + (S.guests > 2 ? 's' : '') : ''}${S.p === 'group' ? ' · for 6 or fewer, choose an Overnight Spa Break' : ''}${S.p === 'break' ? ' · travelling solo? Call us for a rate' : ''}</span></div>`;
+    const quick = [...new Set([minG, 2, 4, 6, 8, 10, 12, 16].filter(n => n >= minG && n <= p.max))].slice(0, 6);
+    const note = S.p === 'break' ? `${Math.ceil(S.guests / 2)} king ensuite room${S.guests > 2 ? 's' : ''} · prices are based on 2 sharing`
+      : S.p === 'group' ? 'Groups of 7 to 16 · 6 or fewer? Choose an Overnight Spa Break'
+      : S.p === 'house' ? 'Up to 16 guests · the price is for the whole house'
+      : S.p === 'private' ? 'Minimum 4 guests, 6 on Sundays'
+      : `Up to ${p.max} guests per booking`;
+    let h = `<h2>How many <em>guests</em>?</h2>
+      <div class="gcount">
+        <div class="gc-main"><button class="gc-btn" data-g="-1" ${S.guests <= minG ? 'disabled' : ''} aria-label="Fewer guests">−</button>
+          <div class="gc-num"><b>${S.guests}</b><span>guest${S.guests > 1 ? 's' : ''}</span></div>
+          <button class="gc-btn" data-g="1" ${S.guests >= p.max ? 'disabled' : ''} aria-label="More guests">+</button></div>
+        <div class="gc-side"><div class="gc-quick">${quick.map(n => `<button class="pill ${S.guests === n ? 'sel' : ''}" data-gq="${n}">${n}</button>`).join('')}</div><p>${note}</p></div>
+      </div>`;
     if (p.bfast && (S.p === 'group' || S.nights > 1))
-      h += `<label class="check" style="margin-top:18px"><input type="checkbox" id="bkBf" ${S.bfast ? 'checked' : ''}> Add continental breakfast, £${BFAST} per person per morning${pricePart()}</label>`;
-    if (p.treat || p.food){
-      h += `<div class="bk-group" style="margin-top:22px">${p.food ? 'Choose each guest’s food' + (p.treat ? ' and treatment' : '') : 'Included for each guest'}</div><div class="guests-grid">`;
-      h += S.picks.map((g, i) => `<div class="guest"><b>Guest ${i + 1}</b>
-        ${p.treat ? `<div class="pk-row"><small class="pk-l">Treatment</small><div class="pills">${['Aromatherapy massage', p.facial || 'Facial'].map(t => `<button class="pill ${g.treat === t ? 'sel' : ''}" data-pk="${i}" data-f="treat" data-v="${t}">${t}</button>`).join('')}</div></div>` : ''}
-        ${p.food ? `<div class="pk-row"><small class="pk-l">Food</small><div class="pills">${(p.foods || ['Afternoon tea','Sweet & savoury grazing board']).map(t => `<button class="pill ${g.food === t ? 'sel' : ''}" data-pk="${i}" data-f="food" data-v="${t}">${t}</button>`).join('')}</div></div>` : ''}</div>`).join('') + '</div>';
-    }
+      h += `<label class="check opt-line"><input type="checkbox" id="bkBf" ${S.bfast ? 'checked' : ''}> Add continental breakfast · £${BFAST} per person, per morning</label>`;
     return h;
   }
 
+  const pricePart = () => '';
+  const INCLUDED = { day:'treat', private:'treat', break:'massage', group:'massage' };
   function treatView(){
     const p = P[S.p]; syncAdds();
-    const g = Math.min(S.tg || 0, S.guests - 1); S.tg = g;
-    const tabs = S.guests > 1 ? `<div class="pills" style="margin-bottom:8px">${S.adds.map((a, i) => `<button class="pill ${i === g ? 'sel' : ''}" data-gt="${i}">Guest ${i + 1}${a.length ? ' · ' + a.length : ''}</button>`).join('')}</div>` : '';
+    while (S.picks.length < S.guests) S.picks.push({ treat:'Aromatherapy massage', food:(p.foods || ['Afternoon tea'])[0] });
+    const g = Math.min(Math.max(S.tg || 0, 0), S.guests - 1); S.tg = g;
+    const pick = S.picks[g], n = S.guests;
+    const dots = n > 1 ? `<div class="gsteps">${Array.from({ length:n }, (_, i) => `<button class="gstep ${i === g ? 'now' : ''} ${i < g || (i !== g && S.seen && S.seen[i]) ? 'done' : ''}" data-gt="${i}">${i < g || (S.seen && S.seen[i] && i !== g) ? '✓' : i + 1}</button>`).join('<i></i>')}</div>` : '';
+    const choice = (fld, opts) => `<div class="choice">${opts.map(([v, sub]) => `<button class="ch ${pick[fld] === v ? 'sel' : ''}" data-pk="${g}" data-f="${fld}" data-v="${v}"><span class="ch-r"></span><b>${v}</b>${sub ? `<small>${sub}</small>` : ''}</button>`).join('')}</div>`;
+    let h = `<div class="gc-head"><h2>${n > 1 ? `Guest ${g + 1} <em>of ${n}</em>` : p.only ? 'Choose your <em>treatments</em>' : 'Your <em>choices</em>'}</h2>${dots}</div>`;
+    if (INCLUDED[S.p] === 'treat') h += `<div class="bk-group">Included 20-minute treatment</div>${choice('treat', [['Aromatherapy massage', 'Relaxing, with aromatherapy oils'], [p.facial || 'Facial', S.p === 'private' ? 'A luxury facial' : 'An aromatherapy facial']])}`;
+    if (INCLUDED[S.p] === 'massage') h += `<div class="inc-line"><span>✓</span> A 20-minute aromatherapy massage is included</div>`;
+    if (p.food) h += `<div class="bk-group">Food</div>${choice('food', (p.foods || ['Afternoon tea', 'Sweet & savoury grazing board']).map(v => [v, v === 'Afternoon tea' ? 'Sweet & savoury treats' : v === 'Grazing board' ? 'Meats, cheese & sweet treats' : 'Meats, cheese & sweet treats · vegan available']))}`;
     const cats = [...new Set(TR.map(t => t.cat))];
-    const list = cats.map(c => `<div class="bk-group">${c}${c === 'Japanese Head Spa' && !p.only ? ' · 10% off with your booking' : ''}</div><div class="tr-list">` + TR.filter(t => t.cat === c).map(t => {
+    const extras = cats.map(c => `<div class="tr-cat">${c}${c === 'Japanese Head Spa' && !p.only ? ' <span>10% off with your booking</span>' : ''}</div><div class="tr-list">` + TR.filter(t => t.cat === c).map(t => {
       const on = S.adds[g].includes(t.id), full = !on && S.adds[g].length >= 3;
       const pr = t.head && !p.only ? `<s>${gbp(t.price)}</s> ${gbp(t.price * (1 - HEAD_OFF))}` : gbp(t.price);
       return `<button class="tr-opt ${on ? 'sel' : ''}" data-add="${t.id}" data-gi="${g}" ${full ? 'disabled' : ''}><span class="tr-tick">${on ? '✓' : '+'}</span><span class="tr-txt"><b>${t.name}</b><span>${t.desc}</span></span><span class="tr-pr"><b>${pr}</b><small>${t.min} min</small></span></button>`;
     }).join('') + '</div>').join('');
-    const when = p.rule ? 'We’ll schedule treatments during your stay and confirm the times by email.' : 'We’ll fit treatments around your visit and confirm the times by email.';
-    return `<h2>${p.only ? 'Choose your <em>treatments</em>' : 'Add <em>treatments</em>'}</h2>
-      <p class="bk-sub">${p.only ? 'Pick at least one treatment.' : (p.treat ? 'Your 20-minute treatment is already included. ' : '') + 'Add massages, facials or a Japanese head spa for anyone in your group. This step is optional.'} ${when}${S.guests > 1 ? ' Choose a guest, then their treatments.' : ''}</p>${tabs}${list}`;
+    h += p.only
+      ? `<p class="bk-sub" style="margin-top:6px">Pick one or more treatments${n > 1 ? ' for this guest' : ''}. We’ll confirm your appointment times by email.</p>${extras}`
+      : `<div class="extra-box"><div class="extra-h"><b>Add extra treatments <span>optional</span></b><p>${INCLUDED[S.p] ? 'Your booking already includes a 20-minute treatment. Want more time? Add any of these.' : 'Add a massage, facial or Japanese head spa to your visit.'} We’ll fit them around your ${p.rule ? 'stay' : 'session'}.</p></div>${extras}</div>`;
+    if (n > 1 && g === 0) h += `<button class="bk-backlink" data-same style="margin-top:14px">Give everyone the same choices as Guest 1</button>`;
+    return h;
   }
 
   function detailView(){
-    const f = (id, label, type = 'text', ac = '', err = 'Please fill this in') => `<div class="bk-field" data-fd="${id}"><label for="bk_${id}">${label}</label><input id="bk_${id}" type="${type}" autocomplete="${ac}" value="${esc(S.d[id])}"><span class="err">${err}</span></div>`;
+    const f = (id, label, type = 'text', ac = '', err = 'Please fill this in', opt = false) => `<div class="bk-field" data-fd="${id}"><label for="bk_${id}">${label}${opt ? ' <span class="opt">optional</span>' : ''}</label><input id="bk_${id}" type="${type}" autocomplete="${ac}" value="${esc(S.d[id])}"><span class="err">${err}</span></div>`;
     const ageLine = (S.p === 'private' || S.p === 'house')
-      ? 'The person booking is 18 or over. Under-16s may use the spa only during a Private Spa session or a whole-house booking.'
-      : 'Everyone in my booking is 18 or over.';
-    return `<h2>Your <em>details</em></h2><p class="bk-sub">We’ll send your confirmation here.</p><div class="det-grid"><div>
-      <div class="bk-2">${f('first', 'First name', 'text', 'given-name')}${f('last', 'Last name', 'text', 'family-name')}</div>
-      <div class="bk-2">${f('email', 'Email', 'email', 'email', 'Please enter a valid email')}${f('phone', 'Phone', 'tel', 'tel', 'Please enter a phone number')}</div>
-      <div class="bk-field"><label for="bk_notes">Anything we should know? <span style="font-weight:400;color:var(--muted)">(optional)</span></label><textarea id="bk_notes" rows="3" placeholder="Dietary needs, celebrations, accessibility…">${esc(S.d.notes)}</textarea></div></div><div>
-      <div class="notice"><b>Treatments:</b> each guest fills in a short consultation form before their treatment. Please tell us about any health conditions or pregnancy.</div>
-      <label class="check" data-ck="adult"><input type="checkbox" id="bkAdult" ${S.adult ? 'checked' : ''}> ${ageLine}</label>
-      <label class="check" data-ck="agree"><input type="checkbox" id="bkAgree" ${S.agree ? 'checked' : ''}> I agree to the <a href="https://www.yorkcottagespa.com/terms-conditions" target="_blank" rel="noopener">terms &amp; conditions</a> and the ${S.p === 'house' ? 'House Welcome Guide' : 'booking policy'} below.</label>
-      <div class="notice">${POLICY[P[S.p].kind === 'ask' ? 'ask' : S.p === 'house' ? 'house' : P[S.p].rule ? 'stay' : 'spa']}${S.p === 'house' ? '<br><br>Up to 16 guests. No parties or events, no pets (working animals welcome), no smoking or vaping indoors and no candles in the house.' : ''}</div>
-      <label class="check"><input type="checkbox" id="bkMkt" ${S.mkt ? 'checked' : ''}> Send me occasional news and offers from York Cottage (optional).</label></div></div>`;
+      ? 'I’m 18 or over. Under-16s only join on a Private Spa or whole-house booking, with an adult.'
+      : S.p === 'break' || S.p === 'group' ? 'Everyone staying is 18 or over.'
+      : 'I’m 18 or over, and any 16 or 17-year-olds will be with an adult.';
+    const pol = POLICY[S.p === 'house' ? 'house' : P[S.p].rule ? 'stay' : 'spa'];
+    return `<h2>Your <em>details</em></h2>
+      <div class="det-grid">
+        <div class="det-card"><div class="bk-group" style="margin-top:0">Lead guest</div>
+          <div class="bk-2">${f('first', 'First name', 'text', 'given-name')}${f('last', 'Last name', 'text', 'family-name')}</div>
+          <div class="bk-2">${f('email', 'Email', 'email', 'email', 'Please enter a valid email')}${f('phone', 'Mobile', 'tel', 'tel', 'Please enter a phone number')}</div>
+          <div class="bk-field"><label for="bk_notes">Dietary needs, celebrations or anything else <span class="opt">optional</span></label><textarea id="bk_notes" rows="2" placeholder="e.g. one vegan, a birthday">${esc(S.d.notes)}</textarea></div>
+          <label class="check"><input type="checkbox" id="bkBlue" ${S.blue ? 'checked' : ''}> I have a Blue Light Card (free upgrade to 30-minute treatments)</label>
+        </div>
+        <div class="det-card soft"><div class="bk-group" style="margin-top:0">Before you book</div>
+          <p class="det-pol">${pol}</p>
+          ${S.p === 'house' ? '<p class="det-pol">Up to 16 guests. No parties or events, no pets (working animals welcome), no smoking or vaping indoors and no candles.</p>' : ''}
+          <p class="det-pol">Each guest completes a short consultation form before treatments. Our therapists are trained in pregnancy massage.</p>
+          <label class="check" data-ck="adult"><input type="checkbox" id="bkAdult" ${S.adult ? 'checked' : ''}> ${ageLine}</label>
+          <label class="check" data-ck="agree"><input type="checkbox" id="bkAgree" ${S.agree ? 'checked' : ''}> <span>I agree to the <a href="terms.html" target="_blank" rel="noopener">terms &amp; conditions</a>.</span></label>
+          <label class="check"><input type="checkbox" id="bkMkt" ${S.mkt ? 'checked' : ''}> Send me news and offers (optional).</label>
+        </div>
+      </div>`;
   }
 
   function payView(){
@@ -307,6 +340,7 @@
         </div>`}
         <div class="lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Payments are encrypted and processed securely by Stripe.</div>
       </div></div>
+      <details class="vcode" ${S.voucher ? 'open' : ''}><summary>Have a gift voucher?</summary><div class="vc-row"><input id="bkVoucher" placeholder="Voucher code" value="${esc(S.voucher || '')}" maxlength="40"><button class="pill" id="bkVApply">Apply</button></div><p class="cal-note">Vouchers are valid for 12 months. We’ll check your code and adjust the balance before your visit.</p></details>
       ${pr.bal ? `<div class="notice"><b>Paying ${gbp(pr.now)} today</b> (50% deposit). The balance of ${gbp(pr.bal)} is due by ${nice(pr.balDue, { year:'numeric' })}. A £500 damage deposit will be pre-authorised before arrival.</div>`
         : S.p === 'house' ? `<div class="notice"><b>Paying in full today</b> because your stay is within 6 weeks. A £500 damage deposit will be pre-authorised before arrival.</div>` : ''}`;
   }
@@ -314,8 +348,8 @@
   function reviewList(){
     const p = P[S.p], d = S.d;
     const when = p.rule ? `${nice(S.date)} – ${nice(endDate(), { year:'numeric' })} (${S.nights} night${S.nights > 1 ? 's' : ''})<br>${stayTimes(S.p, S.date, S.nights).map(([a, b]) => a + ' ' + b).join(' · ')}` : `${nice(S.date, { year:'numeric' })} · ${sesLabel()}`;
-    const picks = (p.treat || p.food) ? S.picks.map((g, i) => `Guest ${i + 1}: ${[p.treat && g.treat, p.food && g.food].filter(Boolean).join(', ')}`).join('<br>') : '';
-    const rows = [['Booking', p.name], ['When', when], ['Guests', S.guests + (S.p === 'break' ? ` · ${Math.ceil(S.guests / 2)} room${S.guests > 2 ? 's' : ''}` : '')], picks && ['Included', picks], treatCost().n && ['Treatments', treatLines('<br>', true)], S.bfast && p.bfast && ['Breakfast', `Continental, ${S.nights} morning${S.nights > 1 ? 's' : ''}`],
+    const picks = (INCLUDED[S.p] === 'treat' || p.food) ? S.picks.map((g, i) => `Guest ${i + 1}: ${[INCLUDED[S.p] === 'treat' && g.treat, p.food && g.food].filter(Boolean).join(', ')}`).join('<br>') : '';
+    const rows = [['Booking', p.name], ['When', when], ['Guests', S.guests + (S.p === 'break' ? ` · ${Math.ceil(S.guests / 2)} room${S.guests > 2 ? 's' : ''}` : '')], picks && ['Included', picks], treatCost().n && ['Treatments', treatLines('<br>', true)], S.bfast && p.bfast && ['Breakfast', `Continental, ${S.nights} morning${S.nights > 1 ? 's' : ''}`], S.blue && ['Blue Light Card', 'Treatments upgraded to 30 minutes'], S.voucher && ['Gift voucher', esc(S.voucher) + ' (checked before your visit)'],
       ['Name', esc(d.first + ' ' + d.last)], ['Contact', esc(d.email) + '<br>' + esc(d.phone)], d.notes && ['Notes', esc(d.notes)]].filter(Boolean);
     return `<div class="pay" style="margin-bottom:18px"><ul class="sum" style="color:var(--ink)">${rows.map(([a, b]) => `<li><span style="color:var(--muted)">${a}</span><b>${b}</b></li>`).join('')}</ul></div>`;
   }
@@ -337,10 +371,11 @@
   // ---------- validation ----------
   function problem(){
     const p = P[S.p];
-    if (S.step === 0) return S.p ? '' : 'Choose what you’d like to book';
-    if (S.step === 2){ if (!S.date) return p.rule ? 'Choose your arrival day' : 'Choose a day'; if (p.rule === 'range' && !S.end) return 'Choose your check-out day'; if (p.sessions && !S.session) return 'Choose a session'; }
-    if (S.step === 1) S.gOK = true;
-    if (S.step === 3 && P[S.p].only && !treatCost().n) return 'Choose at least one treatment';
+    if (S.step === 0) return S.cat ? '' : 'Choose what you’d like to book';
+    if (S.step === 1) return S.p && P[S.p].group === S.cat ? '' : 'Choose an option';
+    if (S.step === DATE){ if (!S.date) return p.rule ? 'Choose your arrival day' : 'Choose a day'; if (p.rule === 'range' && !S.end) return 'Choose your check-out day'; if (p.sessions && !S.session) return 'Choose a session'; }
+    if (S.step === GUESTS) S.gOK = true;
+    if (S.step === CHOICES && P[S.p].only && !S.adds[S.tg].length) return 'Choose at least one treatment for this guest';
     if (S.step === DETAILS){
       const d = S.d, bad = [];
       if (!(d.first || '').trim()) bad.push('first'); if (!(d.last || '').trim()) bad.push('last');
@@ -355,16 +390,17 @@
   function navView(){
     if (S.ref){ nav.innerHTML = '<span></span><button class="bk-close">Close</button>'; $('.bk-close', nav).onclick = close; return; }
     const last = S.step === LAST, ask = S.p && P[S.p].kind === 'ask', pr = price();
-    const label = last ? (ask ? 'Send request' : S.pm === 'klarna' ? 'Continue with Klarna' : `Pay ${gbp(pr.now)}`) : 'Continue';
-    nav.innerHTML = `${S.step ? '<button class="back">← Back</button>' : '<span></span>'}<span class="bk-msg"></span><button class="bk-close" title="Your choices are saved">Close</button>${S.step === 0 && !S.p ? '' : '<button class="btn btn-solid go">'}${S.paying ? '<span class="spin"></span> ' + (S.pm === 'klarna' && !ask ? 'Opening Klarna…' : 'Processing…') : label + ' <span class="arrow">→</span>'}${S.step === 0 && !S.p ? '' : '</button>'}`;
+    const label = last ? (ask ? 'Send request' : S.pm === 'klarna' ? 'Continue with Klarna' : `Pay ${gbp(pr.now)}`) : S.step === CHOICES && S.tg < S.guests - 1 ? `Next: Guest ${S.tg + 2}` : 'Continue';
+    nav.innerHTML = `${S.step ? '<button class="back">← Back</button>' : '<span></span>'}<span class="bk-msg"></span><button class="bk-close" title="Your choices are saved">Close</button><button class="btn btn-solid go">${S.paying ? '<span class="spin"></span> ' + (S.pm === 'klarna' && !ask ? 'Opening Klarna…' : 'Processing…') : label + ' <span class="arrow">→</span>'}</button>`;
   }
 
+  function sideWire(){ const x = $('.side-x', side); if (x) x.onclick = close; side.querySelectorAll('[data-sgoto]').forEach(b => b.onclick = () => { S.step = +b.dataset.sgoto; draw(); }); }
   function sideView(){
     const p = P[S.p], pr = price(), est = estimate();
-    if (!p){ side.innerHTML = `<div class="eyebrow">Your booking</div><h3>Nothing chosen yet</h3><p class="sum-empty">Pick a spa day, a stay or a treatment to see your total here.</p><p class="foot-note">Questions? Call 01933 580 100 or message us on WhatsApp.</p>`; return; }
+    if (!p){ side.innerHTML = `<div class="side-top"><div class="eyebrow">Your booking</div><button class="side-x" aria-label="Close booking">&times;</button></div><h3>Nothing chosen yet</h3><p class="sum-empty">Pick a spa day, a stay or a treatment to see your total here.</p><p class="foot-note">Questions? Call 01933 580 100 or message us on WhatsApp.</p>`; return; }
     const tc = treatCost(), g = S.gOK;
     const unit = S.p === 'house' ? `${gbp(p.night)} × ${S.nights} nights` : p.priceN ? `${gbp(p.priceN[S.nights])} × ${S.guests}` : `${gbp(p.price)} × ${S.guests}`;
-    const rows = [['Booking', p.name],
+    const rows = [['Booking', `${p.name} <button class="side-edit" data-sgoto="1" title="Change">✎</button>`],
       S.date && ['Date', p.rule ? `${nice(S.date)}${endDate() ? ' → ' + nice(endDate()) : ''}` : nice(S.date)],
       S.session && ['Session', sesLabel()],
       g && ['Guests', S.guests],
@@ -376,7 +412,7 @@
       ? `<div class="big"><span>${g ? 'Estimate' : 'From'}</span><b>${g ? gbp(est) : gbp(p.est)}</b></div><p>${g ? 'We’ll confirm the exact price.' : 'per person'} Nothing to pay now.</p>`
       : ready ? `<div class="big"><span>Total</span><b>${gbp(pr.total)}</b></div>${pr.bal ? `<p>${gbp(pr.now)} deposit today, ${gbp(pr.bal)} by ${nice(pr.balDue)}.</p>` : '<p>Paid in full today. VAT included.</p>'}`
       : `<div class="big"><span>From</span><b>${p.from.replace(/^from /, '').split(' ')[0]}</b></div><p>${p.from.replace(/^from /, '').split(' ').slice(1).join(' ')}. Your total appears once you choose ${S.p === 'house' ? 'your dates' : 'your guests'}.</p>`;
-    side.innerHTML = `<div class="eyebrow">Your booking</div><h3>${p.name}</h3><ul class="sum">${rows.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join('')}</ul>
+    side.innerHTML = `<div class="side-top"><div class="eyebrow">Your booking</div><button class="side-x" aria-label="Close booking" title="Close (your choices are saved)">&times;</button></div><h3>${p.name}</h3><ul class="sum">${rows.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join('')}</ul>
       <div class="sum-tot">${tot}<button class="sum-toggle">Details</button></div>
       <p class="sum-pol">${{ house:'50% deposit. Move your dates with 6+ months’ notice.', break:'Refundable with 30+ days’ notice.', group:'Refundable with 30+ days’ notice.' }[S.p] || (p.only ? 'Pay today. Move your appointment with 30+ days’ notice.' : 'Non-refundable, but you can move your visit with 30+ days’ notice.')}</p>
       <p class="foot-note">Questions? Call 01933 580 100 or message us on WhatsApp.</p>`;
@@ -387,8 +423,8 @@
   function wire(){
     body.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => {
       const g = b.dataset.cat || null, opts = Object.keys(P).filter(k => P[k].group === g);
-      if (g && opts.length === 1){ const k = opts[0]; if (k !== S.p){ const pend = S.pending; reset(k); S.pending = pend; syncAdds(); } S.cat = g; S.step = 1; draw(); return; }
-      S.cat = g; draw(); });
+      if (g && opts.length === 1 && opts[0] !== S.p){ const pend = S.pending; reset(opts[0]); S.pending = pend; syncAdds(); }
+      S.cat = g; S.step = 0; draw(); });
     body.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { const k = b.dataset.p; if (k !== S.p){ const pend = S.pending, cat = S.cat; reset(k); S.pending = pend; S.cat = cat; syncAdds(); } S.cat = P[k].group; S.step = 1; draw(); });
     body.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + +b.dataset.m, 1); draw(); });
     body.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.d.split('-').map(Number); const D = new Date(y, m - 1, d);
@@ -404,23 +440,28 @@
     body.querySelectorAll('[data-pk]').forEach(b => b.onclick = () => { S.picks[+b.dataset.pk][b.dataset.f] = b.dataset.v; draw(); });
     body.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const g = S.adds[+b.dataset.gi], id = b.dataset.add, i = g.indexOf(id); if (i >= 0) g.splice(i, 1); else if (g.length < 3) g.push(id); draw(); });
     body.querySelectorAll('[data-pm]').forEach(b => b.onclick = () => { S.pm = b.dataset.pm; draw(); });
-    body.querySelectorAll('[data-gt]').forEach(b => b.onclick = () => { S.tg = +b.dataset.gt; draw(); });
+    body.querySelectorAll('[data-gt]').forEach(b => b.onclick = () => { (S.seen = S.seen || {})[S.tg] = 1; S.tg = +b.dataset.gt; draw(); });
     ['first','last','email','phone','notes'].forEach(k => { const el = $('#bk_' + k, body); if (el) el.oninput = () => { S.d[k] = el.value; el.closest('.bk-field').classList.remove('bad'); }; });
-    [['#bkAdult','adult'],['#bkAgree','agree'],['#bkMkt','mkt']].forEach(([s, k]) => { const el = $(s, body); if (el) el.onchange = () => { S[k] = el.checked; el.closest('.check').classList.remove('bad'); }; });
+    [['#bkAdult','adult'],['#bkAgree','agree'],['#bkMkt','mkt'],['#bkBlue','blue']].forEach(([s, k]) => { const el = $(s, body); if (el) el.onchange = () => { S[k] = el.checked; el.closest('.check').classList.remove('bad'); }; });
     const c = body.querySelector('[data-close]'); if (c) c.onclick = close;
-    const back = $('.back', nav); if (back) back.onclick = () => { S.step--; draw(); };
+    const back = $('.back', nav); if (back) back.onclick = () => { if (S.step === CHOICES && S.tg > 0){ S.tg--; draw(); return; } S.step--; if (S.step === CHOICES) S.tg = S.guests - 1; draw(); };
     const go = $('.go', nav); if (go) go.onclick = next;
     const cl = $('.bk-close', nav); if (cl) cl.onclick = close;
+    const va = $('#bkVApply', body); if (va) va.onclick = () => { S.voucher = ($('#bkVoucher', body).value || '').trim(); draw(); };
+    body.querySelectorAll('[data-gq]').forEach(b => b.onclick = () => { S.guests = +b.dataset.gq; S.gOK = true; if (S.date && !dateOK(S.p, S.date)){ S.date = null; S.end = null; } draw(); });
+    const same = body.querySelector('[data-same]'); if (same) same.onclick = () => { S.picks = S.picks.map(() => ({ ...S.picks[0] })); S.adds = S.adds.map(() => [...S.adds[0]]); S.seen = {}; for (let i = 0; i < S.guests; i++) S.seen[i] = 1; S.step = DETAILS; draw(); };
   }
 
   function next(){
     if (S.paying) return;
     const pb = problem(), msg = $('.bk-msg', nav);
     if (pb){
-      if (typeof pb === 'string'){ msg.textContent = pb; const o = $('.bk-opts', body); if (o && S.step === 0){ o.classList.remove('nudge'); void o.offsetWidth; o.classList.add('nudge'); } return; }
+      if (typeof pb === 'string'){ msg.textContent = pb; const o = $(S.step === 0 ? '.bk-types' : '.bk-opts', body); if (o && S.step < 2){ o.classList.remove('nudge'); void o.offsetWidth; o.classList.add('nudge'); } return; }
       if (pb.bad){ pb.bad.forEach(k => $(`[data-fd="${k}"]`, body).classList.add('bad')); msg.textContent = 'Please check the highlighted fields'; $(`#bk_${pb.bad[0]}`, body).focus(); return; }
       if (pb.ck){ $(`[data-ck="${pb.ck}"]`, body).classList.add('bad'); msg.textContent = pb.ck === 'adult' ? 'Please confirm the age requirement' : 'Please agree to the terms to continue'; return; }
     }
+    if (S.step === CHOICES && S.tg < S.guests - 1){ (S.seen = S.seen || {})[S.tg] = 1; S.tg++; draw(); return; }
+    if (S.step === DATE) S.tg = 0;
     if (S.step < LAST){ S.step++; draw(); return; }
     // CONNECT: create the booking (server) -> Stripe PaymentIntent -> stripe.confirmPayment(); show the confirmation on success.
     // Test mode: simulate a successful Stripe payment. No request is sent anywhere.

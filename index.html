@@ -9,22 +9,28 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=11251530">
+<link rel="stylesheet" href="site.css?v=1125155342">
 </head>
-<body>
+<body data-page="">
 
-<header id="top">
+<header id="top" class="solid">
   <div class="wrap nav">
-    <a class="logo" href="#"><b>York Cottage</b><span>Spa &middot; Bozeat</span></a>
+    <a class="logo" href="index.html"><b>York Cottage</b><span>Spa &middot; Bozeat</span></a>
     <a class="btn hdr-book" data-book="" href="#book">Book</a>
     <button class="burger" aria-label="Menu" aria-expanded="false"><i></i><i></i><i></i></button>
     <ul class="menu">
-      <li><a href="#spa" data-nav="spa">Spa</a></li>
-      <li><a href="#stay" data-nav="stay">Stay</a></li>
-      <li><a href="treatments.html" data-nav="treatments">Treatments</a></li>
-      <li><a href="#gifts" data-nav="gifts">Gift vouchers</a></li>
-      <li><a href="#find" data-nav="find">Find us</a></li>
-      <li><a class="btn" data-book="" href="https://www.yorkcottagespa.com/booking-calendar/day-spa-session">Book now</a></li>
+      <li class="has-sub"><a href="spa.html" data-nav="spa">Spa<svg class="caret" viewBox="0 0 12 8" width="10" height="7"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></a>
+        <ul class="sub"><li><a href="spa.html">Spa days overview</a></li><li><a href="day-spa.html">Day Spa</a></li><li><a href="spa-access.html">Spa Access</a></li><li><a href="private-spa.html">Private Spa</a></li><li><a href="treatments.html">Treatments</a></li></ul></li>
+      <li class="has-sub"><a href="stay.html" data-nav="stay">Stay<svg class="caret" viewBox="0 0 12 8" width="10" height="7"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></a>
+        <ul class="sub"><li><a href="stay.html">Stays overview</a></li><li><a href="spa-breaks.html">Overnight Spa Break</a></li><li><a href="two-night-break.html">2-Night Spa Break</a></li><li><a href="group-breaks.html">Group Spa Breaks (7+)</a></li><li><a href="whole-house.html">Whole House & Spa</a></li></ul></li>
+      <li class="has-sub"><a href="events.html" data-nav="events">Events<svg class="caret" viewBox="0 0 12 8" width="10" height="7"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></a>
+        <ul class="sub"><li><a href="events.html">Parties & events</a></li><li><a href="corporate.html">Corporate</a></li></ul></li>
+      <li class="has-sub"><a href="recommendations.html" data-nav="explore">Explore<svg class="caret" viewBox="0 0 12 8" width="10" height="7"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></a>
+        <ul class="sub"><li><a href="recommendations.html">Recommendations</a></li><li><a href="private-chef.html">Private chef</a></li><li><a href="yoga.html">Yoga</a></li><li><a href="afternoon-tea.html">Afternoon tea</a></li><li><a href="local-dining.html">Local pubs & restaurants</a></li><li><a href="gallery.html">Gallery</a></li></ul></li>
+      <li><a href="gift-vouchers.html" data-nav="gifts">Gift vouchers</a></li>
+      <li><a href="faqs.html" data-nav="faqs">FAQs</a></li>
+      <li><a href="contact.html" data-nav="contact">Contact</a></li>
+      <li><a class="btn" data-book="" href="#book">Book now</a></li>
     </ul>
   </div>
 </header>
@@ -35,17 +41,9 @@
     <div class="eyebrow rv">Boutique spa &amp; stays &middot; Northamptonshire</div>
     <h1 class="rv d1">Slow down. <em>Breathe</em> in the country.</h1>
     <p class="rv d2">An award-winning, modern spa with accommodation, tucked into the rural village of Bozeat. Join us for a day spa, an overnight spa break, or take the whole house for the weekend.</p>
-    <div class="qbook rv d3" role="search" aria-label="Quick booking">
-      <label><small>I'd like</small><select id="qbType" aria-label="Booking type">
-        <option value="day">A spa day &middot; from &pound;100 pp</option>
-        <option value="access">Spa access &middot; &pound;50 pp</option>
-        <option value="private">A private spa &middot; 4+ guests</option>
-        <option value="break">An overnight stay &middot; from &pound;145 pp</option>
-        <option value="group">A group stay &middot; 7+ guests</option>
-        <option value="house">The whole house &middot; from &pound;1,840 / night</option>
-        <option value="treat">Treatments only &middot; from &pound;50</option>
-      </select></label>
-      <button class="btn btn-clay" id="qbGo" data-book="day">Check availability <span class="arrow">&rarr;</span></button>
+    <div class="hero-cta rv d3">
+      <a class="btn btn-clay" data-book="" href="#book">Book now <span class="arrow">&rarr;</span></a>
+      <a class="btn btn-ghost" href="spa.html">Explore the spa</a>
     </div>
     <a class="g-chip rv d3" data-g-link href="https://www.google.com/search?q=York+Cottage+Spa+Bozeat+reviews" target="_blank" rel="noopener"><svg class="g" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.6 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.3V7.1H2.1a11 11 0 0 0 0 9.9z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4z"/></svg><b data-g-rating>4.6</b><span data-g-stars></span><span><span data-g-count>266</span> Google reviews</span></a>
   </div>
@@ -101,7 +99,7 @@
       <p class="lead rv d2">Spa pool, sauna and a calm lounge, with refreshments throughout. Choose a full day spa, simple spa access, or the spa all to yourselves.</p>
     </div>
     <div class="cards">
-      <a class="card rv" data-book="day" href="https://www.yorkcottagespa.com/spa-packages">
+      <a class="card rv" data-book="day" href="day-spa.html">
         <img src="https://static.wixstatic.com/media/7a9273_cdf5c47efec5473fb3957a7d5adeb3ac~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_cdf5c47efec5473fb3957a7d5adeb3ac~mv2.jpg" alt="">
         <div class="card-body">
           <span class="price">From &pound;100 per person</span>
@@ -110,7 +108,7 @@
           <span class="more">Book the day spa &rarr;</span>
         </div>
       </a>
-      <a class="card rv d1" data-book="access" href="https://www.yorkcottagespa.com/spa-packages/accessonly">
+      <a class="card rv d1" data-book="access" href="spa-access.html">
         <img src="https://static.wixstatic.com/media/7a9273_91aab4999b9e42e3a69a8f37c6e7c272~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_91aab4999b9e42e3a69a8f37c6e7c272~mv2.jpg" alt="">
         <div class="card-body">
           <span class="price">&pound;50 per person</span>
@@ -119,7 +117,7 @@
           <span class="more">Book spa access &rarr;</span>
         </div>
       </a>
-      <a class="card rv d2" data-book="private" href="https://www.yorkcottagespa.com/private-spa">
+      <a class="card rv d2" data-book="private" href="private-spa.html">
         <img src="https://static.wixstatic.com/media/7a9273_bd0a45f992774bccb26756818d10e7de~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_bd0a45f992774bccb26756818d10e7de~mv2.jpg" alt="">
         <div class="card-body">
           <span class="price">From &pound;100 per person</span>
@@ -140,7 +138,7 @@
       <p class="lead rv d2">Arrive, change into your robe and let the afternoon slip away. Every day spa session includes:</p>
       <div class="session rv d3">
         <div><small>Morning 09:30&ndash;13:30 &middot; Afternoon 13:00&ndash;17:00</small><b>&pound;100 per person</b></div>
-        <a class="btn btn-solid" data-book="day" href="https://www.yorkcottagespa.com/booking-calendar/day-spa-session">Book a session <span class="arrow">&rarr;</span></a>
+        <a class="btn btn-solid" data-book="day" href="day-spa.html">Book a session <span class="arrow">&rarr;</span></a>
       </div>
     </div>
     <ul class="list rv d2">
@@ -169,7 +167,7 @@
           <h3>Overnight Spa Break</h3>
           <p>A king ensuite room, a grazing board and the spa. 2 nights from &pound;220 per person (Sunday to Wednesday arrivals).</p>
           <ul><li>Check-in 13:30, spa 14:00&ndash;18:00 (Mon&ndash;Thu)</li><li>Sundays: check-in 14:00, spa 18:00&ndash;22:30</li><li>20-minute aromatherapy massage each</li></ul>
-          <div class="stay-foot"><b>&pound;145<small>per person, 2 sharing</small></b><a data-book="break" href="https://www.yorkcottagespa.com/spa-breaks">Book a break &rarr;</a></div>
+          <div class="stay-foot"><b>&pound;145<small>per person, 2 sharing</small></b><a data-book="break" href="spa-breaks.html">Book a break &rarr;</a></div>
         </div>
       </article>
       <article class="stay-card rv d1">
@@ -179,7 +177,7 @@
           <h3>Group Spa Break</h3>
           <p>Bring the group together for a night away, with private spa access just for you.</p>
           <ul><li>Up to 8 rooms, spa just for your group</li><li>Spa 14:00&ndash;22:00 (Sun 17:30&ndash;22:00)</li><li>Grazing board or afternoon tea, massage each</li></ul>
-          <div class="stay-foot"><b>&pound;145<small>from, per person</small></b><a data-book="group" href="https://www.yorkcottagespa.com/group-spa-breaks">Book a group &rarr;</a></div>
+          <div class="stay-foot"><b>&pound;145<small>from, per person</small></b><a data-book="group" href="group-breaks.html">Book a group &rarr;</a></div>
         </div>
       </article>
       <article class="stay-card feature rv d2">
@@ -189,7 +187,7 @@
           <h3>The Whole House &amp; Spa</h3>
           <p>Eight bedrooms, a full kitchen, two living rooms and a private spa for up to 16 guests. It's all yours.</p>
           <ul><li>8 bedrooms, up to 16 guests</li><li>Check-in 16:00, check-out 11:00</li><li>Hot tub open 08:00&ndash;22:00 daily</li></ul>
-          <div class="stay-foot"><b>&pound;1,840<small>from, per night</small></b><a data-book="house" href="https://www.yorkcottagespa.com/book-the-house">Book the house &rarr;</a></div>
+          <div class="stay-foot"><b>&pound;1,840<small>from, per night</small></b><a data-book="house" href="whole-house.html">Book the house &rarr;</a></div>
         </div>
       </article>
     </div>
@@ -200,7 +198,7 @@
   <div class="band-img" id="parallax"></div>
   <div class="wrap">
     <p class="rv">Warm water, good company, and the whole evening ahead.</p>
-    <a class="btn btn-light rv d1" data-book="break" href="https://www.yorkcottagespa.com/stay">Find your stay <span class="arrow">&rarr;</span></a>
+    <a class="btn btn-light rv d1" data-book="break" href="stay.html">Find your stay <span class="arrow">&rarr;</span></a>
   </div>
 </div>
 
@@ -227,21 +225,21 @@
       <p class="lead rv d2">Thoughtful, easy and always welcome. Buy online in a few minutes, ready to give.</p>
     </div>
     <div class="gift-grid">
-      <a class="gift rv" href="https://www.yorkcottagespa.com/product-page/day-spa-gift-certificate">
+      <a data-voucher="day1" class="gift rv" href="gift-vouchers.html">
         <span class="sale">Offer</span>
         <span class="tag">For one</span>
         <h3>Day Spa</h3>
         <p>A day spa session with afternoon tea and a massage.</p>
         <div class="cost"><b>&pound;90</b><s>&pound;100</s></div>
       </a>
-      <a class="gift rv d1" href="https://www.yorkcottagespa.com/product-page/couple-day-spa-gift-certificate">
+      <a data-voucher="day2" class="gift rv d1" href="gift-vouchers.html">
         <span class="sale">Offer</span>
         <span class="tag">For two</span>
         <h3>Day Spa for Two</h3>
         <p>Share a day spa session, with afternoon tea and a massage each.</p>
         <div class="cost"><b>&pound;181</b><s>&pound;200</s></div>
       </a>
-      <a class="gift rv d2" href="https://www.yorkcottagespa.com/product-page/overnight-spa-gift-certificate-for-two">
+      <a data-voucher="break2" class="gift rv d2" href="gift-vouchers.html">
         <span class="tag">For two</span>
         <h3>Ensuite Spa Break</h3>
         <p>A night away for two, with a grazing platter and massages.</p>
@@ -316,26 +314,27 @@
 <footer>
   <div class="wrap">
     <div class="foot">
-      <a class="logo" href="#"><b>York Cottage</b><span>Spa &middot; Bozeat</span></a>
-      <nav>
-        <a href="#spa">Spa</a><a href="#stay">Stay</a><a href="treatments.html">Treatments</a><a href="#gifts">Gift vouchers</a><a href="https://www.yorkcottagespa.com/events">Events</a><a href="https://www.yorkcottagespa.com/faqs">FAQs</a>
-      </nav>
-      <div class="social">
-        <a href="https://www.instagram.com/yorkcottagespa/" aria-label="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" fill="currentColor"/></svg></a>
-        <a href="https://www.facebook.com/yorkcottagespa/" aria-label="Facebook"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 21v-7.5H16l.4-3h-2.9V8.6c0-.9.3-1.5 1.5-1.5h1.5V4.4A20 20 0 0 0 14.3 4c-2.2 0-3.8 1.4-3.8 3.9v2.6H8v3h2.5V21h3Z"/></svg></a>
-      </div>
+      <div class="foot-brand"><a class="logo" href="index.html"><b>York Cottage</b><span>Spa &middot; Bozeat</span></a>
+        <p>Easton Lane, Bozeat, Northamptonshire NN29 7NN<br><a href="tel:+441933580100">01933 580 100</a> &middot; <a href="mailto:info@yorkcottagespa.com">info@yorkcottagespa.com</a></p>
+        <div class="social">
+          <a href="https://www.instagram.com/yorkcottagespa/" aria-label="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" fill="currentColor"/></svg></a>
+          <a href="https://www.facebook.com/yorkcottagespa/" aria-label="Facebook"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 21v-7.5H16l.4-3h-2.9V8.6c0-.9.3-1.5 1.5-1.5h1.5V4.4A20 20 0 0 0 14.3 4c-2.2 0-3.8 1.4-3.8 3.9v2.6H8v3h2.5V21h3Z"/></svg></a>
+          <a href="https://wa.me/message/IXGSPUN5UC4AN1" aria-label="WhatsApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg></a>
+        </div></div>
+      <nav class="foot-cols"><div><b>Spa</b><a href="spa.html">Spa days overview</a><a href="day-spa.html">Day Spa</a><a href="spa-access.html">Spa Access</a><a href="private-spa.html">Private Spa</a><a href="treatments.html">Treatments</a></div><div><b>Stay</b><a href="stay.html">Stays overview</a><a href="spa-breaks.html">Overnight Spa Break</a><a href="two-night-break.html">2-Night Spa Break</a><a href="group-breaks.html">Group Spa Breaks (7+)</a><a href="whole-house.html">Whole House & Spa</a></div><div><b>Events</b><a href="events.html">Parties & events</a><a href="corporate.html">Corporate</a></div><div><b>Explore</b><a href="recommendations.html">Recommendations</a><a href="private-chef.html">Private chef</a><a href="yoga.html">Yoga</a><a href="afternoon-tea.html">Afternoon tea</a><a href="local-dining.html">Local pubs & restaurants</a><a href="gallery.html">Gallery</a></div><div><b>More</b><a href="gift-vouchers.html">Gift vouchers</a><a href="faqs.html">FAQs</a><a href="gallery.html">Gallery</a><a href="contact.html">Contact &amp; find us</a></div></nav>
     </div>
     <div class="legal">
-      <span>&copy; York Cottage Spa Ltd. 2026</span>
-      <span><a href="https://www.yorkcottagespa.com/terms-conditions">Terms &amp; Conditions</a> &nbsp;&middot;&nbsp; <a href="https://www.yorkcottagespa.com/privacy-policy">Privacy Policy</a></span>
+      <span>&copy; York Cottage Spa Ltd. 2026 &middot; Living Wage employer &middot; <a href="https://ratings.food.gov.uk/business/en-GB/1499803">Food hygiene rating</a></span>
+      <span><a href="terms.html">Terms &amp; Conditions</a> &nbsp;&middot;&nbsp; <a href="privacy.html">Privacy Policy</a></span>
     </div>
   </div>
 </footer>
 
 <a class="mbar" data-book="" href="#book"><span><b>Book your visit</b><small>Spa days, stays &amp; treatments</small></span><em>Book now <span class="arrow">&rarr;</span></em></a>
-<script src="site.js?v=11251530"></script>
-<script src="booking.js?v=11251530"></script>
-<script src="reviews.js?v=11251530"></script>
-<script src="chat.js?v=11251530"></script>
+<script src="site.js?v=1125155342"></script>
+<script src="booking.js?v=1125155342"></script>
+<script src="reviews.js?v=1125155342"></script>
+<script src="chat.js?v=1125155342"></script>
+<script src="vouchers.js?v=1125155342"></script>
 </body>
 </html>

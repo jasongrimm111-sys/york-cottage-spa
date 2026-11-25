@@ -1,7 +1,7 @@
 (() => {
   const h = document.querySelector('header'), b = document.querySelector('.burger');
   const onScroll = () => {
-    h.classList.toggle('solid', scrollY > 60);
+    h.classList.add('solid'); // always the solid look (user preference)
     const p = document.getElementById('parallax');
     if (p){ const r = p.parentElement.getBoundingClientRect(); p.style.transform = `translateY(${(r.top + r.height/2 - innerHeight/2) * -0.08}px)`; }
   };
@@ -56,3 +56,21 @@
 /* hero quick booking: the button opens the checkout for the chosen type */
 (() => { const sel = document.getElementById('qbType'), go = document.getElementById('qbGo'); if (!sel || !go) return;
   sel.addEventListener('change', () => { go.dataset.book = sel.value; }); })();
+
+/* gallery lightbox and contact form */
+(() => {
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-lb]'); if (!a) return;
+    e.preventDefault();
+    const lb = document.createElement('div'); lb.className = 'lb';
+    const im = document.createElement('img'); im.src = a.href; im.alt = ''; lb.appendChild(im);
+    lb.onclick = () => lb.remove(); document.body.appendChild(lb);
+  });
+  addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.lb').forEach(x => x.remove()); });
+  const f = document.getElementById('cform');
+  if (f) f.addEventListener('submit', e => {
+    e.preventDefault();
+    const v = id => document.getElementById(id).value;
+    location.href = 'mailto:info@yorkcottagespa.com?subject=' + encodeURIComponent('Website enquiry from ' + v('cf_n')) + '&body=' + encodeURIComponent(v('cf_m') + '\n\n' + v('cf_n') + '\n' + v('cf_e'));
+  });
+})();

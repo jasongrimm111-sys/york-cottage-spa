@@ -17,6 +17,8 @@ FACTS
 - Payment: card or Klarna (pay in 3).
 - Directions: just after the national speed limit signs leaving Bozeat towards Easton Maudit. what3words ///names.answers.fulfilled.
 - Rated 4.6 out of 5 from over 260 Google reviews.
+- FAQs: free parking; free Wi-Fi throughout; one electric car charger (first come first served); VAT receipts on request; luggage storage before/after check-in; communal guest kitchen for spa break guests; takeaways (Indian, Chinese, Italian, Turkish) deliver; guests may bring their own snacks and drinks; Day Spa sessions have at most 6 guests in the spa (capacity 12); food can be enjoyed before or after the spa; 16-18 year olds welcome on Day Spa sessions with an adult; therapists trained in pregnancy massage; Blue Light Card holders get included treatments upgraded to 30 minutes; gift vouchers valid 12 months and redeemed with the code at checkout; whole house: spa exclusive to the group, available until 10:30 on check-out day, one basket of firewood included, 2-night minimum Fri/Sat, midweek on request.
+- Extras: yoga from £15 per person, 45 minutes, minimum 6; private chef on request; afternoon tea and grazing boards by Desired Desserts with vegan options; hen parties, weddings (marquee or tipi up to 60) and corporate events (boardroom for 16, marquee up to 100) by arrangement.
 
 When the guest clearly wants to book something, end your reply with one tag on its own line: [book:day], [book:access], [book:private], [book:break], [book:group] or [book:house]. When the guest needs a person, end with [human].`;
 
