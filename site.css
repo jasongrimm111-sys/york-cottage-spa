@@ -994,3 +994,45 @@ h3.sm{font-size:24px;margin-bottom:4px}
 .split .tm-head{margin-bottom:14px;gap:0}
 .page-hero::after{background:linear-gradient(180deg,rgba(25,30,26,.35) 0%,rgba(25,30,26,.35) 40%,rgba(25,30,26,.82) 100%)}
 .page-hero .wrap{padding-top:120px}
+/* ===== mobile fixes ===== */
+html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+.hdr-chat{display:none}
+@media (max-width:980px){
+  /* no zoom when tapping into a field (iOS zooms below 16px) */
+  input,select,textarea{font-size:16px!important}
+  /* chat button lives in the header next to Book */
+  .hdr-chat{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--forest);margin-right:6px;position:relative;z-index:60;cursor:pointer;padding:0}
+  .hdr-book{margin-left:auto}
+  .hdr-chat + .hdr-book,.hdr-book{margin-right:6px}
+  body.open .hdr-chat{opacity:0;pointer-events:none}
+  .ycc-fab{display:none!important}
+  .yc-chat{right:0;bottom:0}
+  /* chat: full screen, sized to the visible screen so nothing is hidden */
+  .yc-chat.on{position:fixed;inset:0;z-index:130}
+  .yc-chat.on .ycc-panel{position:fixed;inset:0;width:100%;height:100dvh;max-height:none;border-radius:0;border:0;bottom:auto}
+  .ycc-head{padding:calc(12px + env(safe-area-inset-top)) 16px 12px}
+  .ycc-x{width:40px;height:40px}
+  .ycc-log{padding:16px}
+  .ycc-form{padding:10px 12px}
+  .ycc-foot{padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+  /* booking: the summary is only as tall as its content */
+  .bk-box{grid-template-rows:auto 1fr;min-height:100dvh}
+  .bk-side{padding:12px 16px;align-self:start}
+  .bk-side .side-top{margin:0 0 4px}
+  .bk-side .eyebrow{font-size:11px}
+  .sum-tot .big b{font-size:26px}
+  .sum-pol,.bk-side .foot-note{display:none}
+  .bk-side.full .sum-pol{display:block}
+}
+@media (max-width:980px){
+  .nav .logo b{font-size:23px}
+  .nav .logo span{font-size:9px;letter-spacing:.28em}
+  .hdr-chat{width:40px;height:40px;margin-left:auto;margin-right:8px}
+  .hdr-book{margin-left:0!important;padding:10px 16px!important;margin-right:4px}
+}
+@media (max-width:360px){.nav .logo span{display:none}}
+@media (max-width:900px){
+  .bk-type > span.bt-img{display:block!important;height:84px}
+  .bk-type b,.bk-type em,.bk-type .opt-cta{margin-left:12px;margin-right:12px}
+  .bk-type .opt-cta{margin-bottom:12px;padding:7px 12px}
+}
