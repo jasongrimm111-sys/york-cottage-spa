@@ -42,11 +42,11 @@ window.YC_CHAT = Object.assign({ endpoint: '', email: 'info@yorkcottagespa.com',
   root.innerHTML = `
     <button class="ycc-fab" aria-label="Chat with us"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg><span>Ask us</span></button>
     <section class="ycc-panel" role="dialog" aria-label="York Cottage chat" hidden>
-      <header><div><b>York Cottage</b><small><i></i>AI assistant · instant answers</small></div><button class="ycc-x" aria-label="Close chat">&times;</button></header>
+      <div class="ycc-head"><div><b>York Cottage</b><small><i></i>Instant answers, 24/7</small></div><button class="ycc-x" aria-label="Close chat">&times;</button></div>
       <div class="ycc-log" aria-live="polite"></div>
       <div class="ycc-sugg"></div>
       <form class="ycc-form"><input type="text" placeholder="Ask about times, prices, stays…" aria-label="Your question" maxlength="500"><button aria-label="Send"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button></form>
-      <footer><span>Need a person?</span><a class="ycc-mail" href="#">Email the team</a></footer>
+      <div class="ycc-foot"><span>Need a person?</span><a class="ycc-mail" href="#">Email the team</a></div>
     </section>`;
   document.body.appendChild(root);
   const fab = root.querySelector('.ycc-fab'), panel = root.querySelector('.ycc-panel'), logEl = root.querySelector('.ycc-log'),
@@ -73,7 +73,7 @@ window.YC_CHAT = Object.assign({ endpoint: '', email: 'info@yorkcottagespa.com',
 
   async function ask(q){
     q = q.trim(); if (!q) return;
-    sugg.innerHTML = ''; say('user', esc(q)); log.push({ role: 'user', content: q });
+    sugg.innerHTML = ''; sugg.remove(); say('user', esc(q)); log.push({ role: 'user', content: q });
     const typing = document.createElement('div'); typing.className = 'ycc-msg assistant typing'; typing.innerHTML = '<i></i><i></i><i></i>'; logEl.appendChild(typing); logEl.scrollTop = logEl.scrollHeight;
     let e = null;
     if (C.endpoint){
@@ -91,7 +91,7 @@ window.YC_CHAT = Object.assign({ endpoint: '', email: 'info@yorkcottagespa.com',
 
   function open(){
     panel.hidden = false; root.classList.add('on'); input.focus();
-    if (!logEl.children.length){ say('assistant', 'Hello! I can help with session times, prices, stays, treatments and bookings. What would you like to know?'); showSugg(); }
+    if (!logEl.children.length){ say('assistant', 'Hi! Ask me about times, prices, stays, treatments or booking.'); logEl.appendChild(sugg); showSugg(); }
   }
   function close(){ panel.hidden = true; root.classList.remove('on'); fab.focus(); }
   fab.onclick = () => panel.hidden ? open() : close();

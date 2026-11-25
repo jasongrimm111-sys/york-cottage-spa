@@ -10,13 +10,13 @@
     access: { name:'Spa Access', group:'Spa', kind:'pay', price:50, per:'per person', from:'£50 per person', min:1, max:8,
               sessions:[['Morning','09:30 – 13:30'],['Afternoon','14:00 – 18:00'],['Evening','times confirmed when you book']],
               blurb:'4-hour session: hot tub, sauna and lounge with hot & cold refreshments, towel and robe.' },
-    private:{ name:'Private Spa', group:'Spa', kind:'ask', est:100, per:'per person', from:'from £100 per person', min:4, max:16, treat:true, food:true, facial:'Luxury facial',
-              sessions:[['Morning','time confirmed with your quote'],['Afternoon','time confirmed with your quote']],
-              blurb:'The spa just for your group. Minimum 4 guests (6 on Sundays, from 11:30). The rate depends on group size.' },
+    private:{ name:'Private Spa', group:'Spa', kind:'pay', price:100, per:'per person', from:'from £100 per person', min:4, max:16, treat:true, food:true, facial:'Luxury facial',
+              sessions:[['Morning','time confirmed by email'],['Afternoon','time confirmed by email']],
+              blurb:'The spa just for your group, with food, drinks and a 20-minute massage or luxury facial each. Minimum 4 guests (6 on Sundays, from 11:30).' },
     break:  { name:'Overnight Spa Break', group:'Stay', kind:'pay', priceN:{1:145, 2:220}, per:'per person', from:'£145 per person', min:2, max:6, rule:'mid', nights:[1,2], bfast:true,
               blurb:'1 night from £145 or 2 nights from £220 per person, based on 2 sharing. King ensuite room, grazing board, 20-minute aromatherapy massage each, spa access.' },
-    group:  { name:'Group Spa Break', group:'Stay', kind:'ask', est:145, per:'per person', from:'from £145 per person', min:7, max:16, rule:'mid', nights:[1], food:true, foods:['Grazing board','Afternoon tea'], bfast:true,
-              blurb:'7+ guests, Sunday to Thursday. Up to 8 rooms, spa exclusive to your group, 20-minute aromatherapy massage each. Send an enquiry.' },
+    group:  { name:'Group Spa Break', group:'Stay', kind:'pay', priceN:{1:145}, per:'per person', from:'from £145 per person', min:7, max:16, rule:'mid', nights:[1], food:true, foods:['Grazing board','Afternoon tea'], bfast:true,
+              blurb:'7+ guests, Sunday to Thursday. Up to 8 rooms, the spa just for your group, a grazing board or afternoon tea and a 20-minute aromatherapy massage each.' },
     house:  { name:'Whole House & Spa', group:'House', kind:'pay', night:1840, per:'per night', from:'from £1,840 per night', min:1, max:16, rule:'range', minN:2, maxN:30,
               blurb:'Exclusive use of the house and spa for up to 16 guests: 8 bedrooms, kitchen, 2 living rooms, hot tub and sauna. 2-night minimum.' },
     treat:  { name:'Treatments only', group:'Treat', kind:'pay', price:0, per:'', from:'from £50', min:1, max:6, only:true,
@@ -120,7 +120,7 @@
   // ---------- shell ----------
   const box = document.createElement('div');
   box.className = 'bk'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Book York Cottage Spa');
-  box.innerHTML = `<div class="bk-box"><div class="bk-main"><div class="bk-top"><span class="logo"><b>York Cottage</b><span>Book your visit</span></span><button class="bk-x" aria-label="Close booking"><span>Close</span><i>&times;</i></button></div><ol class="bk-steps"></ol><div class="bk-body"></div><div class="bk-nav"></div></div><aside class="bk-side"></aside></div>`;
+  box.innerHTML = `<div class="bk-box"><div class="bk-main"><div class="bk-head"><ol class="bk-steps"></ol><button class="bk-x" aria-label="Close booking" title="Close (your choices are saved)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><div class="bk-body"></div><div class="bk-nav"></div></div><aside class="bk-side"></aside></div>`;
   document.body.appendChild(box);
   const body = $('.bk-body', box), nav = $('.bk-nav', box), side = $('.bk-side', box), stepsEl = $('.bk-steps', box);
 
@@ -163,14 +163,15 @@
   // ---------- steps ----------
   function draw(){
     const st = steps();
-    stepsEl.innerHTML = S.ref ? '' : st.map((t, i) => `<li class="${i === S.step ? 'now' : i < S.step ? 'done' : ''}"><i>${i < S.step ? '✓' : i + 1}</i><b>${t}</b></li>`).join('');
+    stepsEl.innerHTML = S.ref ? '' : st.map((t, i) => `<li class="${i === S.step ? 'now' : i < S.step ? 'done' : ''}">${i < S.step ? `<button data-goto="${i}" title="Back to ${t}">` : '<span>'}<i>${i < S.step ? '✓' : i + 1}</i><b>${t}</b>${i < S.step ? '</button>' : '</span>'}</li>`).join('');
+    stepsEl.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => { S.step = +b.dataset.goto; draw(); });
     body.innerHTML = S.ref ? doneView() : [chooseView, guestView, dateView, treatView, detailView, payView][S.step]();
     navView(); sideView(); wire(); save();
     $('.bk-main', box).scrollTop = 0; box.scrollTop = 0;
   }
 
   function chooseView(){
-    const grp = g => Object.entries(P).filter(([, p]) => p.group === g).map(([k, p]) => `<button class="bk-opt ${S.p === k ? 'sel' : ''}" data-p="${k}"><small>${k === 'break' ? '1 night Sun – Thu · 2 nights Sun – Wed' : k === 'group' ? 'Sun – Thu · enquiry' : k === 'house' ? '2 – 30 nights' : p.only ? 'No spa session' : k === 'private' ? 'Enquiry · min 4 guests' : '4-hour sessions'}</small><b>${p.name}</b><span>${p.blurb}</span><em>${p.from[0] === 'f' ? 'F' + p.from.slice(1) : p.from}</em><span class="opt-cta">${S.p === k ? '✓ Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('');
+    const grp = g => Object.entries(P).filter(([, p]) => p.group === g).map(([k, p]) => `<button class="bk-opt ${S.p === k ? 'sel' : ''}" data-p="${k}"><small>${k === 'break' ? '1 night Sun – Thu · 2 nights Sun – Wed' : k === 'group' ? 'Sun – Thu · 7+ guests' : k === 'house' ? '2 – 30 nights' : p.only ? 'No spa session' : k === 'private' ? '4+ guests (6+ on Sundays)' : '4-hour sessions'}</small><b>${p.name}</b><span>${p.blurb}</span><em>${p.from[0] === 'f' ? 'F' + p.from.slice(1) : p.from}</em><span class="opt-cta">${S.p === k ? '✓ Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('');
     const pend = S.pending ? `<div class="notice"><b>${TRi[S.pending].name}</b> is ready to add. Book it on its own, or add it to a spa day or a stay (Japanese head spa is 10% off with a spa session or stay).</div>` : '';
     const TABS = [['Spa', 'Spa day', 'Day Spa, Spa Access or the Private Spa'], ['Stay', 'Overnight stay', 'Ensuite rooms, Sunday to Thursday'], ['House', 'Exclusive use', 'The whole house & spa, from £1,840 a night'], ['Treat', 'Treatments only', 'Massage, facials & head spa']];
     if (!S.cat) S.cat = S.p ? P[S.p].group : S.pending ? 'Treat' : 'Spa';
@@ -183,18 +184,22 @@
     const p = P[S.p], range = p.rule === 'range';
     const m = S.month || (S.date ? new Date(S.date.getFullYear(), S.date.getMonth(), 1) : new Date(first.getFullYear(), first.getMonth(), 1));
     S.month = m;
-    const startW = (m.getDay() + 6) % 7, dim = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
-    const endSel = endDate();
-    let cells = ['Mo','Tu','We','Th','Fr','Sa','Su'].map(d => `<span class="dw">${d}</span>`).join('') + '<span></span>'.repeat(startW);
-    for (let i = 1; i <= dim; i++){
-      const d = new Date(m.getFullYear(), m.getMonth(), i), ok = dateOK(S.p, d);
-      let c = BH.has(iso(d)) ? 'bh' : '';
-      if (S.date && +d === +S.date) c += ' sel';
-      else if (endSel && d > S.date && d < endSel) c += ' in';
-      else if (endSel && +d === +endSel) c += ' end';
-      cells += `<button data-d="${iso(d)}" class="${c}" ${ok ? '' : 'disabled'} aria-label="${nice(d, { year:'numeric' })}">${i}</button>`;
-    }
-    const prevOK = new Date(m.getFullYear(), m.getMonth(), 0) >= first, nextOK = new Date(m.getFullYear(), m.getMonth() + 1, 1) <= last;
+    const endSel = endDate(), two = !!p.rule && innerWidth > 900;
+    const grid = mm => {
+      const startW = (mm.getDay() + 6) % 7, dim = new Date(mm.getFullYear(), mm.getMonth() + 1, 0).getDate();
+      let cells = ['Mo','Tu','We','Th','Fr','Sa','Su'].map(d => `<span class="dw">${d}</span>`).join('') + '<span></span>'.repeat(startW);
+      for (let i = 1; i <= dim; i++){
+        const d = new Date(mm.getFullYear(), mm.getMonth(), i), ok = dateOK(S.p, d);
+        let c = BH.has(iso(d)) ? 'bh' : '';
+        if (S.date && +d === +S.date) c += ' sel';
+        else if (endSel && d > S.date && d < endSel) c += ' in';
+        else if (endSel && +d === +endSel) c += ' end';
+        cells += `<button data-d="${iso(d)}" class="${c}" ${ok ? '' : 'disabled'} aria-label="${nice(d, { year:'numeric' })}">${i}</button>`;
+      }
+      return `<div class="cal-m"><b class="cal-t">${mm.toLocaleDateString('en-GB', { month:'long', year:'numeric' })}</b><div class="cal-g">${cells}</div></div>`;
+    };
+    const m2 = new Date(m.getFullYear(), m.getMonth() + 1, 1);
+    const prevOK = new Date(m.getFullYear(), m.getMonth(), 0) >= first, nextOK = new Date(m.getFullYear(), m.getMonth() + (two ? 2 : 1), 1) <= last;
     const times = rows => `<ul class="times">${rows.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join('')}</ul>`;
     let right = '';
     if (p.sessions) right = `<div class="bk-group" style="margin-top:0">Session</div><div class="ses">${p.sessions.map(([n, t]) => `<button class="ses-opt ${S.session === n ? 'sel' : ''}" data-s="${n}"><b>${n}</b><span>${t}</span></button>`).join('')}</div>
@@ -212,8 +217,8 @@
         : `<p class="stay-when"><b>${nice(S.date)}</b> → <b>${nice(S.end)}</b> · ${S.nights} nights</p>${times(stayTimes('house', S.date, S.nights))}<p class="cal-note">From £1,840 per night for the whole house. Rates can vary by date.</p>`);
     }
     return `<h2>Choose your <em>${p.rule ? 'dates' : 'day'}</em></h2><p class="bk-sub">${p.name}${p.rule === 'mid' ? ' · Sunday to Thursday' : range ? ' · 2 to 30 nights' : ' · 4-hour sessions'}</p>
-      <div class="bk-row"><div class="cal"><div class="cal-h"><button data-m="-1" ${prevOK ? '' : 'disabled'} aria-label="Previous month">‹</button><b>${m.toLocaleDateString('en-GB', { month:'long', year:'numeric' })}</b><button data-m="1" ${nextOK ? '' : 'disabled'} aria-label="Next month">›</button></div>
-      <div class="cal-g">${cells}</div><div class="cal-note"><span><i></i>Bank holiday</span></div></div><div>${right}</div></div>`;
+      <div class="bk-row ${two ? 'wide' : ''}"><div class="cal"><div class="cal-nav"><button data-m="-1" ${prevOK ? '' : 'disabled'} aria-label="Previous month">‹</button><button data-m="1" ${nextOK ? '' : 'disabled'} aria-label="Next month">›</button></div>
+      <div class="cal-ms">${grid(m)}${two ? grid(m2) : ''}</div><div class="cal-note"><span><i></i>Bank holiday</span>${p.rule ? '<span>Tap your arrival day' + (p.rule === 'range' ? ', then your departure day' : '') + '</span>' : ''}</div></div><div class="bk-right">${right}</div></div>`;
   }
 
   const gMin = () => P[S.p].min;
@@ -367,6 +372,7 @@
       : `<div class="big"><span>From</span><b>${p.from.replace(/^from /, '').split(' ')[0]}</b></div><p>${p.from.replace(/^from /, '').split(' ').slice(1).join(' ')}. Your total appears once you choose ${S.p === 'house' ? 'your dates' : 'your guests'}.</p>`;
     side.innerHTML = `<div class="eyebrow">Your booking</div><h3>${p.name}</h3><ul class="sum">${rows.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join('')}</ul>
       <div class="sum-tot">${tot}<button class="sum-toggle">Details</button></div>
+      <p class="sum-pol">${{ house:'50% deposit. Move your dates with 6+ months’ notice.', break:'Refundable with 30+ days’ notice.', group:'Refundable with 30+ days’ notice.' }[S.p] || (p.only ? 'Pay today. Move your appointment with 30+ days’ notice.' : 'Non-refundable, but you can move your visit with 30+ days’ notice.')}</p>
       <p class="foot-note">Questions? Call 01933 580 100 or message us on WhatsApp.</p>`;
     const t = $('.sum-toggle', side); if (t) t.onclick = () => side.classList.toggle('full');
   }

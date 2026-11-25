@@ -25,8 +25,8 @@ window.YC_GOOGLE = Object.assign({
     const box = document.getElementById('gReviews');
     if (box && d.reviews && d.reviews.length){
       box.innerHTML = d.reviews.slice(0, 6).map(v => `<article class="g-rev">
-        <header>${v.photo ? `<img src="${esc(v.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy">` : `<i>${esc((v.name || '?')[0])}</i>`}
-          <div><b>${v.link ? `<a href="${esc(v.link)}" target="_blank" rel="noopener">${esc(v.name)}</a>` : esc(v.name)}</b><small>${esc(v.when)}</small></div></header>
+        <div class="g-rev-h">${v.photo ? `<img src="${esc(v.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy">` : `<i>${esc((v.name || '?')[0])}</i>`}
+          <div><b>${v.link ? `<a href="${esc(v.link)}" target="_blank" rel="noopener">${esc(v.name)}</a>` : esc(v.name)}</b><small>${esc(v.when)}</small></div></div>
         ${stars(v.rating)}
         <p>${esc(v.text)}</p>
       </article>`).join('') + `<p class="g-attr">Reviews from <b>Google</b>. <a data-g-link href="${esc(d.url)}" target="_blank" rel="noopener">See all ${d.count.toLocaleString('en-GB')} reviews</a></p>`;
