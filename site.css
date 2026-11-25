@@ -1036,3 +1036,13 @@ html{-webkit-text-size-adjust:100%;touch-action:manipulation}
   .bk-type b,.bk-type em,.bk-type .opt-cta{margin-left:12px;margin-right:12px}
   .bk-type .opt-cta{margin-bottom:12px;padding:7px 12px}
 }
+/* nicer Select / Selected buttons */
+.bk-opt .opt-cta,.bk-type .opt-cta{background:transparent;color:var(--forest)!important;border:1.5px solid var(--forest);padding:8px 16px;transition:background .2s, color .2s, border-color .2s}
+.bk-opt:hover .opt-cta,.bk-type:hover .opt-cta{background:var(--forest);color:var(--cream)!important}
+.bk-opt.sel,.bk-type.sel{background:linear-gradient(180deg,#fff 0%,#f6f1e9 100%);border-color:var(--forest);box-shadow:0 0 0 2px var(--forest),0 18px 30px -20px rgba(35,40,35,.55)}
+.bk-opt.sel .opt-cta,.bk-type.sel .opt-cta{background:var(--forest);border-color:var(--forest);color:var(--cream)!important;padding-left:10px}
+.bk-opt.sel .opt-cta .arrow,.bk-type.sel .opt-cta .arrow{display:none}
+.bk-opt.sel .opt-cta::before,.bk-type.sel .opt-cta::before{content:"";width:18px;height:18px;border-radius:50%;background:var(--clay) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 12.5 4 4 8-9' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat;flex:none}
+.bk-type.sel .bt-img{position:relative}
+.bk-type.sel .bt-img::after{content:"";position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:var(--clay) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 12.5 4 4 8-9' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px no-repeat;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.bk-opt.sel::after{content:"";position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;background:var(--clay) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 12.5 4 4 8-9' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/14px no-repeat}

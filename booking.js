@@ -160,6 +160,7 @@
   });
 
   // ---------- steps ----------
+  let lastAt = '';
   function draw(){
     const st = steps();
     stepsEl.innerHTML = S.ref ? '' : st.map((t, i) => `<li class="${i === S.step ? 'now' : i < S.step ? 'done' : ''}">${i < S.step ? `<button data-goto="${i}" title="Back to ${t}">` : '<span>'}<i>${i < S.step ? '✓' : i + 1}</i><b>${t}</b>${i < S.step ? '</button>' : '</span>'}</li>`).join('');
@@ -168,7 +169,8 @@
     body.innerHTML = bar + (S.ref ? doneView() : [typeView, optionView, guestView, dateView, treatView, detailView, payView][S.step]());
     body.querySelectorAll('.sel-bar [data-goto]').forEach(b => b.onclick = () => { S.step = +b.dataset.goto; draw(); });
     navView(); sideView(); sideWire(); wire(); save();
-    body.scrollTop = 0; $('.bk-main', box).scrollTop = 0; box.scrollTop = 0; side.scrollTop = 0;
+    const at = S.step + ':' + (S.tg || 0) + ':' + !!S.ref;  // only jump to the top on a new step or guest
+    if (at !== lastAt){ body.scrollTop = 0; $('.bk-main', box).scrollTop = 0; box.scrollTop = 0; side.scrollTop = 0; lastAt = at; }
   }
 
   const TYPE_NAMES = { Spa:'Spa day', Treat:'Treatments only', Stay:'Overnight stay', House:'Exclusive use' };
@@ -180,7 +182,7 @@
   const typeView = () => chooseView(), optionView = () => chooseView();
   function chooseView(){
     const cost = p => p.price || (p.priceN && p.priceN[1]) || p.night || 0;
-    const grp = g => Object.entries(P).filter(([, p]) => p.group === g).sort((a, b) => cost(a[1]) - cost(b[1])).map(([k, p]) => `<button class="bk-opt ${S.p === k ? 'sel' : ''}" data-p="${k}"><small>${k === 'break' ? '1 night Sun – Thu · 2 nights Sun – Wed' : k === 'group' ? 'Sun – Thu · 7+ guests' : k === 'house' ? '2 – 30 nights' : p.only ? 'No spa session' : k === 'private' ? '4+ guests (6+ on Sundays)' : '4-hour sessions'}</small><b>${p.name}</b><span>${p.blurb}</span><em>${p.from[0] === 'f' ? 'F' + p.from.slice(1) : p.from}</em><span class="opt-cta">${S.p === k ? '✓ Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('');
+    const grp = g => Object.entries(P).filter(([, p]) => p.group === g).sort((a, b) => cost(a[1]) - cost(b[1])).map(([k, p]) => `<button class="bk-opt ${S.p === k ? 'sel' : ''}" data-p="${k}"><small>${k === 'break' ? '1 night Sun – Thu · 2 nights Sun – Wed' : k === 'group' ? 'Sun – Thu · 7+ guests' : k === 'house' ? '2 – 30 nights' : p.only ? 'No spa session' : k === 'private' ? '4+ guests (6+ on Sundays)' : '4-hour sessions'}</small><b>${p.name}</b><span>${p.blurb}</span><em>${p.from[0] === 'f' ? 'F' + p.from.slice(1) : p.from}</em><span class="opt-cta">${S.p === k ? 'Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('');
     const pend = S.pending ? `<div class="notice"><b>${TRi[S.pending].name}</b> is ready to add. Book it on its own, or add it to a spa day or a stay (Japanese head spa is 10% off with a spa session or stay).</div>` : '';
     const TYPES = [
       ['Spa', 'Spa day', 'Day Spa, Spa Access or the Private Spa', 'From £50 pp', 'https://static.wixstatic.com/media/7a9273_c527bfae78d645c096615f66806d3b0f~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_c527bfae78d645c096615f66806d3b0f~mv2.jpg'],
@@ -189,7 +191,7 @@
       ['House', 'Exclusive use', 'The whole house & spa, up to 16 guests', 'From £1,840 / night', 'https://static.wixstatic.com/media/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg']];
     if (S.cat === undefined) S.cat = S.p ? P[S.p].group : null;
     if (S.step === 0){
-      return `<h2>What would you like to <em>book</em>?</h2>${pend}<div class="bk-types">${TYPES.map(([g, t, d, f, img]) => `<button class="bk-type ${S.cat === g ? 'sel' : ''}" data-cat="${g}"><span class="bt-img" style="background-image:url('${img}')"></span><b>${t}</b><span>${d}</span><em>${f}</em><span class="opt-cta">${S.cat === g ? '✓ Selected' : 'Choose'} <span class="arrow">→</span></span></button>`).join('')}</div>`;
+      return `<h2>What would you like to <em>book</em>?</h2>${pend}<div class="bk-types">${TYPES.map(([g, t, d, f, img]) => `<button class="bk-type ${S.cat === g ? 'sel' : ''}" data-cat="${g}"><span class="bt-img" style="background-image:url('${img}')"></span><b>${t}</b><span>${d}</span><em>${f}</em><span class="opt-cta">${S.cat === g ? 'Selected' : 'Choose'} <span class="arrow">→</span></span></button>`).join('')}</div>`;
     }
     const T = TYPES.find(t => t[0] === S.cat);
     return `${selBar()}<h2>${T[1]}: choose an <em>option</em></h2>${pend}

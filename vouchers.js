@@ -26,6 +26,7 @@
 
   const field = (id, label, type = 'text', opt = false, ph = '') => `<div class="bk-field" data-fd="${id}"><label for="v_${id}">${label}${opt ? ' <span class="opt">optional</span>' : ''}</label>${type === 'area' ? `<textarea id="v_${id}" rows="3" maxlength="300" placeholder="${ph}">${esc(S.d[id])}</textarea>` : `<input id="v_${id}" type="${type}" value="${esc(S.d[id])}" placeholder="${ph}">`}<span class="err">Please fill this in</span></div>`;
 
+  let lastStep = -1;
   function draw(){
     stepsEl.innerHTML = S.ref ? '' : STEPS.map((t, i) => `<li class="${i === S.step ? 'now' : i < S.step ? 'done' : ''}"><span><i>${i < S.step ? '✓' : i + 1}</i><b>${t}</b></span></li>`).join('');
     const v = VO[S.k];
@@ -35,7 +36,7 @@
         <ol class="next"><li>The voucher code is valid for 12 months.</li><li>To redeem, enter the code when booking and bring the voucher on arrival.</li></ol>`;
       nav.innerHTML = '<span></span><button class="btn btn-solid go">Done</button>'; $('.go', nav).onclick = close; sideView(); return;
     }
-    if (S.step === 0) body.innerHTML = `<h2>Choose a <em>voucher</em></h2><div class="bk-opts">${Object.entries(VO).map(([k, o]) => `<button class="bk-opt ${S.k === k ? 'sel' : ''}" data-k="${k}"><small>${o.who}</small><b>${o.name.replace(' gift voucher', '')}</b><span>${o.desc}</span><em>${gbp(o.price)}${o.was ? ` <s style="color:var(--muted);font-weight:400">${gbp(o.was)}</s>` : ''}</em><span class="opt-cta">${S.k === k ? '✓ Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('')}</div>`;
+    if (S.step === 0) body.innerHTML = `<h2>Choose a <em>voucher</em></h2><div class="bk-opts">${Object.entries(VO).map(([k, o]) => `<button class="bk-opt ${S.k === k ? 'sel' : ''}" data-k="${k}"><small>${o.who}</small><b>${o.name.replace(' gift voucher', '')}</b><span>${o.desc}</span><em>${gbp(o.price)}${o.was ? ` <s style="color:var(--muted);font-weight:400">${gbp(o.was)}</s>` : ''}</em><span class="opt-cta">${S.k === k ? 'Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('')}</div>`;
     if (S.step === 1) body.innerHTML = `<h2>Who’s it <em>for</em>?</h2><div class="det-grid"><div class="det-card">
         <div class="bk-group" style="margin-top:0">The voucher</div>${field('to', 'Recipient’s name')}${field('from', 'From (your name)')}${field('msg', 'Personal message', 'area', true, 'Happy birthday! Enjoy some time to relax.')}</div>
         <div class="det-card soft"><div class="bk-group" style="margin-top:0">Delivery</div>
@@ -49,7 +50,7 @@
           : `<div class="klarna-box"><p><b>3 interest-free payments of ${gbp(Math.round(v.price / 3 * 100) / 100)}</b></p><p class="k-small">You’ll confirm with Klarna. Subject to approval.</p></div>`}</div></div>`;
     const last = S.step === 2;
     nav.innerHTML = `${S.step ? '<button class="back">← Back</button>' : '<span></span>'}<span class="bk-msg"></span><button class="bk-close">Close</button><button class="btn btn-solid go">${last ? (S.pm === 'klarna' ? 'Continue with Klarna' : 'Pay ' + gbp(v.price)) : 'Continue'} <span class="arrow">→</span></button>`;
-    sideView(); wire(); body.scrollTop = 0;
+    sideView(); wire(); if (S.step !== lastStep){ body.scrollTop = 0; box.scrollTop = 0; lastStep = S.step; }
   }
   function sideView(){
     const v = VO[S.k];
