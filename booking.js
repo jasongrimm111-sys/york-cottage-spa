@@ -90,7 +90,7 @@
 
   const S = { step:0 };
   const reset = k => Object.assign(S, { p:k || null, step:k ? 1 : 0, date:null, nights:k && P[k].nights ? P[k].nights[0] : 1, session:null,
-    guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, gOK:false, end:null, bfast:false, picks:[], adds:[], pending:null, tg:0, cat:null, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
+    guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, gOK:false, end:null, bfast:false, picks:[], adds:[], pending:null, tg:0, cat:undefined, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
 
   const steps = () => ['Choose', 'Guests', 'Date', 'Treatments', 'Details', S.p && P[S.p].kind === 'ask' ? 'Send' : 'Pay'];
   const LAST = 5, DETAILS = 4;
@@ -120,7 +120,7 @@
   // ---------- shell ----------
   const box = document.createElement('div');
   box.className = 'bk'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Book York Cottage Spa');
-  box.innerHTML = `<div class="bk-box"><div class="bk-main"><div class="bk-head"><ol class="bk-steps"></ol><button class="bk-x" aria-label="Close booking" title="Close (your choices are saved)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><div class="bk-body"></div><div class="bk-nav"></div></div><aside class="bk-side"></aside></div>`;
+  box.innerHTML = `<div class="bk-box"><div class="bk-main"><div class="bk-head"><ol class="bk-steps"></ol></div><div class="bk-body"></div><div class="bk-nav"></div></div><aside class="bk-side"></aside></div>`;
   document.body.appendChild(box);
   const body = $('.bk-body', box), nav = $('.bk-nav', box), side = $('.bk-side', box), stepsEl = $('.bk-steps', box);
 
@@ -149,10 +149,9 @@
     if (!keep){ reset(P[k] ? k : null); }
     if (TRi[tr]){ S.pending = tr; if (keep && S.step > 3) S.step = 3; }
     if (S.p) syncAdds();
-    box.classList.add('on'); document.body.classList.add('bk-open'); draw(); $('.bk-x', box).focus();
+    box.classList.add('on'); document.body.classList.add('bk-open'); draw(); const fb = $('.bk-close', nav); if (fb) fb.focus({ preventScroll:true });
   }
   function close(){ box.classList.remove('on'); document.body.classList.remove('bk-open'); if (S.ref) reset(null); save(); }
-  $('.bk-x', box).onclick = close;
   box.addEventListener('click', e => { if (e.target === box) close(); });
   addEventListener('keydown', e => { if (e.key === 'Escape' && box.classList.contains('on')) close(); });
   document.addEventListener('click', e => {
@@ -173,11 +172,18 @@
   function chooseView(){
     const grp = g => Object.entries(P).filter(([, p]) => p.group === g).map(([k, p]) => `<button class="bk-opt ${S.p === k ? 'sel' : ''}" data-p="${k}"><small>${k === 'break' ? '1 night Sun – Thu · 2 nights Sun – Wed' : k === 'group' ? 'Sun – Thu · 7+ guests' : k === 'house' ? '2 – 30 nights' : p.only ? 'No spa session' : k === 'private' ? '4+ guests (6+ on Sundays)' : '4-hour sessions'}</small><b>${p.name}</b><span>${p.blurb}</span><em>${p.from[0] === 'f' ? 'F' + p.from.slice(1) : p.from}</em><span class="opt-cta">${S.p === k ? '✓ Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('');
     const pend = S.pending ? `<div class="notice"><b>${TRi[S.pending].name}</b> is ready to add. Book it on its own, or add it to a spa day or a stay (Japanese head spa is 10% off with a spa session or stay).</div>` : '';
-    const TABS = [['Spa', 'Spa day', 'Day Spa, Spa Access or the Private Spa'], ['Stay', 'Overnight stay', 'Ensuite rooms, Sunday to Thursday'], ['House', 'Exclusive use', 'The whole house & spa, from £1,840 a night'], ['Treat', 'Treatments only', 'Massage, facials & head spa']];
-    if (!S.cat) S.cat = S.p ? P[S.p].group : S.pending ? 'Treat' : 'Spa';
-    const tabs = `<div class="bk-tabs" role="tablist">${TABS.map(([g, t, d]) => `<button role="tab" aria-selected="${S.cat === g}" class="bk-tab ${S.cat === g ? 'sel' : ''}" data-cat="${g}"><b>${t}</b><small>${d}</small></button>`).join('')}</div>`;
-    return `<h2>What would you like to <em>book</em>?</h2>${pend}${tabs}
-      <div class="bk-opts ${S.cat === 'House' || S.cat === 'Treat' ? 'one' : ''}">${grp(S.cat)}</div>`;
+    const TYPES = [
+      ['Spa', 'Spa day', 'Day Spa, Spa Access or the Private Spa', 'From £50 pp', '<path d="M3 15c2 2 4 2 6 0s4-2 6 0 4 2 6 0M3 19c2 2 4 2 6 0s4-2 6 0 4 2 6 0M7 11V5a2 2 0 0 1 4 0M13 11V5a2 2 0 0 1 4 0"/>'],
+      ['Stay', 'Overnight stay', 'Spa breaks for 2 or groups of 7+', 'From £145 pp', '<path d="M3 18V8M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5M7 11.5a1.5 1.5 0 1 0 0-.01"/>'],
+      ['House', 'Exclusive use', 'The whole house & spa, up to 16 guests', 'From £1,840 / night', '<path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6"/>'],
+      ['Treat', 'Treatments only', 'Massage, facials & Japanese head spa', 'From £50', '<path d="M12 21c-4-3-7-6-7-10a7 7 0 0 1 14 0c0 4-3 7-7 10Z"/><path d="M12 8v6M9 11h6"/>']];
+    if (S.cat === undefined) S.cat = S.p ? P[S.p].group : null;
+    if (!S.cat){
+      return `<h2>What would you like to <em>book</em>?</h2>${pend}<div class="bk-types">${TYPES.map(([g, t, d, f, ico]) => `<button class="bk-type" data-cat="${g}"><span class="bt-ico"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6">${ico}</svg></span><b>${t}</b><span>${d}</span><em>${f}</em><span class="opt-cta">Choose <span class="arrow">→</span></span></button>`).join('')}</div>`;
+    }
+    const T = TYPES.find(t => t[0] === S.cat);
+    return `<button class="bk-backlink" data-cat="">← All booking types</button><h2>${T[1]}: choose an <em>option</em></h2>${pend}
+      <div class="bk-opts">${grp(S.cat)}</div>`;
   }
 
   function dateView(){
@@ -347,10 +353,10 @@
   }
 
   function navView(){
-    if (S.ref){ nav.innerHTML = ''; return; }
+    if (S.ref){ nav.innerHTML = '<span></span><button class="bk-close">Close</button>'; $('.bk-close', nav).onclick = close; return; }
     const last = S.step === LAST, ask = S.p && P[S.p].kind === 'ask', pr = price();
     const label = last ? (ask ? 'Send request' : S.pm === 'klarna' ? 'Continue with Klarna' : `Pay ${gbp(pr.now)}`) : 'Continue';
-    nav.innerHTML = `${S.step ? '<button class="back">← Back</button>' : '<span></span>'}<span class="bk-msg"></span><button class="btn btn-solid go">${S.paying ? '<span class="spin"></span> ' + (S.pm === 'klarna' && !ask ? 'Opening Klarna…' : 'Processing…') : label + ' <span class="arrow">→</span>'}</button>`;
+    nav.innerHTML = `${S.step ? '<button class="back">← Back</button>' : '<span></span>'}<span class="bk-msg"></span><button class="bk-close" title="Your choices are saved">Close</button>${S.step === 0 && !S.p ? '' : '<button class="btn btn-solid go">'}${S.paying ? '<span class="spin"></span> ' + (S.pm === 'klarna' && !ask ? 'Opening Klarna…' : 'Processing…') : label + ' <span class="arrow">→</span>'}${S.step === 0 && !S.p ? '' : '</button>'}`;
   }
 
   function sideView(){
@@ -379,8 +385,11 @@
 
   // ---------- events ----------
   function wire(){
-    body.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { S.cat = b.dataset.cat; draw(); });
-    body.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { const k = b.dataset.p; if (k !== S.p){ const pend = S.pending, cat = S.cat; reset(k); S.pending = pend; S.cat = cat; syncAdds(); } S.step = 1; draw(); });
+    body.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => {
+      const g = b.dataset.cat || null, opts = Object.keys(P).filter(k => P[k].group === g);
+      if (g && opts.length === 1){ const k = opts[0]; if (k !== S.p){ const pend = S.pending; reset(k); S.pending = pend; syncAdds(); } S.cat = g; S.step = 1; draw(); return; }
+      S.cat = g; draw(); });
+    body.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { const k = b.dataset.p; if (k !== S.p){ const pend = S.pending, cat = S.cat; reset(k); S.pending = pend; S.cat = cat; syncAdds(); } S.cat = P[k].group; S.step = 1; draw(); });
     body.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + +b.dataset.m, 1); draw(); });
     body.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.d.split('-').map(Number); const D = new Date(y, m - 1, d);
       if (S.p === 'house'){
@@ -401,6 +410,7 @@
     const c = body.querySelector('[data-close]'); if (c) c.onclick = close;
     const back = $('.back', nav); if (back) back.onclick = () => { S.step--; draw(); };
     const go = $('.go', nav); if (go) go.onclick = next;
+    const cl = $('.bk-close', nav); if (cl) cl.onclick = close;
   }
 
   function next(){

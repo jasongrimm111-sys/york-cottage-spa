@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=11251525">
+<link rel="stylesheet" href="site.css?v=11251530">
 </head>
 <body>
 
@@ -35,9 +35,17 @@
     <div class="eyebrow rv">Boutique spa &amp; stays &middot; Northamptonshire</div>
     <h1 class="rv d1">Slow down. <em>Breathe</em> in the country.</h1>
     <p class="rv d2">An award-winning, modern spa with accommodation, tucked into the rural village of Bozeat. Join us for a day spa, an overnight spa break, or take the whole house for the weekend.</p>
-    <div class="hero-cta rv d3">
-      <a class="btn btn-light" href="#spa">Explore day spa <span class="arrow">&rarr;</span></a>
-      <a class="btn btn-ghost" href="#stay">Stay overnight</a>
+    <div class="qbook rv d3" role="search" aria-label="Quick booking">
+      <label><small>I'd like</small><select id="qbType" aria-label="Booking type">
+        <option value="day">A spa day &middot; from &pound;100 pp</option>
+        <option value="access">Spa access &middot; &pound;50 pp</option>
+        <option value="private">A private spa &middot; 4+ guests</option>
+        <option value="break">An overnight stay &middot; from &pound;145 pp</option>
+        <option value="group">A group stay &middot; 7+ guests</option>
+        <option value="house">The whole house &middot; from &pound;1,840 / night</option>
+        <option value="treat">Treatments only &middot; from &pound;50</option>
+      </select></label>
+      <button class="btn btn-clay" id="qbGo" data-book="day">Check availability <span class="arrow">&rarr;</span></button>
     </div>
     <a class="g-chip rv d3" data-g-link href="https://www.google.com/search?q=York+Cottage+Spa+Bozeat+reviews" target="_blank" rel="noopener"><svg class="g" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.6 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.3V7.1H2.1a11 11 0 0 0 0 9.9z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4z"/></svg><b data-g-rating>4.6</b><span data-g-stars></span><span><span data-g-count>266</span> Google reviews</span></a>
   </div>
@@ -58,8 +66,8 @@
       </div>
     </div>
     <div class="intro-pics rv d2">
-      <img class="a" src="https://static.wixstatic.com/media/7a9273_3128e98839d246529de17f99846a2b2a~mv2.jpg" alt="The front door of York Cottage Spa">
-      <img class="b" src="https://static.wixstatic.com/media/7a9273_0fed7351ea044db299d21524d0244378~mv2.jpg" alt="Treatments at York Cottage Spa">
+      <img class="a" src="https://static.wixstatic.com/media/7a9273_3128e98839d246529de17f99846a2b2a~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_3128e98839d246529de17f99846a2b2a~mv2.jpg" alt="The front door of York Cottage Spa">
+      <img class="b" src="https://static.wixstatic.com/media/7a9273_0fed7351ea044db299d21524d0244378~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_0fed7351ea044db299d21524d0244378~mv2.jpg" alt="Treatments at York Cottage Spa">
       <div class="badge"><span>Award<br>winning<br>spa</span></div>
     </div>
   </div>
@@ -94,7 +102,7 @@
     </div>
     <div class="cards">
       <a class="card rv" data-book="day" href="https://www.yorkcottagespa.com/spa-packages">
-        <img src="https://static.wixstatic.com/media/7a9273_cdf5c47efec5473fb3957a7d5adeb3ac~mv2.jpg" alt="">
+        <img src="https://static.wixstatic.com/media/7a9273_cdf5c47efec5473fb3957a7d5adeb3ac~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_cdf5c47efec5473fb3957a7d5adeb3ac~mv2.jpg" alt="">
         <div class="card-body">
           <span class="price">From &pound;100 per person</span>
           <h3>Day Spa</h3>
@@ -103,7 +111,7 @@
         </div>
       </a>
       <a class="card rv d1" data-book="access" href="https://www.yorkcottagespa.com/spa-packages/accessonly">
-        <img src="https://static.wixstatic.com/media/7a9273_91aab4999b9e42e3a69a8f37c6e7c272~mv2.jpg" alt="">
+        <img src="https://static.wixstatic.com/media/7a9273_91aab4999b9e42e3a69a8f37c6e7c272~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_91aab4999b9e42e3a69a8f37c6e7c272~mv2.jpg" alt="">
         <div class="card-body">
           <span class="price">&pound;50 per person</span>
           <h3>Spa Access</h3>
@@ -112,7 +120,7 @@
         </div>
       </a>
       <a class="card rv d2" data-book="private" href="https://www.yorkcottagespa.com/private-spa">
-        <img src="https://static.wixstatic.com/media/7a9273_bd0a45f992774bccb26756818d10e7de~mv2.jpg" alt="">
+        <img src="https://static.wixstatic.com/media/7a9273_bd0a45f992774bccb26756818d10e7de~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_bd0a45f992774bccb26756818d10e7de~mv2.jpg" alt="">
         <div class="card-body">
           <span class="price">From &pound;100 per person</span>
           <h3>Private Spa</h3>
@@ -155,7 +163,7 @@
     </div>
     <div class="stays">
       <article class="stay-card rv">
-        <div class="pic"><img src="https://static.wixstatic.com/media/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg" alt="An ensuite bedroom at York Cottage"></div>
+        <div class="pic"><img src="https://static.wixstatic.com/media/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg" alt="An ensuite bedroom at York Cottage"></div>
         <div class="body">
           <span class="tag">Sunday &ndash; Thursday</span>
           <h3>Overnight Spa Break</h3>
@@ -165,7 +173,7 @@
         </div>
       </article>
       <article class="stay-card rv d1">
-        <div class="pic"><img src="https://static.wixstatic.com/media/7a9273_b97fa262c0ab4429b85da5892b5850c4~mv2.jpg" alt=""></div>
+        <div class="pic"><img src="https://static.wixstatic.com/media/7a9273_b97fa262c0ab4429b85da5892b5850c4~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_b97fa262c0ab4429b85da5892b5850c4~mv2.jpg" alt=""></div>
         <div class="body">
           <span class="tag">Sunday &ndash; Thursday &middot; 7+ guests</span>
           <h3>Group Spa Break</h3>
@@ -175,7 +183,7 @@
         </div>
       </article>
       <article class="stay-card feature rv d2">
-        <div class="pic"><img src="https://static.wixstatic.com/media/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg" alt="The front of York Cottage"></div>
+        <div class="pic"><img src="https://static.wixstatic.com/media/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg" alt="The front of York Cottage"></div>
         <div class="body">
           <span class="tag">Exclusive use &middot; 2-night minimum</span>
           <h3>The Whole House &amp; Spa</h3>
@@ -198,7 +206,7 @@
 
 <section id="treatments">
   <div class="wrap treat">
-    <div class="treat-pic rv"><img src="https://static.wixstatic.com/media/7a9273_449e06a871aa4ab0803ceb38eece1bf6~mv2.jpg" alt="A treatment room at York Cottage Spa"></div>
+    <div class="treat-pic rv"><img src="https://static.wixstatic.com/media/7a9273_449e06a871aa4ab0803ceb38eece1bf6~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_449e06a871aa4ab0803ceb38eece1bf6~mv2.jpg" alt="A treatment room at York Cottage Spa"></div>
     <div>
       <div class="eyebrow rv">Treatments</div>
       <h2 class="rv d1">Time that's <em>just for you</em></h2>
@@ -252,16 +260,16 @@
     <a class="btn btn-ghost rv d2" href="https://www.instagram.com/yorkcottagespa/">Follow on Instagram</a>
   </div>
   <div class="strip">
-    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_f25c24e7a8f44c76baf4b942f30590eb~mv2.jpg" alt="">
-    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_3760b75ab67f40fe8a273b9fae32d4bf~mv2.jpg" alt="">
-    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_ab85ef499c1e41718ef838197bfe44ed~mv2.jpg" alt="">
-    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_281c0d1bc05e4b329f67a9d257f24ca1~mv2.jpg" alt="">
-    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_7586b6b2ac694ae5b57bf3f571a4201f~mv2.jpg" alt="">
-    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_6598de2d84f849188386e0070f6f06f4~mv2.jpg" alt="">
-    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_eadaa48d53664c57b5f52afaf68e8990~mv2.jpg" alt="">
-    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_7374d8bf508e4df6a3fa942b224841eb~mv2.jpg" alt="">
-    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_3f807f5d1e064d96829173cc8305fb46~mv2.jpg" alt="">
-    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_874f286fc3f74d969cf137652e054956~mv2.jpg" alt="">
+    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_f25c24e7a8f44c76baf4b942f30590eb~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_f25c24e7a8f44c76baf4b942f30590eb~mv2.jpg" alt="">
+    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_3760b75ab67f40fe8a273b9fae32d4bf~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_3760b75ab67f40fe8a273b9fae32d4bf~mv2.jpg" alt="">
+    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_ab85ef499c1e41718ef838197bfe44ed~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_ab85ef499c1e41718ef838197bfe44ed~mv2.jpg" alt="">
+    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_281c0d1bc05e4b329f67a9d257f24ca1~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_281c0d1bc05e4b329f67a9d257f24ca1~mv2.jpg" alt="">
+    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_7586b6b2ac694ae5b57bf3f571a4201f~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_7586b6b2ac694ae5b57bf3f571a4201f~mv2.jpg" alt="">
+    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_6598de2d84f849188386e0070f6f06f4~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_6598de2d84f849188386e0070f6f06f4~mv2.jpg" alt="">
+    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_eadaa48d53664c57b5f52afaf68e8990~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_eadaa48d53664c57b5f52afaf68e8990~mv2.jpg" alt="">
+    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_7374d8bf508e4df6a3fa942b224841eb~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_7374d8bf508e4df6a3fa942b224841eb~mv2.jpg" alt="">
+    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_3f807f5d1e064d96829173cc8305fb46~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_3f807f5d1e064d96829173cc8305fb46~mv2.jpg" alt="">
+    <img loading="lazy" src="https://static.wixstatic.com/media/7a9273_874f286fc3f74d969cf137652e054956~mv2.jpg/v1/fit/w_1400,h_1400,q_80,enc_auto/7a9273_874f286fc3f74d969cf137652e054956~mv2.jpg" alt="">
   </div>
 </section>
 
@@ -325,9 +333,9 @@
 </footer>
 
 <a class="mbar" data-book="" href="#book"><span><b>Book your visit</b><small>Spa days, stays &amp; treatments</small></span><em>Book now <span class="arrow">&rarr;</span></em></a>
-<script src="site.js?v=11251525"></script>
-<script src="booking.js?v=11251525"></script>
-<script src="reviews.js?v=11251525"></script>
-<script src="chat.js?v=11251525"></script>
+<script src="site.js?v=11251530"></script>
+<script src="booking.js?v=11251530"></script>
+<script src="reviews.js?v=11251530"></script>
+<script src="chat.js?v=11251530"></script>
 </body>
 </html>

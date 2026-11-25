@@ -43,3 +43,16 @@
   };
   addEventListener('scroll', tick, { passive:true }); tick();
 })();
+
+/* treatment page: highlight the treatment tab for the section in view */
+(() => {
+  const tabs = [...document.querySelectorAll('.tm-nav a[href^="#"]')]; if (!tabs.length) return;
+  const spy = () => { const y = innerHeight * 0.35; let cur = null;
+    tabs.forEach(a => { const s = document.querySelector(a.getAttribute('href')); if (s){ const r = s.getBoundingClientRect(); if (r.top <= y && r.bottom > y) cur = a; } });
+    tabs.forEach(a => a.classList.toggle('active', a === cur)); };
+  addEventListener('scroll', spy, { passive:true }); spy();
+})();
+
+/* hero quick booking: the button opens the checkout for the chosen type */
+(() => { const sel = document.getElementById('qbType'), go = document.getElementById('qbGo'); if (!sel || !go) return;
+  sel.addEventListener('change', () => { go.dataset.book = sel.value; }); })();
