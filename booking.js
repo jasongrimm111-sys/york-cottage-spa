@@ -120,12 +120,38 @@
   // ---------- shell ----------
   const box = document.createElement('div');
   box.className = 'bk'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Book York Cottage Spa');
-  box.innerHTML = `<div class="bk-box"><div class="bk-main"><div class="bk-top"><span class="logo"><b>York Cottage</b><span>Book your visit</span></span><button class="bk-x" aria-label="Close">&times;</button></div><ol class="bk-steps"></ol><div class="bk-body"></div><div class="bk-nav"></div></div><aside class="bk-side"></aside></div>`;
+  box.innerHTML = `<div class="bk-box"><div class="bk-main"><div class="bk-top"><span class="logo"><b>York Cottage</b><span>Book your visit</span></span><button class="bk-x" aria-label="Close booking"><span>Close</span><i>&times;</i></button></div><ol class="bk-steps"></ol><div class="bk-body"></div><div class="bk-nav"></div></div><aside class="bk-side"></aside></div>`;
   document.body.appendChild(box);
   const body = $('.bk-body', box), nav = $('.bk-nav', box), side = $('.bk-side', box), stepsEl = $('.bk-steps', box);
 
-  function open(k, tr){ reset(P[k] ? k : null); if (TRi[tr]) S.pending = tr; if (S.p) syncAdds(); box.classList.add('on'); document.body.classList.add('bk-open'); draw(); $('.bk-x', box).focus(); }
-  function close(){ box.classList.remove('on'); document.body.classList.remove('bk-open'); }
+  // keep an unfinished booking when the checkout is closed, also across pages (this browser tab only)
+  const SKEY = 'yc-booking-v1';
+  const DATES = ['date', 'end', 'month'];
+  function save(){
+    try {
+      if (!S.p || S.ref){ sessionStorage.removeItem(SKEY); return; }
+      const o = { ...S, paying:false }; DATES.forEach(k => o[k] = S[k] ? +S[k] : null);
+      sessionStorage.setItem(SKEY, JSON.stringify(o));
+    } catch (e) {}
+  }
+  function restore(){
+    try {
+      const o = JSON.parse(sessionStorage.getItem(SKEY) || 'null'); if (!o || !P[o.p]) return false;
+      DATES.forEach(k => o[k] = o[k] ? new Date(o[k]) : null);
+      if (o.date && o.date < first){ o.date = null; o.end = null; if (o.step > 2) o.step = 2; }
+      Object.assign(S, o); return true;
+    } catch (e) { return false; }
+  }
+  let started = false;
+  function open(k, tr){
+    if (!started){ started = true; if (!S.p) restore(); }
+    const keep = S.p && !S.ref && (!P[k] || k === S.p);
+    if (!keep){ reset(P[k] ? k : null); }
+    if (TRi[tr]){ S.pending = tr; if (keep && S.step > 3) S.step = 3; }
+    if (S.p) syncAdds();
+    box.classList.add('on'); document.body.classList.add('bk-open'); draw(); $('.bk-x', box).focus();
+  }
+  function close(){ box.classList.remove('on'); document.body.classList.remove('bk-open'); if (S.ref) reset(null); save(); }
   $('.bk-x', box).onclick = close;
   box.addEventListener('click', e => { if (e.target === box) close(); });
   addEventListener('keydown', e => { if (e.key === 'Escape' && box.classList.contains('on')) close(); });
@@ -139,7 +165,7 @@
     const st = steps();
     stepsEl.innerHTML = S.ref ? '' : st.map((t, i) => `<li class="${i === S.step ? 'now' : i < S.step ? 'done' : ''}"><i>${i < S.step ? '✓' : i + 1}</i><b>${t}</b></li>`).join('');
     body.innerHTML = S.ref ? doneView() : [chooseView, guestView, dateView, treatView, detailView, payView][S.step]();
-    navView(); sideView(); wire();
+    navView(); sideView(); wire(); save();
     $('.bk-main', box).scrollTop = 0; box.scrollTop = 0;
   }
 
