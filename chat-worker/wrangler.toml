@@ -1,0 +1,9 @@
+name = "york-cottage-chat"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Web addresses allowed to use this chat (comma separated)
+ALLOWED_ORIGINS = "https://jasongrimm111-sys.github.io,https://www.yorkcottagespa.com"
+# The Claude API key is a secret: run  npx wrangler secret put ANTHROPIC_API_KEY
