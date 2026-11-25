@@ -41,13 +41,13 @@ window.YC_CHAT = Object.assign({ endpoint: '', email: 'info@yorkcottagespa.com',
   root.className = 'yc-chat';
   root.innerHTML = `
     <button class="ycc-fab" aria-label="Chat with us"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg><span>Ask us</span></button>
-    <section class="ycc-panel" role="dialog" aria-label="York Cottage chat" hidden>
+    <div class="ycc-panel" role="dialog" aria-label="York Cottage chat" hidden>
       <div class="ycc-head"><div><b>York Cottage</b><small><i></i>Instant answers, 24/7</small></div><button class="ycc-x" aria-label="Close chat">&times;</button></div>
       <div class="ycc-log" aria-live="polite"></div>
       <div class="ycc-sugg"></div>
       <form class="ycc-form"><input type="text" placeholder="Ask about times, prices, stays…" aria-label="Your question" maxlength="500"><button aria-label="Send"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button></form>
       <div class="ycc-foot"><span>Need a person?</span><a class="ycc-mail" href="#">Email the team</a></div>
-    </section>`;
+    </div>`;
   document.body.appendChild(root);
   const fab = root.querySelector('.ycc-fab'), panel = root.querySelector('.ycc-panel'), logEl = root.querySelector('.ycc-log'),
         form = root.querySelector('.ycc-form'), input = form.querySelector('input'), sugg = root.querySelector('.ycc-sugg'), mail = root.querySelector('.ycc-mail');
