@@ -592,3 +592,18 @@ svg.g{width:22px;height:22px;flex:none}
   .pay-grid > .pay{margin-bottom:0!important;padding:16px 18px}
   .pay-grid .sum{gap:7px;font-size:13.5px}
 }
+/* checkout type tabs */
+.bk-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:var(--cream);border:1px solid var(--line);border-radius:16px;padding:6px;margin-bottom:16px}
+.bk-tab{border:0;background:transparent;border-radius:11px;padding:11px 12px;text-align:left;font:inherit;color:var(--ink);cursor:pointer;transition:background .2s, color .2s}
+.bk-tab b{display:block;font-family:var(--serif);font-size:20px;font-weight:500;line-height:1.1}
+.bk-tab small{display:block;font-size:12px;color:var(--muted);margin-top:3px;line-height:1.35}
+.bk-tab:hover{background:rgba(255,255,255,.6)}
+.bk-tab.sel{background:var(--forest);color:var(--cream);box-shadow:0 8px 18px -10px rgba(35,40,35,.6)}
+.bk-tab.sel small{color:rgba(246,241,233,.7)}
+.bk-opts{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.bk-opts.one{grid-template-columns:minmax(0,520px)}
+.bk-opts.one .bk-opt{padding:24px}
+.bk-opts.one .bk-opt b{font-size:28px}
+.bk-opts.one .bk-opt span{font-size:14.5px}
+@media (min-width:901px){.bk-opts{grid-template-columns:repeat(3,1fr)}.bk-opts.one{grid-template-columns:minmax(0,520px)}}
+@media (max-width:900px){.bk-tabs{grid-template-columns:1fr 1fr}.bk-tab b{font-size:17px}.bk-tab small{display:none}}

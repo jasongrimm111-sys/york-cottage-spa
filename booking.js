@@ -14,9 +14,9 @@
               blurb:'Sunday–Thursday. Ensuite room, evening grazing board, 20-minute treatment, afternoon spa.' },
     group:  { name:'Group Spa Break', group:'Stay', kind:'pay', price:145, per:'per person', min:7, max:16, rule:'mid', nights:[1], treat:true,
               blurb:'Sunday–Thursday, 7+ guests. Grazing board, 20-minute treatments, private spa access.' },
-    house:  { name:'Whole House & Spa', group:'Stay', kind:'pay', price:115, per:'per person, per night', min:2, max:16, rule:'wkd',
+    house:  { name:'Whole House & Spa', group:'House', kind:'pay', price:115, per:'per person, per night', min:2, max:16, rule:'wkd',
               blurb:'Friday–Sunday and bank holidays. 8 bedrooms, up to 16 guests, the house and spa to yourselves.' },
-    treat:  { name:'Treatments only', group:'Spa', kind:'pay', price:0, per:'', min:1, max:6, sessions:['Morning','Afternoon'], only:true,
+    treat:  { name:'Treatments only', group:'Treat', kind:'pay', price:0, per:'', min:1, max:6, sessions:['Morning','Afternoon'], only:true,
               blurb:'Just here for a massage, facial or head spa? Choose your treatments with no spa session.' }
   };
   // Treatment menu (from the York Cottage treatment menu)
@@ -68,7 +68,7 @@
 
   const S = { step:0 };
   const reset = k => Object.assign(S, { p:k || null, step:k ? 1 : 0, date:null, nights:k && P[k].nights ? P[k].nights[0] : 1, session:null,
-    guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, picks:[], adds:[], pending:null, tg:0, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
+    guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, picks:[], adds:[], pending:null, tg:0, cat:null, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
 
   const steps = () => ['Choose', 'Date', 'Guests', 'Treatments', 'Details', S.p && P[S.p].kind === 'ask' ? 'Send' : 'Pay'];
   const LAST = 5, DETAILS = 4;
@@ -122,9 +122,11 @@
   function chooseView(){
     const grp = g => Object.entries(P).filter(([, p]) => p.group === g).map(([k, p]) => `<button class="bk-opt ${S.p === k ? 'sel' : ''}" data-p="${k}"><small>${p.rule === 'mid' ? 'Sun – Thu' : p.rule === 'wkd' ? 'Fri – Sun & bank hols' : p.only ? 'No spa session' : 'Day visit'}</small><b>${p.name}</b><span>${p.blurb}</span><em>${p.only ? 'From £50' : p.price ? gbp(p.price) + ' ' + p.per : 'Price on request'}</em></button>`).join('');
     const pend = S.pending ? `<div class="notice"><b>${TRi[S.pending].name}</b> is ready to add. Book it on its own, or add it to a spa day or a stay (Japanese head spa is 10% off with a spa session or stay).</div>` : '';
-    return `<h2>What would you like to <em>book</em>?</h2><p class="bk-sub">Choose a spa visit, a stay or just a treatment. You can add treatments to any booking.</p>${pend}
-      <div class="bk-group">Spa days</div><div class="bk-opts">${grp('Spa')}</div>
-      <div class="bk-group">Stays</div><div class="bk-opts">${grp('Stay')}</div>`;
+    const TABS = [['Spa', 'Spa day', 'Day Spa, Spa Access or the Private Spa'], ['Stay', 'Overnight stay', 'Ensuite rooms, Sunday to Thursday'], ['House', 'Exclusive use', 'The whole house & spa at weekends'], ['Treat', 'Treatments only', 'Massage, facials & head spa']];
+    if (!S.cat) S.cat = S.p ? P[S.p].group : S.pending ? 'Treat' : 'Spa';
+    const tabs = `<div class="bk-tabs" role="tablist">${TABS.map(([g, t, d]) => `<button role="tab" aria-selected="${S.cat === g}" class="bk-tab ${S.cat === g ? 'sel' : ''}" data-cat="${g}"><b>${t}</b><small>${d}</small></button>`).join('')}</div>`;
+    return `<h2>What would you like to <em>book</em>?</h2><p class="bk-sub">Pick a type, then an option. You can add treatments to any booking.</p>${pend}${tabs}
+      <div class="bk-opts ${S.cat === 'House' || S.cat === 'Treat' ? 'one' : ''}">${grp(S.cat)}</div>`;
   }
 
   function dateView(){
@@ -297,7 +299,8 @@
 
   // ---------- events ----------
   function wire(){
-    body.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { const k = b.dataset.p; if (k !== S.p){ const pend = S.pending; reset(k); S.pending = pend; syncAdds(); } S.step = 1; draw(); });
+    body.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { S.cat = b.dataset.cat; draw(); });
+    body.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { const k = b.dataset.p; if (k !== S.p){ const pend = S.pending, cat = S.cat; reset(k); S.pending = pend; S.cat = cat; syncAdds(); } S.step = 1; draw(); });
     body.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + +b.dataset.m, 1); draw(); });
     body.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.d.split('-').map(Number); S.date = new Date(y, m - 1, d); if (S.p === 'house') S.nights = runFrom(S.date); draw(); });
     body.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { S.session = b.dataset.s; draw(); });
