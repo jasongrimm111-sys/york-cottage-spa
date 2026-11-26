@@ -40,6 +40,8 @@
       const [c, b] = await Promise.all(['config.json', 'busy.json'].map(f => fetch(LIVE_URL + f + '?v=' + v, { cache: 'no-store' }).then(r => r.ok ? r.json() : null)));
       if (c) L.cfg = fill(c, JSON.parse(JSON.stringify(window.YC_DEFAULTS)));
       if (b) L.ix = YE.fromBusy(b);
+      const ep = c && (c.consult || {}).endpoint;
+      if (ep && L.ix) { try { const h = await (await fetch(ep.replace(/\/$/, '') + '/holds', { cache: 'no-store' })).json(); for (const x of (h.holds || [])) if (x.id !== S.hold) YE.addToIndex(L.cfg, L.ix, x); } catch (e) {} }
       L.ok = !!c; applyLive();
       if (box.classList.contains('on')) draw();
     } catch (e) { /* keep the built-in rules */ }
@@ -322,6 +324,7 @@
   }
 
   // the first day that can be booked (with a session free, for session bookings), chosen for the guest (user, 2026-11-26)
+  const resetAfter = () => { S.times = {}; S.tpDate = {}; S.adds = S.adds.map(() => []); S.picks = []; S.roomOf = []; S.seen = {}; S.tg = 0; S.sameNote = ''; };
   function firstFree(){
     const p = P[S.p];
     for (let d = new Date(first); d <= last; d = add(d, 1)) {
@@ -343,6 +346,7 @@
   const roomText = m => m === 0 ? 'Included treatments only' : m > 0 && m < 60 ? `Extras up to ${m} min` : '';
 
   function dateView(){
+    if (S.goneMsg) { const m = S.goneMsg; S.goneMsg = ''; return `<div class="notice bad">${esc(m)}</div>` + dateView(); }
     const p = P[S.p], range = p.rule === 'range';
     if (!S.date) { const d = firstFree(); if (d) { S.date = d; S.end = null; S.month = new Date(d.getFullYear(), d.getMonth(), 1); S.times = {}; } }
     const m = S.month || (S.date ? new Date(S.date.getFullYear(), S.date.getMonth(), 1) : new Date(first.getFullYear(), first.getMonth(), 1));
@@ -458,7 +462,6 @@
       : `<div class="extra-box"><div class="extra-h"><b>Add extra treatments <span>optional</span></b><p>${incMode(S.p) ? 'Your booking already includes a treatment. Want more time? Add any of these.' : 'Add a massage, facial or Japanese head spa to your visit.'} Up to ${maxExtras()} per guest${p.rule ? ' across your stay' : ''}; we’ll fit them around your ${p.rule ? 'stay' : 'session'}.</p></div>${S.adds[g].length >= maxExtras() ? `<div class="notice">That’s the most we can book online for one guest. For more, call us on 01933 580 100.</div>` : ''}${extras}</div>`;
     if (anyNone) h = h.replace('<div class="tr-cat">', `<div class="more-time"><span>Some treatments have no available times ${p.rule ? 'on these dates' : 'in this session'}.</span><button type="button" class="bk-backlink" data-gostep="${DATE}">Change your ${p.sessions ? 'day or session' : 'dates'} for more availability →</button></div><div class="tr-cat">`);
     if (S.sameNote && g > 0) { h = `<div class="notice">${esc(S.sameNote)}</div>` + h; if (g === n - 1) S.sameNote = ''; }
-    if (n > 1 && g === 0) h += `<button class="bk-backlink" data-same style="margin-top:14px">Give everyone the same ${P[S.p].food ? 'included treatment and food' : 'included treatment'} as ${esc(gName(0))}</button>`;
     // ---- this guest's treatment times, right under their treatments ----
     if (YE && L.cfg && S.date) {
       S.times = S.times || {}; S.tpDate = S.tpDate || {};
@@ -638,14 +641,14 @@
     body.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + +b.dataset.m, 1); draw(); });
     body.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.d.split('-').map(Number); const D = new Date(y, m - 1, d);
       if (S.p === 'house'){
-        if (!S.date || S.end || D <= S.date){ S.date = D; S.end = null; S.nights = 0; }
+        if (!S.date || S.end || D <= S.date){ S.date = D; S.end = null; S.nights = 0; resetAfter(); }
         else { const n = Math.round((D - S.date) / 864e5); if (n < 2){ $('.bk-msg', nav).textContent = 'The whole house has a 2-night minimum'; return; } if (n > 30){ $('.bk-msg', nav).textContent = 'Stays are up to 30 nights'; return; }
           if (YE && L.cfg){ const c = YE.dateCheck(L.cfg, L.ix, { product: 'house', date: iso(S.date), nights: n, guests: S.guests }); if (!c.ok){ $('.bk-msg', nav).textContent = 'Those dates aren’t all free: ' + c.why; return; } }
           S.end = D; S.nights = n; }
-      } else { if (!S.date || +S.date !== +D) S.times = {}; S.date = D; }
+      } else { if (!S.date || +S.date !== +D) resetAfter(); S.date = D; }
       draw(); });
-    body.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { if (S.session !== b.dataset.s) S.times = {}; S.session = b.dataset.s; draw(); });
-    body.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { S.nights = +b.dataset.n; if (S.date && !dateOK(S.p, S.date)) S.date = null; draw(); });
+    body.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { if (S.session !== b.dataset.s) resetAfter(); S.session = b.dataset.s; draw(); });
+    body.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { if (S.nights !== +b.dataset.n) resetAfter(); S.nights = +b.dataset.n; if (S.date && !dateOK(S.p, S.date)) S.date = null; draw(); });
     body.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { const p = P[S.p]; S.guests = Math.min(p.max, Math.max(gMin(), S.guests + +b.dataset.g)); S.gOK = true; if (S.date && !dateOK(S.p, S.date)){ S.date = null; S.end = null; } draw(); });
     const bf = $('#bkBf', body); if (bf) bf.onchange = () => { S.bfast = bf.checked; draw(); };
     body.querySelectorAll('[data-pk]').forEach(b => b.onclick = () => { S.picks[+b.dataset.pk][b.dataset.f] = b.dataset.v; if (b.dataset.f === 'treat' && S.times) Object.keys(S.times).filter(k => k.startsWith(`g${b.dataset.pk}-inc`)).forEach(k => delete S.times[k]); draw(); });
@@ -667,7 +670,7 @@
     const cl = $('.bk-close', nav); if (cl) cl.onclick = close;
     // start again: a second press confirms, so one stray tap doesn't lose the booking (user, 2026-11-26)
     const rs = $('.bk-reset', side); if (rs) rs.onclick = () => { if (!rs.dataset.sure) { rs.dataset.sure = '1'; rs.textContent = 'Sure? Clear it all'; rs.classList.add('sure'); setTimeout(() => { if (rs.isConnected) { delete rs.dataset.sure; rs.textContent = 'Start again'; rs.classList.remove('sure'); } }, 4000); return; }
-      try { sessionStorage.removeItem(SKEY); } catch (e) {} reset(null); S.cat = null; S.promo = null; S.d = {}; S.names = []; S.roomOf = []; draw(); window.scrollTo({ top: 0 }); };
+      try { sessionStorage.removeItem(SKEY); } catch (e) {} if (S.hold && L.cfg && (L.cfg.consult || {}).endpoint) fetch(L.cfg.consult.endpoint.replace(/\/$/, '') + '/release', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hold: S.hold }) }).catch(() => {}); S.hold = null; reset(null); S.cat = null; S.promo = null; S.d = {}; S.names = []; S.roomOf = []; draw(); window.scrollTo({ top: 0 }); };
     const va = $('#bkVApply', body); if (va) va.onclick = async () => {
       if (S.promo) { S.promo = null; S.promoMsg = ''; draw(); return; }
       const code = ($('#bkVoucher', body).value || '').trim(); if (!code) return;
@@ -677,16 +680,6 @@
       draw(); };
     body.querySelectorAll('[data-alt]').forEach(b => b.onclick = () => { const k = b.dataset.alt; if (!P[k]) return; const pend = S.pending; reset(k); S.pending = pend; S.cat = P[k].group; syncAdds(); S.step = GUESTS; draw(); });
     body.querySelectorAll('[data-gq]').forEach(b => b.onclick = () => { S.guests = +b.dataset.gq; S.gOK = true; if (S.date && !dateOK(S.p, S.date)){ S.date = null; S.end = null; } draw(); });
-    const same = body.querySelector('[data-same]'); if (same) same.onclick = () => {
-      // copies guest 1's included treatment and food only; extras stay each guest's own choice (user 2026-11-27)
-      const left = [];
-      for (let i = 1; i < S.guests; i++) { const want = { ...(S.picks[i] || {}), ...S.picks[0] };
-        const t = incMode(S.p) === 'treat' ? (incList(S.p) || []).find(x => x.name === want.treat) : null;
-        if (t && YE && L.cfg && !fitsWith(i, x => ({ ...x, included: t.id }), 'samei' + i + '=' + t.id)) { left.push(gName(i)); want.treat = (S.picks[i] || {}).treat; }
-        S.picks[i] = want; }
-      if (S.times) Object.keys(S.times).filter(k => !k.startsWith('g0-')).forEach(k => delete S.times[k]);
-      S.sameNote = left.length ? `Copied. There wasn’t time for the same treatment for ${left.join(', ')}, so they keep their own.` : `Copied ${gName(0)}’s ${P[S.p].food ? 'treatment and food' : 'treatment'} to everyone. Now choose any extras and a time for each guest.`;
-      S.seen = {}; S.seen[0] = 1; S.tg = 1; draw(); };
   }
 
   function next(){
@@ -701,6 +694,8 @@
     if (S.step === DATE) S.tg = 0;
     if (S.step === DETAILS && YE && L.cfg) { const r = planNow(); if (r && !r.ok) { msg.textContent = 'Those treatments no longer fit on that day. Please go back and choose another time.'; return; } }
     if (S.step < LAST){ S.step++; if (S.step === ROOMS && !needRooms()) { autoRooms(stayRooms()); S.step++; } draw(); return; }
+    if (P[S.p].kind !== 'ask' && !S.holdOK) { holdThenPay(); return; }
+    S.holdOK = false;
     // CONNECT: create the booking (server) -> Stripe PaymentIntent -> stripe.confirmPayment(); show the confirmation on success.
     // Test mode: simulate a successful Stripe payment. No request is sent anywhere.
     { const pr = price(); S.paid = pr ? { method: S.pm, amount: pr.now, id: 'pi_test_' + Math.random().toString(36).slice(2, 14) } : null; }
@@ -715,6 +710,23 @@
       return;
     }
     setTimeout(() => { S.paying = false; S.ref = 'YC-' + Math.random().toString(36).slice(2, 8).toUpperCase(); draw(); }, 1400);
+  }
+  // just before paying, the receiver re-checks the times against every booking and anyone else paying right now, and holds
+  // them for 30 minutes. If someone got there first, the guest goes back to choose again.
+  async function holdThenPay(){
+    const ep = L.cfg && (L.cfg.consult || {}).endpoint, msg = $('.bk-msg', nav);
+    if (!ep) { S.holdOK = true; next(); return; }   // not switched on yet (test mode)
+    S.paying = true; navView();
+    try {
+      const b = { ...engineBooking(), rooms: P[S.p].rule ? [...new Set((S.roomOf || []).filter(Boolean))] : [] };
+      b.guestList = b.guestList.map(g => ({ included: g.included, food: g.food, extras: g.extras }));
+      const r = await fetch(ep.replace(/\/$/, '') + '/hold', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ booking: b, release: S.hold || null }) });
+      const j = await r.json().catch(() => ({}));
+      S.paying = false;
+      if (r.ok && j.ok) { S.hold = j.hold; S.holdOK = true; next(); return; }
+      if (j.gone) { await loadLive(); resetAfter(); S.step = DATE; S.goneMsg = (j.why || 'Someone has just booked that time') + '. Please choose again; nothing has been charged.'; draw(); return; }
+      navView(); $('.bk-msg', nav).textContent = j.error || j.why || 'We couldn’t check availability just now. Please try again.';
+    } catch (e) { S.paying = false; navView(); $('.bk-msg', nav).textContent = 'We couldn’t check availability just now. Please try again.'; }
   }
   loadLive();
 
