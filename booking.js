@@ -680,7 +680,6 @@
     setTimeout(() => { S.paying = false; S.ref = 'YC-' + Math.random().toString(36).slice(2, 8).toUpperCase(); draw(); }, 1400);
   }
   loadLive();
-  if (/[?&]debug/.test(location.search)) window.__ycb = { S, L, engineBooking: () => engineBooking() };   // for checking availability problems
 
   if (PAGE) {
     const q = new URLSearchParams(location.search), k = q.get('b'), tr = q.get('tr'), pr = q.get('promo');
