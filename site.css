@@ -1173,3 +1173,9 @@ body.book-page .hdr-book{display:none}
 
 .sum-who{display:block;font-size:11.5px;opacity:.7;font-weight:400}
 .sum li s{opacity:.6;margin-right:4px}
+
+/* the York Cottage lotus beside the name (vector, takes the header's colour) */
+.logo{flex-direction:row!important;align-items:center;gap:10px}
+.logo .logo-mark{width:46px;height:auto;flex:none;display:block}
+.logo .logo-t{display:flex;flex-direction:column;font-size:inherit;letter-spacing:normal;text-transform:none;margin:0;opacity:1}
+@media (max-width:700px){.logo .logo-mark{width:38px}.logo{gap:8px}}
