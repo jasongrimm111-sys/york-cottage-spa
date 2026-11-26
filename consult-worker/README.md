@@ -1,4 +1,4 @@
-# Consultation form receiver
+# Website receiver (consultation forms and support messages)
 
 Guests fill in their consultation form on the website (consult.html). Their browser encrypts it with York Cottage's
 public key before sending, so this service only ever handles encrypted data that it can't read. It files each form in
@@ -11,4 +11,6 @@ the private data store (`consult/inbox/`); the booking jobs then match it to the
 4. Copy the address it prints (https://york-cottage-consult.<you>.workers.dev) into the admin portal:
    Settings → Consultation form → Receiving address.
 
-Until then, guests fill in the form on a tablet when they arrive.
+Until then, guests fill in the consultation form on a tablet when they arrive, and the contact form asks people to call.
+
+The same receiver also takes the contact form (`/contact`), guests' replies (`/reply`) and shows a guest their conversation (`/ticket`, only with the private key from their link). Messages land in `support/inbox/` and the booking jobs file them into `support/tickets.json`, which the admin portal's Support page shows.
