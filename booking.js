@@ -38,7 +38,7 @@
   }
   const sesTime = (p, name) => { const x = (p.sessions || []).find(z => z[0] === name); return x ? x[1] : ''; };
   const sesLabel = () => { const p = P[S.p], t = sesTime(p, S.session); return S.session + (t && /\d/.test(t) ? ' · ' + t : ''); };
-  const endDate = () => S.p === 'house' ? S.end : (S.date ? add(S.date, S.nights) : null);
+  const endDate = () => S.p === 'house' ? S.end : (S.date && P[S.p] && P[S.p].rule ? add(S.date, S.nights) : null);  // one-day visits have no end day
 
   // Treatment menu (from the York Cottage treatment menu)
   const TR = window.YC_TREATMENTS = [
