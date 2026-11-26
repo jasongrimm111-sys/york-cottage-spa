@@ -121,7 +121,7 @@
       return needs.length ? YE.plan(L.cfg, L.ix, b, { needs }).items : [];
     });
   }
-  const slotsFor = (need, exceptKey) => cached('slots:' + need.key + ':' + need.tid + ':' + (exceptKey || need.key), () => YE.slotsFor(L.cfg, L.ix, engineBooking(), need, pickedItems(exceptKey || need.key)));
+  const slotsFor = (need, exceptKey) => cached('slots:' + need.key + ':' + need.tid + ':' + (exceptKey || need.key), () => (exceptKey && exceptKey !== need.key ? YE.slotsFor : YE.slotsAhead)(L.cfg, L.ix, engineBooking(), need, pickedItems(exceptKey || need.key)));
   const nSlots = sl => sl.reduce((a, d) => a + d.times.length, 0);
   function planNow() { if (!YE || !L.cfg || !S.date) return null; const r = YE.plan(L.cfg, L.ix, engineBooking()); S.plan = r.ok ? r.items : null; return r; }
   const fdShort = d => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
