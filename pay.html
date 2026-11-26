@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Pay for your booking | York Cottage Spa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css?v=1126124314">
+<style>
+  body{background:var(--cream)}
+  .pp{max-width:520px;margin:0 auto;padding:48px 20px 80px}
+  .pp-brand{text-align:center;margin-bottom:26px;text-decoration:none;display:block}
+  .pp-brand b{font-family:var(--serif);font-size:34px;font-weight:500;color:var(--forest)}
+  .pp-brand small{display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--clay);font-weight:600}
+  .pp-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:26px;box-shadow:0 30px 60px -40px rgba(35,40,35,.45)}
+  .pp-amt{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px}
+  .pp-amt b{font-family:var(--serif);font-size:40px;font-weight:500}
+  .pp .btn{width:100%;justify-content:center;margin-top:16px}
+  .pp-done{text-align:center}
+  .pp-done .done-ico{margin:0 auto 14px}
+</style>
+</head>
+<body>
+<div class="pp">
+  <a class="pp-brand" href="index.html"><small>Bozeat, Northamptonshire</small><b>York Cottage Spa</b></a>
+  <div class="pp-card" id="pp"></div>
+  <p class="cal-note" style="text-align:center;margin-top:16px">Questions? Call 01933 580 100 or email info@yorkcottagespa.com</p>
+</div>
+<script>
+// Payment link page. Test mode: nothing is charged.
+// CONNECT: once STRIPE_SECRET_KEY is added to the data store, emailed links go straight to Stripe's own checkout instead of here.
+(() => {
+  const q = new URLSearchParams(location.search), ref = (q.get('ref') || '').replace(/[^A-Z0-9-]/gi, '').slice(0, 12), amt = Math.max(0, +q.get('amt') || 0);
+  const el = document.getElementById('pp'), gbp = n => '£' + n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  let pm = 'card';
+  const done = () => { el.innerHTML = `<div class="pp-done"><div class="done-ico"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5L20 7"/></svg></div><h2 style="font-size:36px">Thank you</h2><p class="bk-sub">Your payment for booking <b>${ref}</b> is complete. We’ve emailed your confirmation with your times.</p><p class="cal-note">Stripe test payment · no money was taken.</p><a class="btn btn-ghost" href="index.html" style="width:auto;margin-top:18px">Back to York Cottage</a></div>`; };
+  if (q.get('done')) return done();
+  if (!ref || !amt) { el.innerHTML = '<h2 style="font-size:30px">This link isn’t complete</h2><p class="bk-sub" style="margin-top:8px">Please use the link in your email, or call us on 01933 580 100.</p>'; return; }
+  const draw = () => {
+    el.innerHTML = `<div class="pp-amt"><div><div class="eyebrow">Booking ${ref}</div><span class="muted">Amount to pay</span></div><b>${gbp(amt)}</b></div>
+      <div class="stripe"><div class="stripe-top"><span class="stripe-test">Test mode</span><span>Powered by <b>stripe</b></span></div>
+      <div class="pm-tabs"><button class="pm ${pm === 'card' ? 'sel' : ''}" data-pm="card">Card</button><button class="pm ${pm === 'klarna' ? 'sel' : ''}" data-pm="klarna"><span class="klarna-logo">Klarna.</span>Pay in 3</button></div>
+      ${pm === 'card' ? `<div class="card-form"><label>Card number<input value="4242 4242 4242 4242" readonly tabindex="-1"></label><div class="cf-2"><label>Expiry<input value="12 / 34" readonly tabindex="-1"></label><label>CVC<input value="123" readonly tabindex="-1"></label></div><p class="k-small">Test mode: Stripe’s test card is used and nothing is charged.</p></div>`
+        : `<div class="klarna-box"><p><b>3 interest-free payments of ${gbp(Math.round(amt / 3 * 100) / 100)}</b></p><p class="k-small">You’ll confirm with Klarna. Subject to approval.</p></div>`}</div>
+      <button class="btn btn-solid" id="go">${pm === 'klarna' ? 'Continue with Klarna' : 'Pay ' + gbp(amt)} <span class="arrow">→</span></button>
+      <div class="lock" style="margin-top:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Payments are encrypted and processed securely by Stripe.</div>`;
+    el.querySelectorAll('[data-pm]').forEach(b => b.onclick = () => { pm = b.dataset.pm; draw(); });
+    document.getElementById('go').onclick = e => { e.target.innerHTML = '<span class="spin"></span> Processing…'; setTimeout(done, 1300); };
+  };
+  draw();
+})();
+</script>
+</body>
+</html>
