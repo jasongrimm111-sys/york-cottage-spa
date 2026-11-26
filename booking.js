@@ -84,7 +84,7 @@
       if (q.kind === 'session' || q.kind === 'private') p.sessions = c.sessions.filter(x => x.product === k && x.active !== false).map(x => [x.name, `${x.start} – ${x.end}`, x.id]);
       p.off = q.active === false || q.online === false;
     }
-    const menu = c.treatments.filter(t => !t.included && t.active !== false && t.online !== false).map(t => ({ id: t.id, cat: t.cat, name: t.name, min: t.min, price: t.price, head: !!t.head, desc: t.desc || '' }));
+    const menu = c.treatments.filter(t => YE.sellable(t) && t.online !== false).map(t => ({ id: t.id, cat: t.cat, name: t.name, min: t.min, price: t.price, head: !!t.head, desc: t.desc || '' }));
     if (menu.length) { TR.length = 0; TR.push(...menu); TRi = Object.fromEntries(TR.map(t => [t.id, t])); }
     HEAD_OFF = (c.rules.headSpaOff || 10) / 100; BFAST = c.breakfastPrice || BFAST;
     banner();
@@ -94,10 +94,10 @@
   // the booking as the engine sees it
   function engineBooking() {
     const c = L.cfg, p = c.products[S.p], d = S.date ? iso(S.date) : null;
-    const inc = v => { const ids = p.included || []; if (!ids.length) return null; const want = /facial/i.test(v || '') ? 'facial' : 'massage'; return ids.find(id => id.includes(want)) || ids[0]; };
+    const inc = v => { const ids = YE.includedFor(c, S.p).map(t => t.id); if (!ids.length) return null; if (ids.includes(v)) return v; const byName = YE.includedFor(c, S.p).find(t => t.name === v); if (byName) return byName.id; const want = /facial/i.test(v || '') ? 'facial' : 'massage'; return ids.find(id => id.includes(want)) || ids[0]; };
     const food = v => { if (!v) return null; const f = c.foods.find(x => x.name === v) || c.foods.find(x => (/tea/i.test(v) && x.id === 'tea') || (/grazing/i.test(v) && x.id === 'grazing')); return f ? f.id : null; };
     return { id: 'web', product: S.p, date: d, nights: P[S.p].rule ? S.nights : 0, sessionId: sesId(S.p, S.session, S.date), guests: S.guests, blueLight: !!S.blue, treatStart: S.treatStart || null,
-      guestList: Array.from({ length: S.guests }, (_, i) => ({ included: INCLUDED[S.p] === 'treat' ? inc((S.picks[i] || {}).treat) : null, food: P[S.p].food ? food((S.picks[i] || {}).food) : null, extras: (S.adds[i] || []).slice() })) };
+      guestList: Array.from({ length: S.guests }, (_, i) => ({ included: incMode(S.p) === 'treat' ? inc((S.picks[i] || {}).treat) : null, food: P[S.p].food ? food((S.picks[i] || {}).food) : null, extras: (S.adds[i] || []).slice() })) };
   }
   // the engine sets every treatment time (spa days, stays, whole house); guests only choose a start time for treatments-only
   function planNow() { if (!YE || !L.cfg || !S.date) return null; const r = YE.plan(L.cfg, L.ix, engineBooking()); S.plan = r.ok ? r.items : null; return r; }
@@ -347,6 +347,9 @@
 
   const pricePart = () => '';
   const INCLUDED = { day:'treat', private:'treat', break:'massage', group:'massage' };
+  // included treatments for a booking type (from the admin): 'treat' = guests choose one, 'massage' = everyone has them
+  const incList = k => YE && L.cfg ? YE.includedFor(L.cfg, k) : null;
+  const incMode = k => { const l = incList(k); if (!l) return INCLUDED[k]; if (!l.length) return null; return l.length > 1 && YE.includedPick(L.cfg, k) === 'one' ? 'treat' : 'massage'; };
   function treatView(){
     const p = P[S.p]; syncAdds();
     while (S.picks.length < S.guests) S.picks.push({ treat:'Aromatherapy massage', food:(p.foods || ['Afternoon tea'])[0] });
@@ -355,8 +358,9 @@
     const dots = n > 1 ? `<div class="gsteps">${Array.from({ length:n }, (_, i) => `<button class="gstep ${i === g ? 'now' : ''} ${i < g || (i !== g && S.seen && S.seen[i]) ? 'done' : ''}" data-gt="${i}">${i < g || (S.seen && S.seen[i] && i !== g) ? '✓' : i + 1}</button>`).join('<i></i>')}</div>` : '';
     const choice = (fld, opts) => `<div class="choice">${opts.map(([v, sub]) => `<button class="ch ${pick[fld] === v ? 'sel' : ''}" data-pk="${g}" data-f="${fld}" data-v="${v}"><span class="ch-r"></span><b>${v}</b>${sub ? `<small>${sub}</small>` : ''}</button>`).join('')}</div>`;
     let h = `<div class="gc-head"><h2>${n > 1 ? `Guest ${g + 1} <em>of ${n}</em>` : p.only ? 'Choose your <em>treatments</em>' : 'Your <em>choices</em>'}</h2>${dots}</div>`;
-    if (INCLUDED[S.p] === 'treat') h += `<div class="bk-group">Included 20-minute treatment</div>${choice('treat', [['Aromatherapy massage', 'Relaxing, with aromatherapy oils'], [p.facial || 'Facial', S.p === 'private' ? 'A luxury facial' : 'An aromatherapy facial']])}`;
-    if (INCLUDED[S.p] === 'massage') h += `<div class="inc-line"><span>✓</span> A 20-minute aromatherapy massage is included</div>`;
+    const il = incList(S.p);
+    if (incMode(S.p) === 'treat') { if (il && !il.some(t => t.name === pick.treat)) pick.treat = il[0].name; h += `<div class="bk-group">Included treatment: choose one</div>${choice('treat', il ? il.map(t => [t.name, t.desc || `${t.min} minutes`]) : [['Aromatherapy massage', 'Relaxing, with aromatherapy oils'], [p.facial || 'Facial', S.p === 'private' ? 'A luxury facial' : 'An aromatherapy facial']])}`; }
+    if (incMode(S.p) === 'massage') h += `<div class="inc-line"><span>✓</span> ${il ? esc(il.map(t => t.name).join(' and ')) + (il.length > 1 ? ' are' : ' is') : 'A 20-minute aromatherapy massage is'} included</div>`;
     if (p.food) h += `<div class="bk-group">Food</div>${choice('food', (p.foods || ['Afternoon tea', 'Sweet & savoury grazing board']).map(v => [v, v === 'Afternoon tea' ? 'Sweet & savoury treats' : v === 'Grazing board' ? 'Meats, cheese & sweet treats' : 'Meats, cheese & sweet treats · vegan available']))}`;
     const cats = [...new Set(TR.map(t => t.cat))];
     const extras = cats.map(c => `<div class="tr-cat">${c}${c === 'Japanese Head Spa' && !p.only ? ' <span>10% off with your booking</span>' : ''}</div><div class="tr-list">` + TR.filter(t => t.cat === c).map(t => {
@@ -437,7 +441,7 @@
   function reviewList(){
     const p = P[S.p], d = S.d;
     const when = p.rule ? `${nice(S.date)} – ${nice(endDate(), { year:'numeric' })} (${S.nights} night${S.nights > 1 ? 's' : ''})<br>${stayTimes(S.p, S.date, S.nights).map(([a, b]) => a + ' ' + b).join(' · ')}` : `${nice(S.date, { year:'numeric' })} · ${sesLabel()}`;
-    const picks = (INCLUDED[S.p] === 'treat' || p.food) ? S.picks.map((g, i) => `Guest ${i + 1}: ${[INCLUDED[S.p] === 'treat' && g.treat, p.food && g.food].filter(Boolean).join(', ')}`).join('<br>') : '';
+    const picks = (incMode(S.p) === 'treat' || p.food) ? S.picks.map((g, i) => `Guest ${i + 1}: ${[incMode(S.p) === 'treat' && g.treat, p.food && g.food].filter(Boolean).join(', ')}`).join('<br>') : '';
     const rows = [['Booking', p.name], ['When', when], ['Guests', S.guests + (S.p === 'break' ? ` · ${Math.ceil(S.guests / 2)} room${S.guests > 2 ? 's' : ''}` : '')], picks && ['Included', picks], treatCost().n && ['Treatments', treatLines('<br>', true)], S.bfast && p.bfast && ['Breakfast', `Continental, ${S.nights} morning${S.nights > 1 ? 's' : ''}`], S.blue && ['Blue Light Card', 'Treatments upgraded to 30 minutes'], S.voucher && ['Gift voucher', esc(S.voucher) + ' (checked before your visit)'],
       S.plan && S.plan.length && ['Your treatment times', timesList(S.plan)],
       ['Name', esc(d.first + ' ' + d.last)], ['Contact', esc(d.email) + '<br>' + esc(d.phone)], d.notes && ['Notes', esc(d.notes)]].filter(Boolean);
