@@ -324,6 +324,8 @@
   }
 
   // the first day that can be booked (with a session free, for session bookings), chosen for the guest (user, 2026-11-26)
+  // could these two treatments be had together (same room, same time)? at the other guest's time if they've picked one
+  const canPair = (k, w) => cached('pair:' + k + '>' + w, () => { const b = { ...engineBooking(), pairs: { ...(S.pairs || {}), [k]: w } }, tm = { ...(b.times || {}) }; delete tm[k]; b.times = tm; return YE.plan(L.cfg, L.ix, b, { needs: YE.treatmentNeeds(L.cfg, b) }).ok; });
   const resetAfter = () => { S.pairs = {}; S.times = {}; S.tpDate = {}; S.adds = S.adds.map(() => []); S.picks = []; S.roomOf = []; S.seen = {}; S.tg = 0; S.sameNote = ''; };
   function firstFree(){
     const p = P[S.p];
@@ -481,7 +483,7 @@
             continue; }
           // who could this be shared with: other guests' treatments, where a room suits both, not already paired
           const taken = new Set([...Object.keys(S.pairs), ...Object.values(S.pairs)]);
-          const mates = n > 1 && !taken.has(need.key) ? siteNeeds().filter(x => x.guest !== g && !taken.has(x.key) && YE.canShare(L.cfg, [need.tid, x.tid])) : [];
+          const mates = n > 1 && !taken.has(need.key) ? siteNeeds().filter(x => x.guest !== g && !taken.has(x.key) && YE.canShare(L.cfg, [need.tid, x.tid]) && canPair(need.key, x.key)) : [];
           const pairNote = S.pairNote && S.pairNote.key === need.key ? S.pairNote.text : '';
           const withHtml = mates.length ? `<div class="tp-mates"><span>Have this together with</span>${mates.map(x => `<button type="button" class="pill" data-pair="${need.key}|${x.key}">${esc(gName(x.guest))} · ${esc(YE.itemName(L.cfg, x))}</button>`).join('')}${pairNote ? `<p class="tp-none">${esc(pairNote)}</p>` : ''}</div>` : '';
           const t = t0, sl = slotsFor(need), cur = S.times[need.key];
