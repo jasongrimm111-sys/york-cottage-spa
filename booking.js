@@ -90,7 +90,7 @@
       if (q.price != null) p.price = q.price; if (q.priceN) p.priceN = { ...p.priceN, ...q.priceN }; if (q.night != null) p.night = q.night;
       if (q.min) p.min = q.min; if (q.max) p.max = q.max; if (q.blurb) p.blurb = q.blurb; if (q.minN) p.minN = q.minN; if (q.maxN) p.maxN = q.maxN;
       if (q.nights) p.nights = q.nights;
-      p.from = q.kind === 'house' ? `from £${q.night.toLocaleString('en-GB')} per night` : q.priceN ? `from £${q.priceN[1]} per person` : q.kind === 'treat' ? p.from : `${q.kind === 'private' ? 'from ' : ''}£${q.price} per person`;
+      p.from = q.kind === 'house' ? `from £${q.night.toLocaleString('en-GB')} per night` : q.priceN ? `from £${q.priceN[1] ?? Object.values(q.priceN)[0]} per person` : q.kind === 'treat' ? p.from : `${q.kind === 'private' ? 'from ' : ''}£${q.price} per person`;
       if (q.kind === 'session' || q.kind === 'private') p.sessions = c.sessions.filter(x => x.product === k && x.active !== false).map(x => [x.name, `${x.start} – ${x.end}`, x.id]);
       p.off = q.active === false || q.online === false;
     }
@@ -302,7 +302,7 @@
   }
   const typeView = () => chooseView(), optionView = () => chooseView();
   function chooseView(){
-    const cost = p => p.price || (p.priceN && p.priceN[1]) || p.night || 0;
+    const cost = p => p.price || (p.priceN && (p.priceN[1] ?? Object.values(p.priceN)[0])) || p.night || 0;
     const grp = g => Object.entries(P).filter(([, p]) => p.group === g && !p.off).sort((a, b) => cost(a[1]) - cost(b[1])).map(([k, p]) => `<button class="bk-opt ${S.p === k ? 'sel' : ''}" data-p="${k}"><small>${k === 'break' ? '1 night · Sunday to Thursday' : k === 'break2' ? '2 nights · arrive Sunday to Wednesday' : k === 'group' ? 'Sun – Thu · 7+ guests' : k === 'house' ? '2 – 30 nights' : p.only ? 'No spa session' : k === 'private' ? '4+ guests (6+ on Sundays)' : '4-hour sessions'}</small><b>${p.name}</b><span>${p.blurb}</span><em>${p.from[0] === 'f' ? 'F' + p.from.slice(1) : p.from}</em><span class="opt-cta">${S.p === k ? 'Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('');
     const pend = S.pending ? `<div class="notice"><b>${TRi[S.pending].name}</b> is ready to add. Book it on its own, or add it to a spa day or a stay (Japanese head spa is 10% off with a spa session or stay).</div>` : '';
     const TYPES = [

@@ -1165,7 +1165,7 @@ body.book-page .mbar{display:none!important}
 body.book-page header .menu .btn[data-book]{display:none}
 @media (max-width:900px){
   body.book-page .book-intro{display:none}
-  body.book-page .book-main{padding-top:64px;background:var(--paper)}
+  body.book-page .book-main{padding-top:84px;background:var(--paper)}
   body.book-page header{background:var(--paper);box-shadow:0 1px 0 var(--line);backdrop-filter:none}
   body.book-page header .hdr-book,body.book-page header .btn[data-book]{display:none}
 }
