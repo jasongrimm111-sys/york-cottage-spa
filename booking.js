@@ -164,6 +164,7 @@
       const n = P[k].rule === 'range' ? (L.cfg.products.house || {}).minN || 2 : P[k].rule ? S.nights : 0;
       const c = YE.dateCheck(L.cfg, L.ix, { product: k, date: iso(d), nights: n, guests: S.gOK ? S.guests : (P[k].min || 1) });
       if (!c.ok) return false;
+      return true;   // the admin's rules (arrival days, nights, minimum guests) have decided
     }
     const p = P[k];
     if (k === 'private' && d.getDay() === 0 && S.guests < 6) return false; // Sundays: 6 guest minimum
@@ -316,7 +317,7 @@
     if (p.rule === 'mid' || p.rule === 'stay'){
       right += `<div class="bk-group">Your stay</div>` + (S.date
         ? `<p class="stay-when"><b>${nice(S.date)}</b> → <b>${nice(add(S.date, S.nights))}</b> · ${S.nights} night${S.nights > 1 ? 's' : ''}</p>${times(stayTimes(S.p, S.date, S.nights))}`
-        : `<p class="cal-note">${S.nights > 1 ? '2-night breaks arrive Sunday to Wednesday.' : 'Breaks run Sunday to Thursday nights.'} Pick your arrival day.</p>`);
+        : `<p class="cal-note">${(() => { const q = L.cfg && L.cfg.products[S.p], days = q && q.arriveDays && q.arriveDays[S.nights]; if (!days) return S.nights > 1 ? '2-night breaks arrive Sunday to Wednesday.' : 'Breaks run Sunday to Thursday nights.'; const N = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']; return days.length === 7 ? 'Arrive any day.' : `${S.nights}-night stays arrive on ${[1, 2, 3, 4, 5, 6, 0].filter(d => days.includes(d)).map(d => N[d]).join(', ')}.`; })()} Pick your arrival day.</p>`);
     }
     if (range){
       right = `<div class="bk-group" style="margin-top:0">Your stay</div>` + (!S.date
