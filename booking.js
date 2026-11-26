@@ -311,8 +311,19 @@
     return `<h2>What would you like to <em>book</em>?</h2>${pend}<div class="bk-types">${TYPES.map(([g, t, d, f, img]) => `<button class="bk-type ${S.cat === g ? 'sel' : ''}" data-cat="${g}"><span class="bt-img" style="background-image:url('${img}')"></span><b>${t}</b><span>${d}</span><em>${f}</em><span class="opt-cta">${S.cat === g ? 'Selected' : 'Choose'} <span class="arrow">→</span></span></button>`).join('')}</div>${T && many ? `<div class="bk-group bk-opts-h" id="bkOpts">${T[1]}: choose one</div><div class="bk-opts">${grp(S.cat)}</div>` : ''}`;
   }
 
+  // the first day that can be booked (with a session free, for session bookings), chosen for the guest (user, 2026-11-26)
+  function firstFree(){
+    const p = P[S.p];
+    for (let d = new Date(first); d <= last; d = add(d, 1)) {
+      if (!dateOK(S.p, d)) continue;
+      if (p.sessions && !p.only && YE && L.cfg) { const l = YE.sessions(L.cfg, L.ix, S.p, iso(d), S.guests); if (l && l.length && !l.some(x => x.ok)) continue; }
+      return d;
+    }
+    return null;
+  }
   function dateView(){
     const p = P[S.p], range = p.rule === 'range';
+    if (!S.date) { const d = firstFree(); if (d) { S.date = d; S.end = null; S.month = new Date(d.getFullYear(), d.getMonth(), 1); S.times = {}; } }
     const m = S.month || (S.date ? new Date(S.date.getFullYear(), S.date.getMonth(), 1) : new Date(first.getFullYear(), first.getMonth(), 1));
     S.month = m;
     const endSel = endDate(), two = !!p.rule && innerWidth > 900;
