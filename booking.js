@@ -105,7 +105,7 @@
     const inc = v => { const ids = YE.includedFor(c, S.p).map(t => t.id); if (!ids.length) return null; if (ids.includes(v)) return v; const byName = YE.includedFor(c, S.p).find(t => t.name === v); if (byName) return byName.id; const want = /facial/i.test(v || '') ? 'facial' : 'massage'; return ids.find(id => id.includes(want)) || ids[0]; };
     const food = v => { if (!v) return null; const f = c.foods.find(x => x.name === v) || c.foods.find(x => (/tea/i.test(v) && x.id === 'tea') || (/grazing/i.test(v) && x.id === 'grazing')); return f ? f.id : null; };
     return { id: 'web', product: S.p, date: d, nights: P[S.p].rule ? S.nights : 0, sessionId: sesId(S.p, S.session, S.date), guests: S.guests, blueLight: !!S.blue, treatStart: null, times: S.times || {},
-      guestList: Array.from({ length: S.guests }, (_, i) => ({ name: ((S.names || [])[i] || '').trim(), included: incMode(S.p) === 'treat' ? inc((S.picks[i] || {}).treat) : null, food: P[S.p].food ? food((S.picks[i] || {}).food) : null, extras: (S.adds[i] || []).slice() })) };
+      guestList: Array.from({ length: S.guests }, (_, i) => ({ name: ((S.names || [])[i] || '').trim(), room: (S.roomOf || [])[i] || null, included: incMode(S.p) === 'treat' ? inc((S.picks[i] || {}).treat) : null, food: P[S.p].food ? food((S.picks[i] || {}).food) : null, extras: (S.adds[i] || []).slice() })) };
   }
   // the engine sets every treatment time (spa days, stays, whole house); guests only choose a start time for treatments-only
   // answers are worked out once per redraw (picking a time redraws)
@@ -190,7 +190,7 @@
 
   const S = { step:0 };
   const reset = k => Object.assign(S, { p:k || null, step:0, date:null, nights:k && P[k].nights ? P[k].nights[0] : 1, session:null,
-    guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, gOK:false, treatStart:null, plan:null, times:{}, tpDate:{}, names:[], g0Own:false, promo:S.promo || null, promoMsg:'', end:null, bfast:false, picks:[], adds:[], pending:null, tg:0, cat:undefined, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
+    guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, gOK:false, treatStart:null, plan:null, times:{}, tpDate:{}, names:[], g0Own:false, roomOf:[], promo:S.promo || null, promoMsg:'', end:null, bfast:false, picks:[], adds:[], pending:null, tg:0, cat:undefined, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
 
   const steps = () => ['Type', 'Option', 'Guests', 'Date', 'Guest choices', 'Treatment times', 'Details', S.p && P[S.p].kind === 'ask' ? 'Send' : 'Pay'];
   const LAST = 7, DETAILS = 6, TIMES = 5, CHOICES = 4, DATE = 3, GUESTS = 2;
@@ -206,6 +206,13 @@
     return { sub, off, n: S.adds.reduce((n, a) => n + a.length, 0) };
   }
   const gName = i => ((S.names || [])[i] || '').trim() || `Guest ${i + 1}`;
+  function stayRooms(){
+    if (!(YE && L.cfg && S.date && P[S.p] && P[S.p].rule)) return [];
+    const ids = YE.pickRooms(L.cfg, L.ix, S.p, iso(S.date), S.nights, S.guests) || [];
+    return ids.map(id => L.cfg.rooms.find(r => r.id === id)).filter(Boolean);
+  }
+  // one room for everyone: nothing to choose
+  function autoRooms(rs){ S.roomOf = S.roomOf || []; if (rs.length === 1) for (let i = 0; i < S.guests; i++) S.roomOf[i] = rs[0].id; else S.roomOf = S.roomOf.map(x => rs.some(r => r.id === x) ? x : ''); }
   const treatLines = (sep, withMin) => S.adds.map((a, i) => a.length ? `${gName(i)}: ` + a.map(id => TRi[id].name + (withMin ? ' (' + TRi[id].min + ' min)' : '')).join(', ') : '').filter(Boolean).join(sep);
 
   function estimate(){ const p = P[S.p]; return p && p.kind === 'ask' ? p.est * S.guests * (p.rule ? S.nights : 1) + (S.bfast && p.bfast ? BFAST * S.guests * S.nights : 0) + treatCost().sub - treatCost().off : 0; }
@@ -445,6 +452,11 @@
           <div class="bk-2">${f('email', 'Email', 'email', 'email', 'Please enter a valid email')}${f('phone', 'Mobile', 'tel', 'tel', 'Please enter a phone number')}</div>
           ${S.guests > 1 || true ? `<div class="bk-group">Who’s coming?</div><p class="cal-note" style="margin:-4px 0 10px">The full name of each guest, so we can welcome everyone and your therapists know who they’re treating.</p>
           <div class="bk-2 gnames">${Array.from({ length: S.guests }, (_, i) => `<div class="bk-field" data-fd="g${i}"><label for="bk_g${i}">Guest ${i + 1}${i === 0 ? ' (lead guest)' : ''}</label><input id="bk_g${i}" type="text" autocomplete="${i === 0 ? 'name' : 'off'}" value="${esc((S.names || [])[i] || '')}" placeholder="First and last name"><small class="err">Please enter this guest’s name</small></div>`).join('')}</div>` : ''}
+          ${(() => { const rs = stayRooms(); autoRooms(rs); if (rs.length < 2) return '';
+            const cnt = id => (S.roomOf || []).filter(x => x === id).length;
+            return `<div class="bk-group">Who’s sleeping where?</div><p class="cal-note" style="margin:-4px 0 10px">Your stay has ${rs.length} bedrooms. Choose a room for each guest so we can get them ready.</p>
+            <div class="room-pick">${rs.map(r => `<div class="rp-room"><b>${esc(r.name)}</b><span>${cnt(r.id)} of ${r.people}</span></div>`).join('')}</div>
+            <div class="bk-2 gnames">${Array.from({ length: S.guests }, (_, i) => `<div class="bk-field" data-fd="r${i}"><label for="bk_r${i}">${esc(gName(i))}</label><select id="bk_r${i}" class="rp-sel"><option value="">Choose a room</option>${rs.map(r => `<option value="${r.id}" ${(S.roomOf || [])[i] === r.id ? 'selected' : ''} ${(S.roomOf || [])[i] !== r.id && cnt(r.id) >= r.people ? 'disabled' : ''}>${esc(r.name)}${cnt(r.id) >= r.people && (S.roomOf || [])[i] !== r.id ? ' (full)' : ''}</option>`).join('')}</select><small class="err">Choose a room for this guest</small></div>`).join('')}</div>`; })()}
           <div class="bk-field"><label for="bk_notes">Dietary needs, celebrations or anything else <span class="opt">optional</span></label><textarea id="bk_notes" rows="2" placeholder="e.g. one vegan, a birthday">${esc(S.d.notes)}</textarea></div>
           <label class="check"><input type="checkbox" id="bkBlue" ${S.blue ? 'checked' : ''}> I have a Blue Light Card (free upgrade to 30-minute treatments)</label>
         </div>
@@ -536,6 +548,7 @@
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email || '')) bad.push('email');
       if ((d.phone || '').replace(/\D/g, '').length < 10) bad.push('phone');
       for (let i = 0; i < S.guests; i++) if (((S.names || [])[i] || '').trim().length < 2) bad.push('g' + i);
+      { const rs = stayRooms(); if (rs.length > 1) for (let i = 0; i < S.guests; i++) if (!(S.roomOf || [])[i]) bad.push('r' + i); }
       if (bad.length) return { bad };
       if (!S.adult) return { ck:'adult' }; if (!S.agree) return { ck:'agree' };
     }
@@ -604,6 +617,7 @@
     body.querySelectorAll('[data-gt]').forEach(b => b.onclick = () => { (S.seen = S.seen || {})[S.tg] = 1; S.tg = +b.dataset.gt; draw(); });
     ['first','last','email','phone','notes'].forEach(k => { const el = $('#bk_' + k, body); if (el) el.oninput = () => { S.d[k] = el.value; el.closest('.bk-field').classList.remove('bad');
       if ((k === 'first' || k === 'last') && !S.g0Own) { S.names = S.names || []; S.names[0] = `${S.d.first || ''} ${S.d.last || ''}`.trim(); const g0 = $('#bk_g0', body); if (g0) g0.value = S.names[0]; } }; });
+    body.querySelectorAll('.rp-sel').forEach(el => el.onchange = () => { S.roomOf = S.roomOf || []; S.roomOf[+el.id.slice(4)] = el.value; draw(); });
     body.querySelectorAll('[id^="bk_g"]').forEach(el => { if (!/^bk_g\d+$/.test(el.id)) return; el.oninput = () => { const i = +el.id.slice(4); S.names = S.names || []; S.names[i] = el.value; if (i === 0) S.g0Own = true; el.closest('.bk-field').classList.remove('bad'); }; });
     [['#bkAdult','adult'],['#bkAgree','agree'],['#bkMkt','mkt'],['#bkBlue','blue']].forEach(([s, k]) => { const el = $(s, body); if (el) el.onchange = () => { S[k] = el.checked; el.closest('.check').classList.remove('bad'); }; });
     const c = body.querySelector('[data-close]'); if (c) c.onclick = close;

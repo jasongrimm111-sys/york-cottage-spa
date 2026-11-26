@@ -1073,3 +1073,9 @@ html{-webkit-text-size-adjust:100%;touch-action:manipulation}
 .tp-times .pill,.tp-days .pill{font-family:var(--sans);font-variant-numeric:tabular-nums}
 .tp-none{font-size:14px;color:#8c2f2c;background:#f8e4e2;border-radius:10px;padding:9px 12px}
 .ch[disabled],.tr-opt[disabled]{opacity:.5;cursor:not-allowed}
+
+/* checkout: who sleeps where */
+.room-pick{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.rp-room{border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:#fff;display:flex;gap:8px;align-items:baseline;font-size:14px}
+.rp-room span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rp-sel{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit}
