@@ -440,6 +440,7 @@
     h += p.only
       ? `<p class="bk-sub" style="margin-top:6px">Pick up to ${maxExtras()} treatments${n > 1 ? ' for this guest' : ''}, then choose a time for each one below.</p>${S.adds[g].length >= maxExtras() ? `<div class="notice">That’s the most we can book online for one guest. For more, call us on 01933 580 100.</div>` : ''}${extras}`
       : `<div class="extra-box"><div class="extra-h"><b>Add extra treatments <span>optional</span></b><p>${incMode(S.p) ? 'Your booking already includes a treatment. Want more time? Add any of these.' : 'Add a massage, facial or Japanese head spa to your visit.'} Up to ${maxExtras()} per guest${p.rule ? ' across your stay' : ''}; we’ll fit them around your ${p.rule ? 'stay' : 'session'}.</p></div>${S.adds[g].length >= maxExtras() ? `<div class="notice">That’s the most we can book online for one guest. For more, call us on 01933 580 100.</div>` : ''}${extras}</div>`;
+    if (S.sameNote && g > 0) { h = `<div class="notice">${esc(S.sameNote)}</div>` + h; if (g === n - 1) S.sameNote = ''; }
     if (n > 1 && g === 0) h += `<button class="bk-backlink" data-same style="margin-top:14px">Give everyone the same choices as Guest 1</button>`;
     // ---- this guest's treatment times, right under their treatments ----
     if (YE && L.cfg && S.date) {
@@ -451,7 +452,7 @@
           const t = { ...(YE.tr(L.cfg, need.tid) || {}), name: YE.itemName(L.cfg, need) }, sl = slotsFor(need), cur = S.times[need.key];
           if (cur && !sl.some(d => d.date === cur.date && d.times.some(x => x.start === cur.start))) delete S.times[need.key];
           const days = sl.filter(d => d.times.length), day = (S.times[need.key] || {}).date || S.tpDate[need.key] || (days[0] || {}).date;
-          h += `<div class="tpick ${S.times[need.key] ? 'done' : ''}"><div class="tp-h"><b>${esc(t.name)}</b><span>${need.min || t.min} min${need.included ? ' · included' : ''}</span>${S.times[need.key] ? `<em>✓ ${sl.length > 1 ? fdShort(S.times[need.key].date) + ' ' : ''}${S.times[need.key].start}</em>` : ''}</div>
+          h += `<div class="tpick ${S.times[need.key] ? 'done' : ''}"><div class="tp-h"><b>${esc(t.name)}</b><span>${need.min || t.min} min${need.included ? ((need.with || []).length ? ` · ${(YE.tr(L.cfg, need.tid) || {}).min} min included + ${(need.min || 0) - ((YE.tr(L.cfg, need.tid) || {}).min || 0)} min extra` : ' · included') : ''}</span>${S.times[need.key] ? `<em>✓ ${sl.length > 1 ? fdShort(S.times[need.key].date) + ' ' : ''}${S.times[need.key].start}</em>` : ''}</div>
             ${!days.length ? `<p class="tp-none">Sorry, there are no available times for this treatment${P[S.p].rule ? ' during your stay' : ' in your session'}. ${need.included ? 'Please choose another session or day.' : 'Please remove it or choose another day.'}</p>`
               : `${sl.length > 1 ? `<div class="pills tp-days">${sl.map(d => `<button class="pill ${d.date === day ? 'sel' : ''}" data-tpd="${need.key}|${d.date}" ${d.times.length ? '' : 'disabled'}>${fdShort(d.date)}${d.times.length ? '' : ' · full'}</button>`).join('')}</div>` : ''}
                 <div class="pills tp-times">${(sl.find(d => d.date === day) || { times: [] }).times.map(x => `<button class="pill ${(S.times[need.key] || {}).start === x.start && (S.times[need.key] || {}).date === day ? 'sel' : ''}" data-tp="${need.key}|${day}|${x.start}">${x.start}</button>`).join('')}</div>`}</div>`;
@@ -561,6 +562,7 @@
     if (S.step === ROOMS && needRooms()) { const miss = Array.from({ length: S.guests }, (_, i) => i).filter(i => !(S.roomOf || [])[i]); if (miss.length) return `Choose a room for ${gName(miss[0])}`; }
     if (S.step === CHOICES && P[S.p].only && !S.adds[S.tg].length) return 'Choose at least one treatment for this guest';
     if (S.step === CHOICES && YE && L.cfg) { const miss = siteNeeds().filter(x => x.guest === S.tg && !(S.times || {})[x.key]); if (miss.length) return 'Choose a time for ' + (YE.tr(L.cfg, miss[0].tid) || {}).name; }
+    if (S.step === CHOICES && S.tg >= S.guests - 1 && YE && L.cfg) { const miss = siteNeeds().find(x => !(S.times || {})[x.key]); if (miss) { return `Choose a time for ${gName(miss.guest)}’s ${(YE.tr(L.cfg, miss.tid) || {}).name}`; } }
     if (S.step === CHOICES && S.tg >= S.guests - 1 && YE && L.cfg) {
       const r = planNow(); if (r && !r.ok) return `Sorry, we can’t fit ${r.fail && r.fail.name ? r.fail.name : 'all the treatments'} in on this ${P[S.p].rule ? 'stay' : 'day'}. Try fewer treatments or another ${P[S.p].rule ? 'date' : 'session'}.`;
     }
@@ -658,7 +660,14 @@
       draw(); };
     body.querySelectorAll('[data-alt]').forEach(b => b.onclick = () => { const k = b.dataset.alt; if (!P[k]) return; const pend = S.pending; reset(k); S.pending = pend; S.cat = P[k].group; syncAdds(); S.step = GUESTS; draw(); });
     body.querySelectorAll('[data-gq]').forEach(b => b.onclick = () => { S.guests = +b.dataset.gq; S.gOK = true; if (S.date && !dateOK(S.p, S.date)){ S.date = null; S.end = null; } draw(); });
-    const same = body.querySelector('[data-same]'); if (same) same.onclick = () => { S.picks = S.picks.map(() => ({ ...S.picks[0] })); S.adds = S.adds.map(() => [...S.adds[0]]); S.seen = {}; for (let i = 0; i < S.guests; i++) S.seen[i] = 1; S.step = DETAILS; draw(); };
+    const same = body.querySelector('[data-same]'); if (same) same.onclick = () => {
+      S.picks = S.picks.map((x, i) => i === 0 ? x : { ...S.picks[0] });
+      // the others' own times go (they choose again); extras are copied one by one, only while everyone's treatments still fit
+      if (S.times) Object.keys(S.times).filter(k => !k.startsWith('g0-')).forEach(k => delete S.times[k]);
+      const left = [];
+      for (let i = 1; i < S.guests; i++) { S.adds[i] = []; for (const id of S.adds[0]) { if (!YE || !L.cfg || fitsWith(i, x => ({ ...x, extras: x.extras.concat(id) }), 'same' + i + ':' + S.adds[i].join(',') + '+' + id)) S.adds[i].push(id); else left.push(`${(TRi[id] || {}).name} for ${gName(i)}`); } }
+      S.sameNote = left.length ? `Copied. There wasn’t time for: ${left.join('; ')}.` : 'Copied to everyone. Now choose a time for each guest.';
+      S.seen = {}; S.seen[0] = 1; S.tg = 1; draw(); };
   }
 
   function next(){
