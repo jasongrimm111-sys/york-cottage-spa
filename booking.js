@@ -431,7 +431,7 @@
       // same kind as the included treatment: it extends it, up to the 55-minute cap, charged for the minutes it adds
       let ext = null;
       if (sameKind && !on) { const already = (S.adds[g] || []).some(id => { const c = chargeOf(g, id); return c && c.extends; }), cap = YE.combineMax(L.cfg), add = already ? 0 : Math.max(0, Math.min(t.min, cap - incN.min));
-        ext = { already, add, total: incN.min + add, price: add >= t.min ? t.price : Math.round(t.price * add / t.min / 5) * 5 }; }
+        ext = { already, add, total: incN.min + add, price: add >= t.min ? t.price : YE.extendPrice(L.cfg) }; }
       else if (sameKind && on) { const c = chargeOf(g, t.id); if (c && c.extends) ext = { add: c.mins, total: Math.min(YE.combineMax(L.cfg), (siteNeeds().find(n => n.guest === g && n.included) || {}).min || 0), price: c.price }; }
       const blocked = ext && ext.already, price = ext && !blocked ? ext.price : t.price;
       const pr = t.head && !p.only ? `<s>${gbp(price)}</s> ${gbp(price * (1 - HEAD_OFF))}` : (ext && !blocked && price !== t.price ? `<s>${gbp(t.price)}</s> ${gbp(price)}` : gbp(price));
