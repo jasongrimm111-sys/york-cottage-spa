@@ -383,7 +383,7 @@
         <div class="gc-main"><button class="gc-btn" data-g="-1" ${S.guests <= minG ? 'disabled' : ''} aria-label="Fewer guests">−</button>
           <div class="gc-num"><b>${S.guests}</b><span>guest${S.guests > 1 ? 's' : ''}</span></div>
           <button class="gc-btn" data-g="1" ${S.guests >= p.max ? 'disabled' : ''} aria-label="More guests">+</button></div>
-        <div class="gc-side"><div class="gc-quick">${quick.map(n => `<button class="pill ${S.guests === n ? 'sel' : ''}" data-gq="${n}">${n}</button>`).join('')}</div><p>${note}</p></div>
+        <div class="gc-side"><p>${note}</p></div>
       </div>`;
     if (p.bfast && (S.p === 'group' || S.nights > 1))
       h += `<label class="check opt-line"><input type="checkbox" id="bkBf" ${S.bfast ? 'checked' : ''}> Add continental breakfast · £${BFAST} per person, per morning</label>`;
