@@ -1219,3 +1219,10 @@ body.book-page .hdr-book{display:none}
 .notice.bad{border-left-color:#b0563f;background:#fbeee9;margin-bottom:14px}
 /* calendar: hovering a day shows it in black, not the pale "inactive" look (2026-11-27) */
 .cal-g button:hover:not(:disabled),.cal-g button.sel:hover,.cal-g button.end:hover{background:var(--ink);color:#fff}
+/* treated together (2026-11-27) */
+.tp-mates{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:13px}
+.tp-mates > span{color:var(--muted);font-weight:600;margin-right:4px}
+.tp-mates .pill{font-size:12.5px;padding:5px 10px}
+.tp-mates .tp-none{flex-basis:100%;margin:4px 0 0}
+.tp-with{margin:6px 0 4px;font-size:13.5px}
+.tp-pair .bk-backlink{margin:0}

@@ -87,7 +87,7 @@ export default {
         const b = body.booking || {};
         if (!b.product || !/^\d{4}-\d{2}-\d{2}$/.test(b.date || '') || !(b.guests >= 1 && b.guests <= 30)) return out({ error: 'Bad request' }, 400);
         // names and notes are never kept in a hold; only what's needed to keep the times
-        const bk = { product: clean(b.product, 20), date: b.date, nights: +b.nights || 0, sessionId: b.sessionId ? clean(b.sessionId, 30) : null, guests: +b.guests, blueLight: !!b.blueLight, rooms: (b.rooms || []).map(r => clean(r, 20)).slice(0, 12), times: b.times || {},
+        const bk = { product: clean(b.product, 20), date: b.date, nights: +b.nights || 0, sessionId: b.sessionId ? clean(b.sessionId, 30) : null, guests: +b.guests, blueLight: !!b.blueLight, rooms: (b.rooms || []).map(r => clean(r, 20)).slice(0, 12), times: b.times || {}, pairs: Object.fromEntries(Object.entries(b.pairs || {}).slice(0, 30).map(([k, v]) => [clean(k, 20), clean(v, 20)])),
           guestList: (b.guestList || []).slice(0, 30).map(g => ({ included: g.included ? clean(g.included, 40) : null, food: g.food ? clean(g.food, 40) : null, extras: (g.extras || []).slice(0, 6).map(x => clean(x, 40)) })) };
         const r = await takeHold(env, bk, body.release ? clean(body.release, 12) : null);
         return out(r, r.ok ? 200 : 409);

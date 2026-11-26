@@ -108,12 +108,12 @@
     const c = L.cfg, p = c.products[S.p], d = S.date ? iso(S.date) : null;
     const inc = v => { const ids = YE.includedFor(c, S.p).map(t => t.id); if (!ids.length) return null; if (ids.includes(v)) return v; const byName = YE.includedFor(c, S.p).find(t => t.name === v); if (byName) return byName.id; const want = /facial/i.test(v || '') ? 'facial' : 'massage'; return ids.find(id => id.includes(want)) || ids[0]; };
     const food = v => { if (!v) return null; const f = c.foods.find(x => x.name === v) || c.foods.find(x => (/tea/i.test(v) && x.id === 'tea') || (/grazing/i.test(v) && x.id === 'grazing')); return f ? f.id : null; };
-    return { id: 'web', product: S.p, date: d, nights: P[S.p].rule ? S.nights : 0, sessionId: sesId(S.p, S.session, S.date), guests: S.guests, blueLight: !!S.blue, treatStart: null, times: S.times || {},
+    return { id: 'web', product: S.p, date: d, nights: P[S.p].rule ? S.nights : 0, sessionId: sesId(S.p, S.session, S.date), guests: S.guests, blueLight: !!S.blue, treatStart: null, times: S.times || {}, pairs: S.pairs || {},
       guestList: Array.from({ length: S.guests }, (_, i) => ({ name: ((S.names || [])[i] || '').trim(), room: (S.roomOf || [])[i] || null, included: incMode(S.p) === 'treat' ? inc((S.picks[i] || {}).treat) : null, food: P[S.p].food ? food((S.picks[i] || {}).food) : null, extras: (S.adds[i] || []).slice() })) };
   }
   // the engine sets every treatment time (spa days, stays, whole house); guests only choose a start time for treatments-only
   // answers are worked out once per redraw (picking a time redraws)
-  let memo = {}; const memoKey = () => JSON.stringify([S.p, S.date && +S.date, S.session, S.nights, S.guests, S.adds, S.picks && S.picks.map(x => x.treat), S.times, S.blue]);
+  let memo = {}; const memoKey = () => JSON.stringify([S.p, S.date && +S.date, S.session, S.nights, S.guests, S.adds, S.picks && S.picks.map(x => x.treat), S.times, S.pairs, S.blue]);
   let memoFor = '';
   const cached = (k, fn) => { const mk = memoKey(); if (mk !== memoFor) { memo = {}; memoFor = mk; } return k in memo ? memo[k] : (memo[k] = fn()); };
   const siteNeeds = () => cached('needs', () => YE.treatmentNeeds(L.cfg, engineBooking()));
@@ -324,7 +324,7 @@
   }
 
   // the first day that can be booked (with a session free, for session bookings), chosen for the guest (user, 2026-11-26)
-  const resetAfter = () => { S.times = {}; S.tpDate = {}; S.adds = S.adds.map(() => []); S.picks = []; S.roomOf = []; S.seen = {}; S.tg = 0; S.sameNote = ''; };
+  const resetAfter = () => { S.pairs = {}; S.times = {}; S.tpDate = {}; S.adds = S.adds.map(() => []); S.picks = []; S.roomOf = []; S.seen = {}; S.tg = 0; S.sameNote = ''; };
   function firstFree(){
     const p = P[S.p];
     for (let d = new Date(first); d <= last; d = add(d, 1)) {
@@ -468,14 +468,29 @@
       const mine = siteNeeds().filter(x => x.guest === g);
       if (mine.length) {
         h += `<div class="bk-group">${n > 1 ? `${esc(gName(g))}’s` : 'Your'} treatment times</div><p class="cal-note" style="margin:-4px 0 10px">Pick a time for each treatment. Only times when a therapist and a treatment room are free are shown${P[S.p].rule ? ', on any day of your stay' : ''}.</p>`;
+        S.pairs = S.pairs || {};
         for (const need of mine) {
-          const t = { ...(YE.tr(L.cfg, need.tid) || {}), name: YE.itemName(L.cfg, need) }, sl = slotsFor(need), cur = S.times[need.key];
+          const t0 = { ...(YE.tr(L.cfg, need.tid) || {}), name: YE.itemName(L.cfg, need) };
+          // treated together with someone else in this booking: their time, the same room, a therapist each
+          const pk = S.pairs[need.key], pn = pk && siteNeeds().find(x => x.key === pk);
+          if (pk && !pn) delete S.pairs[need.key];
+          if (pn) { const pt = S.times[pk];
+            h += `<div class="tpick done tp-pair"><div class="tp-h"><b>${esc(t0.name)}</b><span>${need.min || t0.min} min</span>${pt ? `<em>✓ ${pt.start}</em>` : ''}</div>
+              <p class="tp-with">Together with ${esc(gName(pn.guest))}’s ${esc(YE.itemName(L.cfg, pn))}, in the same room${pt ? ` at ${pt.start}` : ''}, each with your own therapist.${pt ? '' : ` Your time will match ${esc(gName(pn.guest))}’s once it’s chosen.`}</p>
+              <button type="button" class="bk-backlink" data-unpair="${need.key}">Have it on my own instead</button></div>`;
+            continue; }
+          // who could this be shared with: other guests' treatments, where a room suits both, not already paired
+          const taken = new Set([...Object.keys(S.pairs), ...Object.values(S.pairs)]);
+          const mates = n > 1 && !taken.has(need.key) ? siteNeeds().filter(x => x.guest !== g && !taken.has(x.key) && YE.canShare(L.cfg, [need.tid, x.tid])) : [];
+          const pairNote = S.pairNote && S.pairNote.key === need.key ? S.pairNote.text : '';
+          const withHtml = mates.length ? `<div class="tp-mates"><span>Have this together with</span>${mates.map(x => `<button type="button" class="pill" data-pair="${need.key}|${x.key}">${esc(gName(x.guest))} · ${esc(YE.itemName(L.cfg, x))}</button>`).join('')}${pairNote ? `<p class="tp-none">${esc(pairNote)}</p>` : ''}</div>` : '';
+          const t = t0, sl = slotsFor(need), cur = S.times[need.key];
           if (cur && !sl.some(d => d.date === cur.date && d.times.some(x => x.start === cur.start))) delete S.times[need.key];
           const days = sl.filter(d => d.times.length), day = (S.times[need.key] || {}).date || S.tpDate[need.key] || (days[0] || {}).date;
           h += `<div class="tpick ${S.times[need.key] ? 'done' : ''}"><div class="tp-h"><b>${esc(t.name)}</b><span>${need.min || t.min} min${need.included ? ((need.with || []).length ? ` · ${(YE.tr(L.cfg, need.tid) || {}).min} min included + ${(need.min || 0) - ((YE.tr(L.cfg, need.tid) || {}).min || 0)} min extra` : ' · included') : ''}</span>${S.times[need.key] ? `<em>✓ ${sl.length > 1 ? fdShort(S.times[need.key].date) + ' ' : ''}${S.times[need.key].start}</em>` : ''}</div>
             ${!days.length ? `<p class="tp-none">Sorry, there are no available times for this treatment${P[S.p].rule ? ' during your stay' : ' in your session'}. ${need.included ? 'Please choose another session or day.' : 'Please remove it or choose another day.'}</p>`
               : `${sl.length > 1 ? `<div class="pills tp-days">${sl.map(d => `<button class="pill ${d.date === day ? 'sel' : ''}" data-tpd="${need.key}|${d.date}" ${d.times.length ? '' : 'disabled'}>${fdShort(d.date)}${d.times.length ? '' : ' · full'}</button>`).join('')}</div>` : ''}
-                <div class="pills tp-times">${(sl.find(d => d.date === day) || { times: [] }).times.map(x => `<button class="pill ${(S.times[need.key] || {}).start === x.start && (S.times[need.key] || {}).date === day ? 'sel' : ''}" data-tp="${need.key}|${day}|${x.start}">${x.start}</button>`).join('')}</div>`}</div>`;
+                <div class="pills tp-times">${(sl.find(d => d.date === day) || { times: [] }).times.map(x => `<button class="pill ${(S.times[need.key] || {}).start === x.start && (S.times[need.key] || {}).date === day ? 'sel' : ''}" data-tp="${need.key}|${day}|${x.start}">${x.start}</button>`).join('')}</div>`}${withHtml}</div>`;
         }
       }
         }
@@ -581,8 +596,8 @@
     if (S.step === GUESTS) { S.gOK = true; const bad = []; for (let i = 0; i < S.guests; i++) if (((S.names || [])[i] || '').trim().length < 2) bad.push('g' + i); if (bad.length) return { bad }; }
     if (S.step === ROOMS && needRooms()) { const miss = Array.from({ length: S.guests }, (_, i) => i).filter(i => !(S.roomOf || [])[i]); if (miss.length) return `Choose a room for ${gName(miss[0])}`; }
     if (S.step === CHOICES && P[S.p].only && !S.adds[S.tg].length) return 'Choose at least one treatment for this guest';
-    if (S.step === CHOICES && YE && L.cfg) { const miss = siteNeeds().filter(x => x.guest === S.tg && !(S.times || {})[x.key]); if (miss.length) return 'Choose a time for ' + (YE.tr(L.cfg, miss[0].tid) || {}).name; }
-    if (S.step === CHOICES && S.tg >= S.guests - 1 && YE && L.cfg) { const miss = siteNeeds().find(x => !(S.times || {})[x.key]); if (miss) { return `Choose a time for ${gName(miss.guest)}’s ${(YE.tr(L.cfg, miss.tid) || {}).name}`; } }
+    if (S.step === CHOICES && YE && L.cfg) { const miss = siteNeeds().filter(x => x.guest === S.tg && !x.start); if (miss.length) return 'Choose a time for ' + (YE.tr(L.cfg, miss[0].tid) || {}).name; }
+    if (S.step === CHOICES && S.tg >= S.guests - 1 && YE && L.cfg) { const miss = siteNeeds().find(x => !x.start); if (miss) { return `Choose a time for ${gName(miss.guest)}’s ${(YE.tr(L.cfg, miss.tid) || {}).name}`; } }
     if (S.step === CHOICES && S.tg >= S.guests - 1 && YE && L.cfg) {
       const r = planNow(); if (r && !r.ok) return `Sorry, we can’t fit ${r.fail && r.fail.name ? r.fail.name : 'all the treatments'} in on this ${P[S.p].rule ? 'stay' : 'day'}. Try fewer treatments or another ${P[S.p].rule ? 'date' : 'session'}.`;
     }
@@ -656,6 +671,12 @@
       if (i >= 0) { g.splice(i, 1); if (S.times) { const keep = {}; g.forEach((x, j) => { const old = S.times[`g${gi}-x${j + (j >= i ? 1 : 0)}`]; if (old) keep[`g${gi}-x${j}`] = old; }); Object.keys(S.times).filter(k => k.startsWith(`g${gi}-x`)).forEach(k => delete S.times[k]); Object.assign(S.times, keep); } }
       else if (g.length < maxExtras()) g.push(id); draw(); });
     body.querySelectorAll('[data-pm]').forEach(b => b.onclick = () => { S.pm = b.dataset.pm; draw(); });
+    body.querySelectorAll('[data-pair]').forEach(b => b.onclick = () => { const [k, w] = b.dataset.pair.split('|'); S.pairNote = null;
+      const test = { ...engineBooking(), pairs: { ...(S.pairs || {}), [k]: w } }, tm = { ...(test.times || {}) }; delete tm[k]; test.times = tm;
+      const r = YE.plan(L.cfg, L.ix, test, { needs: YE.treatmentNeeds(L.cfg, test) });
+      if (!r.ok) { S.pairNote = { key: k, text: (S.times || {})[w] ? `Sorry, there isn’t a room and two therapists free together at ${S.times[w].start}. Try another time for ${gName((siteNeeds().find(x => x.key === w) || {}).guest)} or have it on your own.` : 'Sorry, there’s no time when you can both be treated together in this session.' }; draw(); return; }
+      S.pairs = { ...(S.pairs || {}), [k]: w }; delete S.times[k]; draw(); });
+    body.querySelectorAll('[data-unpair]').forEach(b => b.onclick = () => { delete S.pairs[b.dataset.unpair]; draw(); });
     body.querySelectorAll('[data-tp]').forEach(b => b.onclick = () => { const [k, d, t] = b.dataset.tp.split('|'); S.times = S.times || {}; S.times[k] = { date: d, start: t }; draw(); });
     body.querySelectorAll('[data-tpd]').forEach(b => b.onclick = () => { const [k, d] = b.dataset.tpd.split('|'); S.tpDate = S.tpDate || {}; S.tpDate[k] = d; draw(); });
     body.querySelectorAll('[data-gt]').forEach(b => b.onclick = () => { (S.seen = S.seen || {})[S.tg] = 1; S.tg = +b.dataset.gt; draw(); });
