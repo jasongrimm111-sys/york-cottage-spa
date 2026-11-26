@@ -13,8 +13,10 @@
     private:{ name:'Private Spa', group:'Spa', kind:'pay', price:100, per:'per person', from:'from £100 per person', min:4, max:16, treat:true, food:true, facial:'Luxury facial',
               sessions:[['Morning','time confirmed by email'],['Afternoon','time confirmed by email']],
               blurb:'The spa just for your group, with food, drinks and a 20-minute massage or luxury facial each. Minimum 4 guests (6 on Sundays, from 11:30).' },
-    break:  { name:'Overnight Spa Break', group:'Stay', kind:'pay', priceN:{1:145, 2:220}, per:'per person', from:'£145 per person', min:2, max:6, rule:'mid', nights:[1,2], bfast:true,
-              blurb:'1 night from £145 or 2 nights from £220 per person, based on 2 sharing. King ensuite room, grazing board, 20-minute aromatherapy massage each, spa access.' },
+    break:  { name:'1-Night Spa Break', group:'Stay', kind:'pay', priceN:{1:145}, per:'per person', from:'£145 per person', min:2, max:6, rule:'mid', nights:[1], bfast:true,
+              blurb:'One night, from £145 per person based on 2 sharing. King ensuite room, grazing board, a 20-minute aromatherapy massage each and spa access. Sunday to Thursday.' },
+    break2: { name:'2-Night Spa Break', group:'Stay', kind:'pay', priceN:{2:220}, per:'per person', from:'£220 per person', min:2, max:6, rule:'mid', nights:[2], bfast:true,
+              blurb:'Two nights, from £220 per person based on 2 sharing. King ensuite room, grazing board, 20-minute aromatherapy massages and spa access. Arrive Sunday to Wednesday.' },
     group:  { name:'Group Spa Break', group:'Stay', kind:'pay', priceN:{1:145}, per:'per person', from:'from £145 per person', min:7, max:16, rule:'mid', nights:[1], food:true, foods:['Grazing board','Afternoon tea'], bfast:true,
               blurb:'7+ guests, Sunday to Thursday. Up to 8 rooms, the spa just for your group, a grazing board or afternoon tea and a 20-minute aromatherapy massage each.' },
     house:  { name:'Whole House & Spa', group:'House', kind:'pay', night:1840, per:'per night', from:'from £1,840 per night', min:1, max:16, rule:'range', minN:2, maxN:30,
@@ -49,7 +51,7 @@
       return [['Check-in', 'from ' + t.checkIn], t.food && [p.kind === 'house' ? 'Food' : 'Food', 'from ' + t.food], t.spa && [p.kind === 'house' ? 'Spa pool & hot tub' : 'Spa & treatments', `${t.spa[0]} – ${t.spa[1]}`], ['Check-out', t.checkOut]].filter(Boolean);
     }
     const sun = d.getDay() === 0;
-    if (k === 'break') return sun
+    if (k === 'break' || k === 'break2') return sun
       ? [['Check-in', 'from 14:00'], ['Grazing board', 'from 16:30'], ['Spa & treatments', nights > 1 ? '17:30 – 22:00' : '18:00 – 22:30'], ['Check-out', '11:00']]
       : [['Check-in', 'from 13:30'], ['Spa & treatments', '14:00 – 18:00'], ['Grazing board', 'from 18:00'], ['Check-out', '11:00']];
     if (k === 'group') return sun
@@ -192,8 +194,8 @@
   const reset = k => Object.assign(S, { p:k || null, step:0, date:null, nights:k && P[k].nights ? P[k].nights[0] : 1, session:null,
     guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, gOK:false, treatStart:null, plan:null, times:{}, tpDate:{}, names:[], g0Own:false, roomOf:[], promo:S.promo || null, promoMsg:'', end:null, bfast:false, picks:[], adds:[], pending:null, tg:0, cat:undefined, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
 
-  const steps = () => ['Booking', 'Guests', 'Date', 'Guest choices', 'Details', S.p && P[S.p].kind === 'ask' ? 'Send' : 'Pay'];
-  const LAST = 5, DETAILS = 4, TIMES = -1, CHOICES = 3, DATE = 2, GUESTS = 1;
+  const steps = () => ['Booking', 'Guests', 'Date', 'Rooms', 'Guest choices', 'Details', S.p && P[S.p].kind === 'ask' ? 'Send' : 'Pay'];
+  const LAST = 6, DETAILS = 5, TIMES = -1, CHOICES = 4, ROOMS = 3, DATE = 2, GUESTS = 1;
   // the times step is skipped when nothing needs a time (e.g. a session with no treatments)
   const hasTimes = () => !!(YE && L.cfg && S.date && siteNeeds().length);
   function syncAdds(){
@@ -206,6 +208,7 @@
     return { sub, off, n: S.adds.reduce((n, a) => n + a.length, 0) };
   }
   const gName = i => ((S.names || [])[i] || '').trim() || `Guest ${i + 1}`;
+  const needRooms = () => stayRooms().length > 1;
   function stayRooms(){
     if (!(YE && L.cfg && S.date && P[S.p] && P[S.p].rule)) return [];
     const ids = YE.pickRooms(L.cfg, L.ix, S.p, iso(S.date), S.nights, S.guests) || [];
@@ -280,10 +283,11 @@
   let lastAt = '';
   function draw(){
     const st = steps();
-    stepsEl.innerHTML = S.ref ? '' : st.map((t, i) => `<li class="${i === S.step ? 'now' : i < S.step ? 'done' : ''}">${i < S.step ? `<button data-goto="${i}" title="Back to ${t}">` : '<span>'}<i>${i < S.step ? '✓' : i + 1}</i><b>${t}</b>${i < S.step ? '</button>' : '</span>'}</li>`).join('');
+    const shown = i => i !== ROOMS || needRooms(), num = i => st.slice(0, i + 1).filter((_, k) => shown(k)).length;
+    stepsEl.innerHTML = S.ref ? '' : st.map((t, i) => !shown(i) ? '' : `<li class="${i === S.step ? 'now' : i < S.step ? 'done' : ''}">${i < S.step ? `<button data-goto="${i}" title="Back to ${t}">` : '<span>'}<i>${i < S.step ? '✓' : num(i)}</i><b>${t}</b>${i < S.step ? '</button>' : '</span>'}</li>`).join('');
     stepsEl.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => { S.step = +b.dataset.goto; draw(); });
     const bar = S.step > 0 && !S.ref ? selBar() : '';
-    body.innerHTML = bar + (S.ref ? doneView() : [chooseView, guestView, dateView, treatView, detailView, payView][S.step]());
+    body.innerHTML = bar + (S.ref ? doneView() : [chooseView, guestView, dateView, roomsView, treatView, detailView, payView][S.step]());
     body.querySelectorAll('.sel-bar [data-goto]').forEach(b => b.onclick = () => { S.step = +b.dataset.goto; draw(); });
     navView(); sideView(); sideWire(); wire(); save();
     const at = S.step + ':' + (S.tg || 0) + ':' + !!S.ref;  // only jump to the top on a new step or guest
@@ -299,7 +303,7 @@
   const typeView = () => chooseView(), optionView = () => chooseView();
   function chooseView(){
     const cost = p => p.price || (p.priceN && p.priceN[1]) || p.night || 0;
-    const grp = g => Object.entries(P).filter(([, p]) => p.group === g && !p.off).sort((a, b) => cost(a[1]) - cost(b[1])).map(([k, p]) => `<button class="bk-opt ${S.p === k ? 'sel' : ''}" data-p="${k}"><small>${k === 'break' ? '1 night Sun – Thu · 2 nights Sun – Wed' : k === 'group' ? 'Sun – Thu · 7+ guests' : k === 'house' ? '2 – 30 nights' : p.only ? 'No spa session' : k === 'private' ? '4+ guests (6+ on Sundays)' : '4-hour sessions'}</small><b>${p.name}</b><span>${p.blurb}</span><em>${p.from[0] === 'f' ? 'F' + p.from.slice(1) : p.from}</em><span class="opt-cta">${S.p === k ? 'Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('');
+    const grp = g => Object.entries(P).filter(([, p]) => p.group === g && !p.off).sort((a, b) => cost(a[1]) - cost(b[1])).map(([k, p]) => `<button class="bk-opt ${S.p === k ? 'sel' : ''}" data-p="${k}"><small>${k === 'break' ? '1 night · Sunday to Thursday' : k === 'break2' ? '2 nights · arrive Sunday to Wednesday' : k === 'group' ? 'Sun – Thu · 7+ guests' : k === 'house' ? '2 – 30 nights' : p.only ? 'No spa session' : k === 'private' ? '4+ guests (6+ on Sundays)' : '4-hour sessions'}</small><b>${p.name}</b><span>${p.blurb}</span><em>${p.from[0] === 'f' ? 'F' + p.from.slice(1) : p.from}</em><span class="opt-cta">${S.p === k ? 'Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('');
     const pend = S.pending ? `<div class="notice"><b>${TRi[S.pending].name}</b> is ready to add. Book it on its own, or add it to a spa day or a stay (Japanese head spa is 10% off with a spa session or stay).</div>` : '';
     const TYPES = [
       ['Spa', 'Spa day', 'Day Spa, Spa Access or the Private Spa', 'From £50 pp', 'https://static.wixstatic.com/media/7a9273_c527bfae78d645c096615f66806d3b0f~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_c527bfae78d645c096615f66806d3b0f~mv2.jpg'],
@@ -373,8 +377,8 @@
     while (S.picks.length < S.guests) S.picks.push({ treat:'Aromatherapy massage', food:(p.foods || ['Afternoon tea'])[0] });
     S.picks.length = S.guests; syncAdds();
     const quick = [...new Set([minG, 2, 4, 6, 8, 10, 12, 16].filter(n => n >= minG && n <= p.max))].slice(0, 6);
-    const note = S.p === 'break' ? `${Math.ceil(S.guests / 2)} king ensuite room${S.guests > 2 ? 's' : ''} · prices are based on 2 sharing`
-      : S.p === 'group' ? 'Groups of 7 to 16 guests.</p><p class="gc-alt">6 or fewer? <button type="button" class="linkbtn-site" data-alt="break">Choose an Overnight Spa Break instead</button>'
+    const note = /^break/.test(S.p) ? `${Math.ceil(S.guests / 2)} king ensuite room${S.guests > 2 ? 's' : ''} · prices are based on 2 sharing`
+      : S.p === 'group' ? 'Groups of 7 to 16 guests.</p><p class="gc-alt">6 or fewer? <button type="button" class="linkbtn-site" data-alt="break">Choose a Spa Break instead</button>'
       : S.p === 'house' ? 'Up to 16 guests · the price is for the whole house'
       : S.p === 'private' ? 'Minimum 4 guests, 6 on Sundays'
       : `Up to ${p.max} guests per booking`;
@@ -384,14 +388,16 @@
           <div class="gc-num"><b>${S.guests}</b><span>guest${S.guests > 1 ? 's' : ''}</span></div>
           <button class="gc-btn" data-g="1" ${S.guests >= p.max ? 'disabled' : ''} aria-label="More guests">+</button></div>
         <div class="gc-side"><p>${note}</p></div>
-      </div>`;
+      </div>
+      <div class="bk-group">Who’s coming?</div><p class="cal-note" style="margin:-4px 0 10px">The full name of each guest, so we can welcome everyone and your therapists know who they’re treating.</p>
+      <div class="bk-2 gnames">${Array.from({ length: S.guests }, (_, i) => `<div class="bk-field" data-fd="g${i}"><label for="bk_g${i}">Guest ${i + 1}${i === 0 ? ' (lead guest)' : ''}</label><input id="bk_g${i}" type="text" autocomplete="${i === 0 ? 'name' : 'off'}" value="${esc((S.names || [])[i] || '')}" placeholder="First and last name"><small class="err">Please enter this guest’s name</small></div>`).join('')}</div>`;
     if (p.bfast && (S.p === 'group' || S.nights > 1))
       h += `<label class="check opt-line"><input type="checkbox" id="bkBf" ${S.bfast ? 'checked' : ''}> Add continental breakfast · £${BFAST} per person, per morning</label>`;
     return h;
   }
 
   const pricePart = () => '';
-  const INCLUDED = { day:'treat', private:'treat', break:'massage', group:'massage' };
+  const INCLUDED = { day:'treat', private:'treat', break:'massage', break2:'massage', group:'massage' };
   // most extra treatments one guest can add online (set per booking type in the admin; staff can add more)
   const maxExtras = () => { const q = L.cfg && L.cfg.products[S.p]; if (q && q.maxExtras) return q.maxExtras; return P[S.p].rule ? 3 * ((S.nights || 1) + 1) : 3; };
   // included treatments for a booking type (from the admin): 'treat' = guests choose one, 'massage' = everyone has them
@@ -405,7 +411,7 @@
     const dots = n > 1 ? `<div class="gsteps">${Array.from({ length:n }, (_, i) => `<button class="gstep ${i === g ? 'now' : ''} ${i < g || (i !== g && S.seen && S.seen[i]) ? 'done' : ''}" data-gt="${i}">${i < g || (S.seen && S.seen[i] && i !== g) ? '✓' : i + 1}</button>`).join('<i></i>')}</div>` : '';
     const incOff = v => { if (!(YE && L.cfg && S.date)) return false; const t = (incList(S.p) || []).find(x => x.name === v); return t ? !nSlots(slotsFor({ key: `g${g}-inc`, guest: g, tid: t.id, min: t.min, included: true })) : false; };
     const choice = (fld, opts) => `<div class="choice">${opts.map(([v, sub]) => { const off = fld === 'treat' && pick.treat !== v && incOff(v); return `<button class="ch ${pick[fld] === v ? 'sel' : ''}" data-pk="${g}" data-f="${fld}" data-v="${v}" ${off ? 'disabled' : ''}><span class="ch-r"></span><b>${v}</b>${off ? '<small>No time left in this session</small>' : sub ? `<small>${sub}</small>` : ''}</button>`; }).join('')}</div>`;
-    let h = `<div class="gc-head"><h2>${n > 1 ? `Guest ${g + 1} <em>of ${n}</em>` : p.only ? 'Choose your <em>treatments</em>' : 'Your <em>choices</em>'}</h2>${dots}</div>`;
+    let h = `<div class="gc-head"><h2>${n > 1 ? `${esc(gName(g))} <em>· ${g + 1} of ${n}</em>` : p.only ? 'Choose your <em>treatments</em>' : 'Your <em>choices</em>'}</h2>${dots}</div>`;
     const il = incList(S.p);
     if (incMode(S.p) === 'treat') { if (il && !il.some(t => t.name === pick.treat)) pick.treat = il[0].name; h += `<div class="bk-group">Included treatment: choose one</div>${choice('treat', il ? il.map(t => [t.name, t.desc || `${t.min} minutes`]) : [['Aromatherapy massage', 'Relaxing, with aromatherapy oils'], [p.facial || 'Facial', S.p === 'private' ? 'A luxury facial' : 'An aromatherapy facial']])}`; }
     if (incMode(S.p) === 'massage') h += `<div class="inc-line"><span>✓</span> ${il ? esc(il.map(t => t.name).join(' and ')) + (il.length > 1 ? ' are' : ' is') : 'A 20-minute aromatherapy massage is'} included</div>`;
@@ -427,7 +433,7 @@
       S.times = S.times || {}; S.tpDate = S.tpDate || {};
       const mine = siteNeeds().filter(x => x.guest === g);
       if (mine.length) {
-        h += `<div class="bk-group">${n > 1 ? `Guest ${g + 1}’s` : 'Your'} treatment times</div><p class="cal-note" style="margin:-4px 0 10px">Pick a time for each treatment. Only times when a therapist and a treatment room are free are shown${P[S.p].rule ? ', on any day of your stay' : ''}.</p>`;
+        h += `<div class="bk-group">${n > 1 ? `${esc(gName(g))}’s` : 'Your'} treatment times</div><p class="cal-note" style="margin:-4px 0 10px">Pick a time for each treatment. Only times when a therapist and a treatment room are free are shown${P[S.p].rule ? ', on any day of your stay' : ''}.</p>`;
         for (const need of mine) {
           const t = YE.tr(L.cfg, need.tid) || {}, sl = slotsFor(need), cur = S.times[need.key];
           if (cur && !sl.some(d => d.date === cur.date && d.times.some(x => x.start === cur.start))) delete S.times[need.key];
@@ -442,11 +448,21 @@
     return h;
   }
 
+  function roomsView(){
+    const rs = stayRooms(); autoRooms(rs);
+    if (rs.length < 2) return `<h2>Your <em>room</em></h2><p class="bk-sub">${rs[0] ? esc(rs[0].name) + ' is yours for the stay.' : 'We’ll get your room ready.'}</p>`;
+    const cnt = id => (S.roomOf || []).filter(x => x === id).length;
+    return `<h2>Who’s in <em>which room</em>?</h2><p class="bk-sub">Your stay has ${rs.length} bedrooms. Tap a guest under each room to put them in it.</p>
+      <div class="rooms-pick">${rs.map(r => `<div class="rp-card ${cnt(r.id) >= r.people ? 'full' : ''}"><div class="rp-img" style="background-image:url('${esc(r.photo || '')}')"></div>
+        <div class="rp-body"><div class="rp-h"><b>${esc(r.name)}</b><span>${cnt(r.id)} of ${r.people}</span></div><small>${esc([r.bed ? r.bed + ' bed' : '', r.ensuite ? 'ensuite' : '', 'sleeps ' + r.people].filter(Boolean).join(' · '))}</small>
+        <div class="rp-guests">${Array.from({ length: S.guests }, (_, i) => { const here = (S.roomOf || [])[i] === r.id, elsewhere = (S.roomOf || [])[i] && !here; return `<button type="button" class="rp-g ${here ? 'on' : ''} ${elsewhere ? 'away' : ''}" data-rg="${r.id}|${i}" ${!here && cnt(r.id) >= r.people ? 'disabled' : ''}>${here ? '✓ ' : ''}${esc(gName(i))}</button>`; }).join('')}</div></div></div>`).join('')}</div>`;
+  }
+
   function detailView(){
     const f = (id, label, type = 'text', ac = '', err = 'Please fill this in', opt = false) => `<div class="bk-field" data-fd="${id}"><label for="bk_${id}">${label}${opt ? ' <span class="opt">optional</span>' : ''}</label><input id="bk_${id}" type="${type}" autocomplete="${ac}" value="${esc(S.d[id])}"><span class="err">${err}</span></div>`;
     const ageLine = (S.p === 'private' || S.p === 'house')
       ? 'I’m 18 or over. Under-16s only join on a Private Spa or whole-house booking, with an adult.'
-      : S.p === 'break' || S.p === 'group' ? 'Everyone staying is 18 or over.'
+      : /^break/.test(S.p) || S.p === 'group' ? 'Everyone staying is 18 or over.'
       : 'I’m 18 or over, and any 16 or 17-year-olds will be with an adult.';
     const pol = (L.cfg && L.cfg.products[S.p] && L.cfg.products[S.p].policy) || POLICY[S.p === 'house' ? 'house' : P[S.p].rule ? 'stay' : 'spa'];
     return `<h2>Your <em>details</em></h2>
@@ -454,13 +470,6 @@
         <div class="det-card"><div class="bk-group" style="margin-top:0">Lead guest</div>
           <div class="bk-2">${f('first', 'First name', 'text', 'given-name')}${f('last', 'Last name', 'text', 'family-name')}</div>
           <div class="bk-2">${f('email', 'Email', 'email', 'email', 'Please enter a valid email')}${f('phone', 'Mobile', 'tel', 'tel', 'Please enter a phone number')}</div>
-          ${S.guests > 1 || true ? `<div class="bk-group">Who’s coming?</div><p class="cal-note" style="margin:-4px 0 10px">The full name of each guest, so we can welcome everyone and your therapists know who they’re treating.</p>
-          <div class="bk-2 gnames">${Array.from({ length: S.guests }, (_, i) => `<div class="bk-field" data-fd="g${i}"><label for="bk_g${i}">Guest ${i + 1}${i === 0 ? ' (lead guest)' : ''}</label><input id="bk_g${i}" type="text" autocomplete="${i === 0 ? 'name' : 'off'}" value="${esc((S.names || [])[i] || '')}" placeholder="First and last name"><small class="err">Please enter this guest’s name</small></div>`).join('')}</div>` : ''}
-          ${(() => { const rs = stayRooms(); autoRooms(rs); if (rs.length < 2) return '';
-            const cnt = id => (S.roomOf || []).filter(x => x === id).length;
-            return `<div class="bk-group">Who’s sleeping where?</div><p class="cal-note" style="margin:-4px 0 10px">Your stay has ${rs.length} bedrooms. Choose a room for each guest so we can get them ready.</p>
-            <div class="room-pick">${rs.map(r => `<div class="rp-room"><b>${esc(r.name)}</b><span>${cnt(r.id)} of ${r.people}</span></div>`).join('')}</div>
-            <div class="bk-2 gnames">${Array.from({ length: S.guests }, (_, i) => `<div class="bk-field" data-fd="r${i}"><label for="bk_r${i}">${esc(gName(i))}</label><select id="bk_r${i}" class="rp-sel"><option value="">Choose a room</option>${rs.map(r => `<option value="${r.id}" ${(S.roomOf || [])[i] === r.id ? 'selected' : ''} ${(S.roomOf || [])[i] !== r.id && cnt(r.id) >= r.people ? 'disabled' : ''}>${esc(r.name)}${cnt(r.id) >= r.people && (S.roomOf || [])[i] !== r.id ? ' (full)' : ''}</option>`).join('')}</select><small class="err">Choose a room for this guest</small></div>`).join('')}</div>`; })()}
           <div class="bk-field"><label for="bk_notes">Dietary needs, celebrations or anything else <span class="opt">optional</span></label><textarea id="bk_notes" rows="2" placeholder="e.g. one vegan, a birthday">${esc(S.d.notes)}</textarea></div>
           <label class="check"><input type="checkbox" id="bkBlue" ${S.blue ? 'checked' : ''}> I have a Blue Light Card (free upgrade to 30-minute treatments)</label>
         </div>
@@ -511,7 +520,7 @@
     const p = P[S.p], d = S.d;
     const when = p.rule ? `${nice(S.date)} – ${nice(endDate(), { year:'numeric' })} (${S.nights} night${S.nights > 1 ? 's' : ''})<br>${stayTimes(S.p, S.date, S.nights).map(([a, b]) => a + ' ' + b).join(' · ')}` : `${nice(S.date, { year:'numeric' })} · ${sesLabel()}`;
     const picks = (incMode(S.p) === 'treat' || p.food) ? S.picks.map((g, i) => `Guest ${i + 1}: ${[incMode(S.p) === 'treat' && g.treat, p.food && g.food].filter(Boolean).join(', ')}`).join('<br>') : '';
-    const rows = [['Booking', p.name], ['When', when], ['Guests', S.guests + (S.p === 'break' ? ` · ${Math.ceil(S.guests / 2)} room${S.guests > 2 ? 's' : ''}` : '')], picks && ['Included', picks], treatCost().n && ['Treatments', treatLines('<br>', true)], S.bfast && p.bfast && ['Breakfast', `Continental, ${S.nights} morning${S.nights > 1 ? 's' : ''}`], S.blue && ['Blue Light Card', 'Treatments upgraded to 30 minutes'], S.voucher && ['Gift voucher', esc(S.voucher) + ' (checked before your visit)'],
+    const rows = [['Booking', p.name], ['When', when], ['Guests', S.guests + (/^break/.test(S.p) ? ` · ${Math.ceil(S.guests / 2)} room${S.guests > 2 ? 's' : ''}` : '')], picks && ['Included', picks], treatCost().n && ['Treatments', treatLines('<br>', true)], S.bfast && p.bfast && ['Breakfast', `Continental, ${S.nights} morning${S.nights > 1 ? 's' : ''}`], S.blue && ['Blue Light Card', 'Treatments upgraded to 30 minutes'], S.voucher && ['Gift voucher', esc(S.voucher) + ' (checked before your visit)'],
       S.plan && S.plan.length && ['Your treatment times', timesList(S.plan)],
       ['Name', esc(d.first + ' ' + d.last)], ['Contact', esc(d.email) + '<br>' + esc(d.phone)], d.notes && ['Notes', esc(d.notes)]].filter(Boolean);
     return `<div class="pay" style="margin-bottom:18px"><ul class="sum" style="color:var(--ink)">${rows.map(([a, b]) => `<li><span style="color:var(--muted)">${a}</span><b>${b}</b></li>`).join('')}</ul></div>`;
@@ -535,7 +544,8 @@
     const p = P[S.p];
     if (S.step === 0) return !S.cat ? 'Choose what you’d like to book' : S.p && P[S.p].group === S.cat ? '' : 'Choose an option';
     if (S.step === DATE){ if (!S.date) return p.rule ? 'Choose your arrival day' : 'Choose a day'; if (p.rule === 'range' && !S.end) return 'Choose your check-out day'; if (p.sessions && !p.only && !S.session) return 'Choose a session'; }
-    if (S.step === GUESTS) S.gOK = true;
+    if (S.step === GUESTS) { S.gOK = true; const bad = []; for (let i = 0; i < S.guests; i++) if (((S.names || [])[i] || '').trim().length < 2) bad.push('g' + i); if (bad.length) return { bad }; }
+    if (S.step === ROOMS && needRooms()) { const miss = Array.from({ length: S.guests }, (_, i) => i).filter(i => !(S.roomOf || [])[i]); if (miss.length) return `Choose a room for ${gName(miss[0])}`; }
     if (S.step === CHOICES && P[S.p].only && !S.adds[S.tg].length) return 'Choose at least one treatment for this guest';
     if (S.step === CHOICES && YE && L.cfg) { const miss = siteNeeds().filter(x => x.guest === S.tg && !(S.times || {})[x.key]); if (miss.length) return 'Choose a time for ' + (YE.tr(L.cfg, miss[0].tid) || {}).name; }
     if (S.step === CHOICES && S.tg >= S.guests - 1 && YE && L.cfg) {
@@ -547,8 +557,7 @@
       if (!(d.first || '').trim()) bad.push('first'); if (!(d.last || '').trim()) bad.push('last');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email || '')) bad.push('email');
       if ((d.phone || '').replace(/\D/g, '').length < 10) bad.push('phone');
-      for (let i = 0; i < S.guests; i++) if (((S.names || [])[i] || '').trim().length < 2) bad.push('g' + i);
-      { const rs = stayRooms(); if (rs.length > 1) for (let i = 0; i < S.guests; i++) if (!(S.roomOf || [])[i]) bad.push('r' + i); }
+
       if (bad.length) return { bad };
       if (!S.adult) return { ck:'adult' }; if (!S.agree) return { ck:'agree' };
     }
@@ -582,7 +591,7 @@
       : `<div class="big"><span>From</span><b>${p.from.replace(/^from /, '').split(' ')[0]}</b></div><p>${p.from.replace(/^from /, '').split(' ').slice(1).join(' ')}. Your total appears once you choose ${S.p === 'house' ? 'your dates' : 'your guests'}.</p>`;
     side.innerHTML = `<div class="side-top"><div class="eyebrow">Your booking</div><button class="side-x" aria-label="Close booking" title="Close (your choices are saved)">&times;</button></div><h3>${p.name}</h3><ul class="sum">${rows.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join('')}</ul>
       <div class="sum-tot">${tot}<button class="sum-toggle">Details</button></div>
-      <p class="sum-pol">${{ house:'50% deposit. Move your dates with 6+ months’ notice.', break:'Refundable with 30+ days’ notice.', group:'Refundable with 30+ days’ notice.' }[S.p] || (p.only ? 'Pay today. Move your appointment with 30+ days’ notice.' : 'Non-refundable, but you can move your visit with 30+ days’ notice.')}</p>
+      <p class="sum-pol">${{ house:'50% deposit. Move your dates with 6+ months’ notice.', break:'Refundable with 30+ days’ notice.', break2:'Refundable with 30+ days’ notice.', group:'Refundable with 30+ days’ notice.' }[S.p] || (p.only ? 'Pay today. Move your appointment with 30+ days’ notice.' : 'Non-refundable, but you can move your visit with 30+ days’ notice.')}</p>
       <p class="foot-note">Questions? Call 01933 580 100 or message us on WhatsApp.${S.p && !S.ref ? '<br><button class="bk-reset" title="Clear everything and start again">Start again</button>' : ''}</p>`;
     const t = $('.sum-toggle', side); if (t) t.onclick = () => side.classList.toggle('full');
   }
@@ -617,11 +626,11 @@
     body.querySelectorAll('[data-gt]').forEach(b => b.onclick = () => { (S.seen = S.seen || {})[S.tg] = 1; S.tg = +b.dataset.gt; draw(); });
     ['first','last','email','phone','notes'].forEach(k => { const el = $('#bk_' + k, body); if (el) el.oninput = () => { S.d[k] = el.value; el.closest('.bk-field').classList.remove('bad');
       if ((k === 'first' || k === 'last') && !S.g0Own) { S.names = S.names || []; S.names[0] = `${S.d.first || ''} ${S.d.last || ''}`.trim(); const g0 = $('#bk_g0', body); if (g0) g0.value = S.names[0]; } }; });
-    body.querySelectorAll('.rp-sel').forEach(el => el.onchange = () => { S.roomOf = S.roomOf || []; S.roomOf[+el.id.slice(4)] = el.value; draw(); });
+    body.querySelectorAll('[data-rg]').forEach(b => b.onclick = () => { const [r, i] = b.dataset.rg.split('|'); S.roomOf = S.roomOf || []; S.roomOf[+i] = S.roomOf[+i] === r ? '' : r; draw(); });
     body.querySelectorAll('[id^="bk_g"]').forEach(el => { if (!/^bk_g\d+$/.test(el.id)) return; el.oninput = () => { const i = +el.id.slice(4); S.names = S.names || []; S.names[i] = el.value; if (i === 0) S.g0Own = true; el.closest('.bk-field').classList.remove('bad'); }; });
     [['#bkAdult','adult'],['#bkAgree','agree'],['#bkMkt','mkt'],['#bkBlue','blue']].forEach(([s, k]) => { const el = $(s, body); if (el) el.onchange = () => { S[k] = el.checked; el.closest('.check').classList.remove('bad'); }; });
     const c = body.querySelector('[data-close]'); if (c) c.onclick = close;
-    const back = $('.back', nav); if (back) back.onclick = () => { if (S.step === CHOICES && S.tg > 0){ S.tg--; draw(); return; } S.step--; if (S.step === CHOICES) S.tg = S.guests - 1; draw(); };
+    const back = $('.back', nav); if (back) back.onclick = () => { if (S.step === CHOICES && S.tg > 0){ S.tg--; draw(); return; } S.step--; if (S.step === ROOMS && !needRooms()) S.step--; if (S.step === CHOICES) S.tg = S.guests - 1; draw(); };
     const go = $('.go', nav); if (go) go.onclick = next;
     const cl = $('.bk-close', nav); if (cl) cl.onclick = close;
     // start again: a second press confirms, so one stray tap doesn't lose the booking (user, 2026-11-26)
@@ -650,7 +659,7 @@
     if (S.step === CHOICES && S.tg < S.guests - 1){ (S.seen = S.seen || {})[S.tg] = 1; S.tg++; draw(); return; }
     if (S.step === DATE) S.tg = 0;
     if (S.step === DETAILS && YE && L.cfg) { const r = planNow(); if (r && !r.ok) { msg.textContent = 'Those treatments no longer fit on that day. Please go back and choose another time.'; return; } }
-    if (S.step < LAST){ S.step++; draw(); return; }
+    if (S.step < LAST){ S.step++; if (S.step === ROOMS && !needRooms()) { autoRooms(stayRooms()); S.step++; } draw(); return; }
     // CONNECT: create the booking (server) -> Stripe PaymentIntent -> stripe.confirmPayment(); show the confirmation on success.
     // Test mode: simulate a successful Stripe payment. No request is sent anywhere.
     { const pr = price(); S.paid = pr ? { method: S.pm, amount: pr.now, id: 'pi_test_' + Math.random().toString(36).slice(2, 14) } : null; }

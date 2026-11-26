@@ -1143,3 +1143,19 @@ body.book-page header{position:absolute}
 
 .gc-alt{margin-top:6px}
 .linkbtn-site{background:none;border:0;padding:0;font:inherit;color:var(--clay);font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+/* rooms step: the rooms with pictures, and who sleeps in each */
+.rooms-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.rp-card{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+.rp-card.full{border-color:var(--forest)}
+.rp-img{height:130px;background:#e9dfd0 center/cover no-repeat}
+.rp-body{padding:12px 14px 14px}
+.rp-h{display:flex;justify-content:space-between;align-items:baseline}
+.rp-h b{font-family:var(--serif);font-size:20px;font-weight:500}
+.rp-h span{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rp-body small{display:block;color:var(--muted);font-size:12.5px;margin:2px 0 10px}
+.rp-guests{display:flex;flex-wrap:wrap;gap:6px}
+.rp-g{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.rp-g.on{background:var(--forest);border-color:var(--forest);color:var(--cream)}
+.rp-g.away{opacity:.45}
+.rp-g[disabled]{opacity:.3;cursor:not-allowed}
