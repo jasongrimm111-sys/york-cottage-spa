@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Consultation form | York Cottage Spa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css?v=1126135516">
+<style>
+  body{background:var(--cream)}
+  .pp{max-width:680px;margin:0 auto;padding:40px 18px 80px}
+  .pp-brand{text-align:center;margin-bottom:22px;text-decoration:none;display:block}
+  .pp-brand b{font-family:var(--serif);font-size:34px;font-weight:500;color:var(--forest)}
+  .pp-brand small{display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--clay);font-weight:600}
+  .pp-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 30px 60px -40px rgba(35,40,35,.45)}
+  .pp-card h1{font-family:var(--serif);font-size:36px;font-weight:500;margin-bottom:6px}
+  .pp .btn{justify-content:center;margin-top:16px;width:100%}
+  .gpick{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 18px}
+  .gpick button{border:1px solid var(--line);border-radius:99px;padding:8px 16px;background:#fff;font:inherit;cursor:pointer}
+  .gpick button.on{background:var(--forest);color:#fff;border-color:var(--forest)}
+  .lockline{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);margin-top:12px}
+</style>
+</head>
+<body>
+<div class="pp">
+  <a class="pp-brand" href="index.html"><small>Bozeat, Northamptonshire</small><b>York Cottage Spa</b></a>
+  <div class="pp-card" id="pp"><p>Loading the form…</p></div>
+  <p class="cal-note" style="text-align:center;margin-top:16px">Questions? Call 01933 580 100 or email info@yorkcottagespa.com</p>
+</div>
+<script src="consult.js?v=1126135516"></script>
+<script>
+// Each guest fills this in before their treatments. Answers are encrypted in this browser with York Cottage's public key,
+// so only the spa's admin portal can read them. The receiving service only ever sees the encrypted form.
+(async () => {
+  const C = window.YCConsult, el = document.getElementById('pp'), q = new URLSearchParams(location.search);
+  const ref = (q.get('ref') || '').replace(/[^A-Z0-9-]/gi, '').slice(0, 12), tok = (q.get('t') || '').replace(/[^a-z0-9]/gi, '').slice(0, 32);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let cfg = null;
+  try { cfg = await fetch('https://raw.githubusercontent.com/jasongrimm111-sys/york-cottage-spa-live/main/config.json?v=' + Math.floor(Date.now() / 60000), { cache: 'no-store' }).then(r => r.json()); } catch (e) {}
+  const c = cfg && cfg.consult;
+  if (!ref || !tok) { el.innerHTML = '<h1>This link isn’t complete</h1><p class="bk-sub">Please use the link in your booking email, or fill in the form when you arrive.</p>'; return; }
+  if (!c || !c.endpoint || !c.publicKey) { el.innerHTML = '<h1>See you soon</h1><p class="bk-sub">We’ll ask you to fill in a short consultation form when you arrive. It only takes a couple of minutes.</p>'; return; }
+  const qs = c.questions && c.questions.length ? c.questions : C.defaults();
+  const st = document.createElement('style'); st.textContent = C.css; document.head.appendChild(st);
+  let g = 0;
+  const draw = () => {
+    el.innerHTML = `<div class="eyebrow">Booking ${esc(ref)}</div><h1>Consultation form</h1><p class="bk-sub">So your therapist can make your treatment safe and just right for you. Each guest fills in their own form.</p>
+      <div class="bk-group">Which guest are you?</div><div class="gpick">${Array.from({ length: 8 }, (_, i) => `<button type="button" data-g="${i}" class="${i === g ? 'on' : ''}">${i === 0 ? 'I booked' : 'Guest ' + (i + 1)}</button>`).join('')}</div>
+      ${C.formHTML(qs)}<button class="btn btn-solid" id="go">Send my form <span class="arrow">→</span></button>
+      <div class="lockline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Your answers are encrypted on this device and only York Cottage can read them. We keep them for ${c.retentionMonths || 24} months.</div>`;
+    C.wireForm(el);
+    el.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { g = +b.dataset.g; el.querySelectorAll('[data-g]').forEach(x => x.classList.toggle('on', x === b)); });
+    document.getElementById('go').onclick = async e => {
+      const v = C.readForm(el, qs), msg = el.querySelector('.cq-msg');
+      if (!v.ok) { msg.textContent = v.msg; msg.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+      e.target.disabled = true; e.target.innerHTML = '<span class="spin"></span> Sending…';
+      try {
+        const sealed = await C.seal(c.publicKey, v.answers);
+        const r = await fetch(c.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref, t: tok, g, sealed }) });
+        if (!r.ok) throw new Error('send');
+        el.innerHTML = `<div style="text-align:center"><div class="done-ico" style="margin:0 auto 14px"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5L20 7"/></svg></div><h1>Thank you</h1><p class="bk-sub">Your form is with your therapist. If anyone else in your group hasn’t filled theirs in, they can use the same link.</p><button class="btn btn-ghost" id="another" style="width:auto">Fill in another guest’s form</button></div>`;
+        document.getElementById('another').onclick = () => { g = Math.min(7, g + 1); draw(); scrollTo(0, 0); };
+      } catch (err) { e.target.disabled = false; e.target.innerHTML = 'Send my form <span class="arrow">→</span>'; msg.textContent = 'Sorry, that didn’t send. Please try again, or fill in the form when you arrive.'; }
+    };
+  };
+  draw();
+})();
+</script>
+</body>
+</html>
