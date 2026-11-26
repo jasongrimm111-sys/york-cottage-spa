@@ -1217,3 +1217,5 @@ body.book-page .hdr-book{display:none}
 .more-time{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;background:#fbf3e3;border:1px solid #ecd9b0;border-radius:12px;padding:10px 14px;margin:6px 0 12px;font-size:14px}
 .more-time .bk-backlink{margin:0;font-weight:700}
 .notice.bad{border-left-color:#b0563f;background:#fbeee9;margin-bottom:14px}
+/* calendar: hovering a day shows it in black, not the pale "inactive" look (2026-11-27) */
+.cal-g button:hover:not(:disabled):not(.sel):not(.end){background:var(--ink);color:#fff}
