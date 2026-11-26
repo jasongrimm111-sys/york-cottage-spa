@@ -1060,3 +1060,16 @@ html{-webkit-text-size-adjust:100%;touch-action:manipulation}
 .gc-num b,.sum-tot .big b,.price,.pc-foot span,.ref,.k-plan b,.cal-g button,.cal-t,.ses-opt span,.tr-pr b,.pp-amt b,.stat b,.num{font-family:var(--sans);font-variant-numeric:tabular-nums lining-nums}
 .gc-num b{font-weight:600}
 .sum-tot .big b{font-weight:600}
+
+/* checkout: a time for each treatment */
+.tpick{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;background:#fff}
+.tpick.done{border-color:var(--forest);background:#f6f8f5}
+.tp-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.tp-h b{font-weight:600}
+.tp-h span{font-size:13px;color:var(--muted)}
+.tp-h em{margin-left:auto;font-style:normal;font-weight:700;color:var(--forest);font-family:var(--sans)}
+.tp-days{margin-bottom:8px}
+.tp-times{flex-wrap:wrap}
+.tp-times .pill,.tp-days .pill{font-family:var(--sans);font-variant-numeric:tabular-nums}
+.tp-none{font-size:14px;color:#8c2f2c;background:#f8e4e2;border-radius:10px;padding:9px 12px}
+.ch[disabled],.tr-opt[disabled]{opacity:.5;cursor:not-allowed}

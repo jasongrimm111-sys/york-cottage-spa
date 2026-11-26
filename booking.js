@@ -59,7 +59,7 @@
     return [];
   }
   const sesTime = (p, name) => { const x = (p.sessions || []).find(z => z[0] === name); return x ? x[1] : ''; };
-  const sesLabel = () => { const p = P[S.p]; if (p.only) return S.treatStart ? 'from ' + S.treatStart : 'time to choose'; const t = sesTime(p, S.session); return S.session + (t && /\d/.test(t) ? ' · ' + t : ''); };
+  const sesLabel = () => { const p = P[S.p]; if (p.only) { const ts = Object.values(S.times || {}).map(x => x.start).sort(); return ts.length ? 'from ' + ts[0] : 'times to choose'; } const t = sesTime(p, S.session); return S.session + (t && /\d/.test(t) ? ' · ' + t : ''); };
   const endDate = () => S.p === 'house' ? S.end : (S.date && P[S.p] && P[S.p].rule ? add(S.date, S.nights) : null);  // one-day visits have no end day
 
   // Treatment menu (from the York Cottage treatment menu)
@@ -104,10 +104,25 @@
     const c = L.cfg, p = c.products[S.p], d = S.date ? iso(S.date) : null;
     const inc = v => { const ids = YE.includedFor(c, S.p).map(t => t.id); if (!ids.length) return null; if (ids.includes(v)) return v; const byName = YE.includedFor(c, S.p).find(t => t.name === v); if (byName) return byName.id; const want = /facial/i.test(v || '') ? 'facial' : 'massage'; return ids.find(id => id.includes(want)) || ids[0]; };
     const food = v => { if (!v) return null; const f = c.foods.find(x => x.name === v) || c.foods.find(x => (/tea/i.test(v) && x.id === 'tea') || (/grazing/i.test(v) && x.id === 'grazing')); return f ? f.id : null; };
-    return { id: 'web', product: S.p, date: d, nights: P[S.p].rule ? S.nights : 0, sessionId: sesId(S.p, S.session, S.date), guests: S.guests, blueLight: !!S.blue, treatStart: S.treatStart || null,
+    return { id: 'web', product: S.p, date: d, nights: P[S.p].rule ? S.nights : 0, sessionId: sesId(S.p, S.session, S.date), guests: S.guests, blueLight: !!S.blue, treatStart: null, times: S.times || {},
       guestList: Array.from({ length: S.guests }, (_, i) => ({ included: incMode(S.p) === 'treat' ? inc((S.picks[i] || {}).treat) : null, food: P[S.p].food ? food((S.picks[i] || {}).food) : null, extras: (S.adds[i] || []).slice() })) };
   }
   // the engine sets every treatment time (spa days, stays, whole house); guests only choose a start time for treatments-only
+  // answers are worked out once per redraw (picking a time redraws)
+  let memo = {}; const memoKey = () => JSON.stringify([S.p, S.date && +S.date, S.session, S.nights, S.guests, S.adds, S.picks && S.picks.map(x => x.treat), S.times, S.blue]);
+  let memoFor = '';
+  const cached = (k, fn) => { const mk = memoKey(); if (mk !== memoFor) { memo = {}; memoFor = mk; } return k in memo ? memo[k] : (memo[k] = fn()); };
+  const siteNeeds = () => cached('needs', () => YE.treatmentNeeds(L.cfg, engineBooking()));
+  // treatments already given a time (except one), placed with a therapist and room
+  function pickedItems(exceptKey) {
+    return cached('picked:' + exceptKey, () => {
+      S.times = S.times || {};
+      const b = engineBooking(), needs = YE.treatmentNeeds(L.cfg, b).filter(n => n.key !== exceptKey && S.times[n.key]);
+      return needs.length ? YE.plan(L.cfg, L.ix, b, { needs }).items : [];
+    });
+  }
+  const slotsFor = (need, exceptKey) => cached('slots:' + need.key + ':' + need.tid + ':' + (exceptKey || need.key), () => YE.slotsFor(L.cfg, L.ix, engineBooking(), need, pickedItems(exceptKey || need.key)));
+  const nSlots = sl => sl.reduce((a, d) => a + d.times.length, 0);
   function planNow() { if (!YE || !L.cfg || !S.date) return null; const r = YE.plan(L.cfg, L.ix, engineBooking()); S.plan = r.ok ? r.items : null; return r; }
   const fdShort = d => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   function timesList(items) {
@@ -175,7 +190,7 @@
 
   const S = { step:0 };
   const reset = k => Object.assign(S, { p:k || null, step:0, date:null, nights:k && P[k].nights ? P[k].nights[0] : 1, session:null,
-    guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, gOK:false, treatStart:null, plan:null, promo:S.promo || null, promoMsg:'', end:null, bfast:false, picks:[], adds:[], pending:null, tg:0, cat:undefined, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
+    guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, gOK:false, treatStart:null, plan:null, times:{}, tpDate:{}, promo:S.promo || null, promoMsg:'', end:null, bfast:false, picks:[], adds:[], pending:null, tg:0, cat:undefined, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
 
   const steps = () => ['Type', 'Option', 'Guests', 'Date', 'Guest choices', 'Details', S.p && P[S.p].kind === 'ask' ? 'Send' : 'Pay'];
   const LAST = 6, DETAILS = 5, CHOICES = 4, DATE = 3, GUESTS = 2;
@@ -367,7 +382,8 @@
     const g = Math.min(Math.max(S.tg || 0, 0), S.guests - 1); S.tg = g;
     const pick = S.picks[g], n = S.guests;
     const dots = n > 1 ? `<div class="gsteps">${Array.from({ length:n }, (_, i) => `<button class="gstep ${i === g ? 'now' : ''} ${i < g || (i !== g && S.seen && S.seen[i]) ? 'done' : ''}" data-gt="${i}">${i < g || (S.seen && S.seen[i] && i !== g) ? '✓' : i + 1}</button>`).join('<i></i>')}</div>` : '';
-    const choice = (fld, opts) => `<div class="choice">${opts.map(([v, sub]) => `<button class="ch ${pick[fld] === v ? 'sel' : ''}" data-pk="${g}" data-f="${fld}" data-v="${v}"><span class="ch-r"></span><b>${v}</b>${sub ? `<small>${sub}</small>` : ''}</button>`).join('')}</div>`;
+    const incOff = v => { if (!(YE && L.cfg && S.date)) return false; const t = (incList(S.p) || []).find(x => x.name === v); return t ? !nSlots(slotsFor({ key: `g${g}-inc`, guest: g, tid: t.id, min: t.min, included: true })) : false; };
+    const choice = (fld, opts) => `<div class="choice">${opts.map(([v, sub]) => { const off = fld === 'treat' && pick.treat !== v && incOff(v); return `<button class="ch ${pick[fld] === v ? 'sel' : ''}" data-pk="${g}" data-f="${fld}" data-v="${v}" ${off ? 'disabled' : ''}><span class="ch-r"></span><b>${v}</b>${off ? '<small>No time left in this session</small>' : sub ? `<small>${sub}</small>` : ''}</button>`; }).join('')}</div>`;
     let h = `<div class="gc-head"><h2>${n > 1 ? `Guest ${g + 1} <em>of ${n}</em>` : p.only ? 'Choose your <em>treatments</em>' : 'Your <em>choices</em>'}</h2>${dots}</div>`;
     const il = incList(S.p);
     if (incMode(S.p) === 'treat') { if (il && !il.some(t => t.name === pick.treat)) pick.treat = il[0].name; h += `<div class="bk-group">Included treatment: choose one</div>${choice('treat', il ? il.map(t => [t.name, t.desc || `${t.min} minutes`]) : [['Aromatherapy massage', 'Relaxing, with aromatherapy oils'], [p.facial || 'Facial', S.p === 'private' ? 'A luxury facial' : 'An aromatherapy facial']])}`; }
@@ -375,18 +391,32 @@
     if (p.food) h += `<div class="bk-group">Food</div>${choice('food', (p.foods || ['Afternoon tea', 'Sweet & savoury grazing board']).map(v => [v, v === 'Afternoon tea' ? 'Sweet & savoury treats' : v === 'Grazing board' ? 'Meats, cheese & sweet treats' : 'Meats, cheese & sweet treats · vegan available']))}`;
     const cats = [...new Set(TR.map(t => t.cat))];
     const extras = cats.map(c => `<div class="tr-cat">${c}${c === 'Japanese Head Spa' && !p.only ? ' <span>10% off with your booking</span>' : ''}</div><div class="tr-list">` + TR.filter(t => t.cat === c).map(t => {
-      const on = S.adds[g].includes(t.id), full = !on && S.adds[g].length >= maxExtras();
+      const on = S.adds[g].includes(t.id), max = !on && S.adds[g].length >= maxExtras();
+      const none = !on && YE && L.cfg && S.date && !nSlots(slotsFor({ key: 'try', guest: g, tid: t.id, min: t.min }, '__none__'));
+      const full = max || none;
       const pr = t.head && !p.only ? `<s>${gbp(t.price)}</s> ${gbp(t.price * (1 - HEAD_OFF))}` : gbp(t.price);
-      return `<button class="tr-opt ${on ? 'sel' : ''}" data-add="${t.id}" data-gi="${g}" ${full ? 'disabled' : ''}><span class="tr-tick">${on ? '✓' : '+'}</span><span class="tr-txt"><b>${t.name}</b><span>${t.desc}</span></span><span class="tr-pr"><b>${pr}</b><small>${t.min} min</small></span></button>`;
+      return `<button class="tr-opt ${on ? 'sel' : ''}" data-add="${t.id}" data-gi="${g}" ${full ? 'disabled' : ''}><span class="tr-tick">${on ? '✓' : '+'}</span><span class="tr-txt"><b>${t.name}</b><span>${t.desc}</span></span><span class="tr-pr"><b>${pr}</b><small>${none ? 'No time left' : t.min + ' min'}</small></span></button>`;
     }).join('') + '</div>').join('');
     h += p.only
       ? `<p class="bk-sub" style="margin-top:6px">Pick up to ${maxExtras()} treatments${n > 1 ? ' for this guest' : ''}, then choose a start time.</p>${S.adds[g].length >= maxExtras() ? `<div class="notice">That’s the most we can book online for one guest. For more, call us on 01933 580 100.</div>` : ''}${extras}`
       : `<div class="extra-box"><div class="extra-h"><b>Add extra treatments <span>optional</span></b><p>${incMode(S.p) ? 'Your booking already includes a treatment. Want more time? Add any of these.' : 'Add a massage, facial or Japanese head spa to your visit.'} Up to ${maxExtras()} per guest${p.rule ? ' across your stay' : ''}; we’ll fit them around your ${p.rule ? 'stay' : 'session'}.</p></div>${S.adds[g].length >= maxExtras() ? `<div class="notice">That’s the most we can book online for one guest. For more, call us on 01933 580 100.</div>` : ''}${extras}</div>`;
     if (n > 1 && g === 0) h += `<button class="bk-backlink" data-same style="margin-top:14px">Give everyone the same choices as Guest 1</button>`;
-    if (p.only && g === n - 1 && YE && L.cfg && S.adds.every(a => a.length)) {
-      const slots = YE.treatSlots(L.cfg, L.ix, { ...engineBooking(), treatStart: null });
-      if (S.treatStart && !slots.some(x => x.time === S.treatStart)) S.treatStart = null;
-      h += `<div class="bk-group">Choose a start time</div>${slots.length ? `<div class="pills times-pick">${slots.map(x => `<button class="pill ${S.treatStart === x.time ? 'sel' : ''}" data-ts="${x.time}" title="Finishes about ${x.end}">${x.time}</button>`).join('')}</div><p class="cal-note">These are the times our therapists are free for ${n > 1 ? 'your group’s' : 'your'} treatments on ${fdShort(iso(S.date))}.</p>` : `<p class="cal-note">Sorry, there’s no free time for these treatments on this day. Try fewer treatments or go back and choose another day.</p>`}`;
+    // ---- your treatment times: pick a day and time for each treatment ----
+    if (YE && L.cfg && S.date) {
+      S.times = S.times || {}; S.tpDate = S.tpDate || {};
+      const mine = siteNeeds().filter(x => x.guest === g);
+      if (mine.length) {
+        h += `<div class="bk-group">${n > 1 ? `Guest ${g + 1}’s` : 'Your'} treatment times</div><p class="cal-note" style="margin:-4px 0 10px">Pick a time for each treatment. Only times when a therapist and a treatment room are free are shown${P[S.p].rule ? ', on any day of your stay' : ''}.</p>`;
+        for (const need of mine) {
+          const t = YE.tr(L.cfg, need.tid) || {}, sl = slotsFor(need), cur = S.times[need.key];
+          if (cur && !sl.some(d => d.date === cur.date && d.times.some(x => x.start === cur.start))) delete S.times[need.key];
+          const days = sl.filter(d => d.times.length), day = (S.times[need.key] || {}).date || S.tpDate[need.key] || (days[0] || {}).date;
+          h += `<div class="tpick ${S.times[need.key] ? 'done' : ''}"><div class="tp-h"><b>${esc(t.name)}</b><span>${need.min || t.min} min${need.included ? ' · included' : ''}</span>${S.times[need.key] ? `<em>✓ ${sl.length > 1 ? fdShort(S.times[need.key].date) + ' ' : ''}${S.times[need.key].start}</em>` : ''}</div>
+            ${!days.length ? `<p class="tp-none">Sorry, there’s no free time left for this treatment${P[S.p].rule ? ' during your stay' : ' in your session'}. ${need.included ? 'Please choose another session or day.' : 'Please remove it or choose another day.'}</p>`
+              : `${sl.length > 1 ? `<div class="pills tp-days">${sl.map(d => `<button class="pill ${d.date === day ? 'sel' : ''}" data-tpd="${need.key}|${d.date}" ${d.times.length ? '' : 'disabled'}>${fdShort(d.date)}${d.times.length ? '' : ' · full'}</button>`).join('')}</div>` : ''}
+                <div class="pills tp-times">${(sl.find(d => d.date === day) || { times: [] }).times.map(x => `<button class="pill ${(S.times[need.key] || {}).start === x.start && (S.times[need.key] || {}).date === day ? 'sel' : ''}" data-tp="${need.key}|${day}|${x.start}">${x.start}</button>`).join('')}</div>`}</div>`;
+        }
+      }
     }
     return h;
   }
@@ -482,8 +512,8 @@
     if (S.step === DATE){ if (!S.date) return p.rule ? 'Choose your arrival day' : 'Choose a day'; if (p.rule === 'range' && !S.end) return 'Choose your check-out day'; if (p.sessions && !p.only && !S.session) return 'Choose a session'; }
     if (S.step === GUESTS) S.gOK = true;
     if (S.step === CHOICES && P[S.p].only && !S.adds[S.tg].length) return 'Choose at least one treatment for this guest';
+    if (S.step === CHOICES && YE && L.cfg) { const miss = siteNeeds().filter(x => x.guest === S.tg && !(S.times || {})[x.key]); if (miss.length) return 'Choose a time for ' + (YE.tr(L.cfg, miss[0].tid) || {}).name; }
     if (S.step === CHOICES && S.tg >= S.guests - 1 && YE && L.cfg) {
-      if (P[S.p].only && !S.treatStart) return 'Choose a start time';
       const r = planNow(); if (r && !r.ok) return `Sorry, we can’t fit ${r.fail && r.fail.name ? r.fail.name : 'all the treatments'} in on this ${P[S.p].rule ? 'stay' : 'day'}. Try fewer treatments or another ${P[S.p].rule ? 'date' : 'session'}.`;
     }
     if (S.step === DATE && S.session && YE && L.cfg && !P[S.p].only) { const l = YE.sessions(L.cfg, L.ix, S.p, iso(S.date), S.guests).find(x => x.name === S.session); if (l && !l.ok) return S.session + ': ' + l.why; }
@@ -544,16 +574,19 @@
         else { const n = Math.round((D - S.date) / 864e5); if (n < 2){ $('.bk-msg', nav).textContent = 'The whole house has a 2-night minimum'; return; } if (n > 30){ $('.bk-msg', nav).textContent = 'Stays are up to 30 nights'; return; }
           if (YE && L.cfg){ const c = YE.dateCheck(L.cfg, L.ix, { product: 'house', date: iso(S.date), nights: n, guests: S.guests }); if (!c.ok){ $('.bk-msg', nav).textContent = 'Those dates aren’t all free: ' + c.why; return; } }
           S.end = D; S.nights = n; }
-      } else S.date = D;
+      } else { if (!S.date || +S.date !== +D) S.times = {}; S.date = D; }
       draw(); });
-    body.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { S.session = b.dataset.s; draw(); });
+    body.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { if (S.session !== b.dataset.s) S.times = {}; S.session = b.dataset.s; draw(); });
     body.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { S.nights = +b.dataset.n; if (S.date && !dateOK(S.p, S.date)) S.date = null; draw(); });
     body.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { const p = P[S.p]; S.guests = Math.min(p.max, Math.max(gMin(), S.guests + +b.dataset.g)); S.gOK = true; if (S.date && !dateOK(S.p, S.date)){ S.date = null; S.end = null; } draw(); });
     const bf = $('#bkBf', body); if (bf) bf.onchange = () => { S.bfast = bf.checked; draw(); };
-    body.querySelectorAll('[data-pk]').forEach(b => b.onclick = () => { S.picks[+b.dataset.pk][b.dataset.f] = b.dataset.v; draw(); });
-    body.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const g = S.adds[+b.dataset.gi], id = b.dataset.add, i = g.indexOf(id); if (i >= 0) g.splice(i, 1); else if (g.length < maxExtras()) g.push(id); draw(); });
+    body.querySelectorAll('[data-pk]').forEach(b => b.onclick = () => { S.picks[+b.dataset.pk][b.dataset.f] = b.dataset.v; if (b.dataset.f === 'treat' && S.times) Object.keys(S.times).filter(k => k.startsWith(`g${b.dataset.pk}-inc`)).forEach(k => delete S.times[k]); draw(); });
+    body.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const gi = +b.dataset.gi, g = S.adds[gi], id = b.dataset.add, i = g.indexOf(id);
+      if (i >= 0) { g.splice(i, 1); if (S.times) { const keep = {}; g.forEach((x, j) => { const old = S.times[`g${gi}-x${j + (j >= i ? 1 : 0)}`]; if (old) keep[`g${gi}-x${j}`] = old; }); Object.keys(S.times).filter(k => k.startsWith(`g${gi}-x`)).forEach(k => delete S.times[k]); Object.assign(S.times, keep); } }
+      else if (g.length < maxExtras()) g.push(id); draw(); });
     body.querySelectorAll('[data-pm]').forEach(b => b.onclick = () => { S.pm = b.dataset.pm; draw(); });
-    body.querySelectorAll('[data-ts]').forEach(b => b.onclick = () => { S.treatStart = b.dataset.ts; draw(); });
+    body.querySelectorAll('[data-tp]').forEach(b => b.onclick = () => { const [k, d, t] = b.dataset.tp.split('|'); S.times = S.times || {}; S.times[k] = { date: d, start: t }; draw(); });
+    body.querySelectorAll('[data-tpd]').forEach(b => b.onclick = () => { const [k, d] = b.dataset.tpd.split('|'); S.tpDate = S.tpDate || {}; S.tpDate[k] = d; draw(); });
     body.querySelectorAll('[data-gt]').forEach(b => b.onclick = () => { (S.seen = S.seen || {})[S.tg] = 1; S.tg = +b.dataset.gt; draw(); });
     ['first','last','email','phone','notes'].forEach(k => { const el = $('#bk_' + k, body); if (el) el.oninput = () => { S.d[k] = el.value; el.closest('.bk-field').classList.remove('bad'); }; });
     [['#bkAdult','adult'],['#bkAgree','agree'],['#bkMkt','mkt'],['#bkBlue','blue']].forEach(([s, k]) => { const el = $(s, body); if (el) el.onchange = () => { S[k] = el.checked; el.closest('.check').classList.remove('bad'); }; });
