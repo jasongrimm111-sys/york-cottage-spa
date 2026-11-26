@@ -204,9 +204,11 @@
     while (S.adds.length < S.guests) S.adds.push([]); S.adds.length = S.guests;
     if (S.pending){ if (!S.adds[0].includes(S.pending)) S.adds[0].push(S.pending); S.pending = null; }
   }
+  const charges = () => (YE && L.cfg && S.p && YE.extraCharges) ? cached('charges', () => YE.extraCharges(L.cfg, engineBooking())) : null;
+  const chargeOf = (gi, id) => { const c = charges(); return c ? c.find(x => x.guest === gi && x.tid === id) : null; };
   function treatCost(){
     let sub = 0, off = 0;
-    S.adds.forEach(a => a.forEach(id => { const t = TRi[id]; sub += t.price; if (t.head && !P[S.p].only) off += t.price * HEAD_OFF; }));
+    S.adds.forEach((a, gi) => a.forEach(id => { const t = TRi[id], c = chargeOf(gi, id), price = c ? c.price : t.price; sub += price; if (t.head && !P[S.p].only) off += price * HEAD_OFF; }));
     return { sub, off, n: S.adds.reduce((n, a) => n + a.length, 0) };
   }
   const gName = i => ((S.names || [])[i] || '').trim() || `Guest ${i + 1}`;
@@ -422,11 +424,18 @@
     const cats = [...new Set(TR.map(t => t.cat))];
     const extras = cats.map(c => `<div class="tr-cat">${c}${c === 'Japanese Head Spa' && !p.only ? ' <span>10% off with your booking</span>' : ''}</div><div class="tr-list">` + TR.filter(t => t.cat === c).map(t => {
       const on = S.adds[g].includes(t.id), max = !on && S.adds[g].length >= maxExtras();
+      const incN = YE && L.cfg && S.date ? siteNeeds().find(n => n.guest === g && n.included) : null, sameKind = !!(incN && YE.combineMax && (L.cfg.rules || {}).combineIncluded !== false && (YE.tr(L.cfg, incN.tid) || {}).cat === t.cat);
       // only offered if the whole booking still fits with it, so no guest is left without a time for their included treatment
       const none = !on && YE && L.cfg && S.date && !fitsWith(g, x => ({ ...x, extras: x.extras.concat(t.id) }), 'x+' + t.id);
-      const full = max || none;
-      const pr = t.head && !p.only ? `<s>${gbp(t.price)}</s> ${gbp(t.price * (1 - HEAD_OFF))}` : gbp(t.price);
-      return `<button class="tr-opt ${on ? 'sel' : ''}" data-add="${t.id}" data-gi="${g}" ${full ? 'disabled' : ''}><span class="tr-tick">${on ? '✓' : '+'}</span><span class="tr-txt"><b>${t.name}</b><span>${t.desc}</span></span><span class="tr-pr"><b>${pr}</b><small>${none ? 'No time left' : t.min + ' min'}</small></span></button>`;
+      const full = max || none || (sameKind && !on && (S.adds[g] || []).some(id => { const c = chargeOf(g, id); return c && c.extends; }));
+      // same kind as the included treatment: it extends it, up to the 55-minute cap, charged for the minutes it adds
+      let ext = null;
+      if (sameKind && !on) { const already = (S.adds[g] || []).some(id => { const c = chargeOf(g, id); return c && c.extends; }), cap = YE.combineMax(L.cfg), add = already ? 0 : Math.max(0, Math.min(t.min, cap - incN.min));
+        ext = { already, add, total: incN.min + add, price: add >= t.min ? t.price : Math.round(t.price * add / t.min / 5) * 5 }; }
+      else if (sameKind && on) { const c = chargeOf(g, t.id); if (c && c.extends) ext = { add: c.mins, total: Math.min(YE.combineMax(L.cfg), (siteNeeds().find(n => n.guest === g && n.included) || {}).min || 0), price: c.price }; }
+      const blocked = ext && ext.already, price = ext && !blocked ? ext.price : t.price;
+      const pr = t.head && !p.only ? `<s>${gbp(price)}</s> ${gbp(price * (1 - HEAD_OFF))}` : (ext && !blocked && price !== t.price ? `<s>${gbp(t.price)}</s> ${gbp(price)}` : gbp(price));
+      return `<button class="tr-opt ${on ? 'sel' : ''}" data-add="${t.id}" data-gi="${g}" ${full ? 'disabled' : ''}><span class="tr-tick">${on ? '✓' : '+'}</span><span class="tr-txt"><b>${t.name}</b><span>${t.desc}</span></span><span class="tr-pr"><b>${pr}</b><small>${none ? 'No time left' : ext && ext.already ? 'Your included treatment is already extended' : ext ? `+${ext.add} min · ${ext.total} min in all` : t.min + ' min'}</small></span></button>`;
     }).join('') + '</div>').join('');
     h += p.only
       ? `<p class="bk-sub" style="margin-top:6px">Pick up to ${maxExtras()} treatments${n > 1 ? ' for this guest' : ''}, then choose a time for each one below.</p>${S.adds[g].length >= maxExtras() ? `<div class="notice">That’s the most we can book online for one guest. For more, call us on 01933 580 100.</div>` : ''}${extras}`
@@ -587,7 +596,7 @@
       g && ['Guests', S.guests],
       pr && !p.only && (S.p === 'house' ? S.nights : g) && ['Price', unit],
       pr && pr.bf && ['Breakfast', gbp(pr.bf)],
-      ...S.adds.flatMap((a, gi) => a.map(id => { const t = TRi[id]; if (!t) return null; const head = t.head && !P[S.p].only; return [`${esc(t.name)}${S.guests > 1 ? `<small class="sum-who">${esc(gName(gi))}</small>` : ''}`, head ? `<s>${gbp(t.price)}</s> ${gbp(t.price * (1 - HEAD_OFF))}` : gbp(t.price)]; })), pr && pr.promo && ['Code ' + esc(S.promo.code), '−' + gbp(pr.promo)]].filter(Boolean);
+      ...S.adds.flatMap((a, gi) => a.map(id => { const t = TRi[id]; if (!t) return null; const head = t.head && !P[S.p].only, c = chargeOf(gi, id), price = c ? c.price : t.price; return [`${esc(t.name)}${c && c.extends && c.mins < t.min ? ` <small class="sum-who">${c.mins} min added to the included treatment</small>` : ''}${S.guests > 1 ? `<small class="sum-who">${esc(gName(gi))}</small>` : ''}`, head ? `<s>${gbp(price)}</s> ${gbp(price * (1 - HEAD_OFF))}` : gbp(price)]; })), pr && pr.promo && ['Code ' + esc(S.promo.code), '−' + gbp(pr.promo)]].filter(Boolean);
     const ready = pr && (S.p === 'house' ? S.nights >= 2 : g || p.only);
     const tot = p.kind === 'ask'
       ? `<div class="big"><span>${g ? 'Estimate' : 'From'}</span><b>${g ? gbp(est) : gbp(p.est)}</b></div><p>${g ? 'We’ll confirm the exact price.' : 'per person'} Nothing to pay now.</p>`
