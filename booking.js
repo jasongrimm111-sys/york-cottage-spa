@@ -44,6 +44,10 @@
   }
   // Arrival, spa and food times from the stay pages
   function stayTimes(k, d, nights){
+    if (YE && L.cfg && L.cfg.products[k] && L.cfg.products[k].times) {
+      const t = YE.stayTimes(L.cfg, k, iso(d), nights), p = L.cfg.products[k];
+      return [['Check-in', 'from ' + t.checkIn], t.food && [p.kind === 'house' ? 'Food' : 'Food', 'from ' + t.food], t.spa && [p.kind === 'house' ? 'Spa pool & hot tub' : 'Spa & treatments', `${t.spa[0]} – ${t.spa[1]}`], ['Check-out', t.checkOut]].filter(Boolean);
+    }
     const sun = d.getDay() === 0;
     if (k === 'break') return sun
       ? [['Check-in', 'from 14:00'], ['Grazing board', 'from 16:30'], ['Spa & treatments', nights > 1 ? '17:30 – 22:00' : '18:00 – 22:30'], ['Check-out', '11:00']]
@@ -75,8 +79,12 @@
   // copy the admin's prices, guest numbers, sessions and treatment menu into the checkout
   function applyLive() {
     const c = L.cfg; if (!c) return;
+    // booking types added in the admin
+    const GROUP = { session: 'Spa', private: 'Spa', stay: 'Stay', house: 'House', treat: 'Treat' };
+    for (const [k, q] of Object.entries(c.products)) if (!P[k]) P[k] = { name: q.name, group: GROUP[q.kind] || 'Spa', kind: 'pay', price: q.price || 0, priceN: q.priceN, night: q.night, per: q.kind === 'house' ? 'per night' : 'per person', from: '', min: q.min || 1, max: q.max || 8,
+      treat: YE.includedFor(c, k).length > 0, food: !!q.food, rule: q.kind === 'stay' ? 'stay' : q.kind === 'house' ? 'range' : undefined, nights: q.nights, bfast: !!q.breakfast, only: q.kind === 'treat', minN: q.minN, maxN: q.maxN, blurb: q.blurb || '', custom: true };
     for (const [k, p] of Object.entries(P)) {
-      const q = c.products[k]; if (!q) continue;
+      const q = c.products[k]; if (!q) { p.off = true; continue; }
       if (q.price != null) p.price = q.price; if (q.priceN) p.priceN = { ...p.priceN, ...q.priceN }; if (q.night != null) p.night = q.night;
       if (q.min) p.min = q.min; if (q.max) p.max = q.max; if (q.blurb) p.blurb = q.blurb; if (q.minN) p.minN = q.minN; if (q.maxN) p.maxN = q.maxN;
       if (q.nights) p.nights = q.nights;
@@ -305,7 +313,7 @@
     else if (p.sessions) right = `<div class="bk-group" style="margin-top:0">Session</div><div class="ses">${sesList.map(([n, t]) => { const l = live && live.find(x => x.name === n); const off = l && !l.ok; return `<button class="ses-opt ${S.session === n ? 'sel' : ''}" data-s="${n}" ${off ? 'disabled' : ''}><b>${n}</b><span>${t}</span>${l ? `<small class="${off ? 'full' : ''}">${off ? esc(l.why) : l.left <= 3 ? `Only ${l.left} place${l.left === 1 ? '' : 's'} left` : 'Available'}</small>` : ''}</button>`; }).join('') || '<p class="cal-note">No sessions on this day.</p>'}</div>
       ${S.p === 'private' ? `<p class="cal-note">Minimum 4 guests, or 6 on Sundays (from 11:30).${S.guests < 6 ? ' Sundays open up for groups of 6 or more.' : ''}</p>` : ''}`;
     else if (p.nights && p.nights.length > 1) right = `<div class="bk-group" style="margin-top:0">How many nights?</div><div class="pills">${p.nights.map(n => `<button class="pill ${S.nights === n ? 'sel' : ''}" data-n="${n}">${n} night${n > 1 ? 's' : ''} · ${gbp(p.priceN[n])} pp</button>`).join('')}</div>`;
-    if (p.rule === 'mid'){
+    if (p.rule === 'mid' || p.rule === 'stay'){
       right += `<div class="bk-group">Your stay</div>` + (S.date
         ? `<p class="stay-when"><b>${nice(S.date)}</b> → <b>${nice(add(S.date, S.nights))}</b> · ${S.nights} night${S.nights > 1 ? 's' : ''}</p>${times(stayTimes(S.p, S.date, S.nights))}`
         : `<p class="cal-note">${S.nights > 1 ? '2-night breaks arrive Sunday to Wednesday.' : 'Breaks run Sunday to Thursday nights.'} Pick your arrival day.</p>`);
@@ -386,7 +394,7 @@
       ? 'I’m 18 or over. Under-16s only join on a Private Spa or whole-house booking, with an adult.'
       : S.p === 'break' || S.p === 'group' ? 'Everyone staying is 18 or over.'
       : 'I’m 18 or over, and any 16 or 17-year-olds will be with an adult.';
-    const pol = POLICY[S.p === 'house' ? 'house' : P[S.p].rule ? 'stay' : 'spa'];
+    const pol = (L.cfg && L.cfg.products[S.p] && L.cfg.products[S.p].policy) || POLICY[S.p === 'house' ? 'house' : P[S.p].rule ? 'stay' : 'spa'];
     return `<h2>Your <em>details</em></h2>
       <div class="det-grid">
         <div class="det-card"><div class="bk-group" style="margin-top:0">Lead guest</div>
