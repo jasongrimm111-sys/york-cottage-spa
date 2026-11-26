@@ -1193,3 +1193,12 @@ body.book-page .hdr-book{display:none}
 .sum li > b{flex:none;white-space:nowrap}
 /* step bar: finished steps shrink to their tick so the bar stays on one line */
 @media (max-width:1280px){ .bk.page .bk-steps li.done b{display:none} .bk.page .bk-steps{gap:4px} }
+
+/* booking on phones: the sticky step bar and its current-step pill were clipped at the top (2026-11-27) */
+@media (max-width:900px){
+  .bk.page .bk-box{overflow:clip}
+  .bk.page .bk-head{top:0;padding-top:12px;padding-bottom:10px}
+  .bk.page .bk-head .bk-steps{padding:3px 2px;align-items:center}
+  .bk.page .bk-body{scroll-margin-top:80px}
+  .bk.page .bk-body h2,.bk.page .gc,.bk.page .bk-field,.bk.page .bk-field input{scroll-margin-top:110px}
+}
