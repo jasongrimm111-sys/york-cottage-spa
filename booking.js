@@ -512,17 +512,15 @@
 
   function doneView(){
     const p = P[S.p], ask = p.kind === 'ask', pr = price();
-    const mail = ask ? 'mailto:info@yorkcottagespa.com?subject=' + encodeURIComponent(p.name + ' enquiry ' + S.ref) + '&body=' + encodeURIComponent(
-      `Hello York Cottage,\n\nI'd like to enquire about a ${p.name}.\n\n${p.rule ? 'Arriving: ' + nice(S.date, { year:'numeric' }) + '\nNights: ' + S.nights : 'Date: ' + nice(S.date, { year:'numeric' }) + '\nSession: ' + S.session}\nGuests: ${S.guests}\n${p.food ? 'Food: ' + S.picks.map(x => x.food).join(', ') + '\n' : ''}${S.bfast ? 'Breakfast: yes\n' : ''}\n${treatCost().n ? 'Treatments: ' + treatLines('; ') + '\n' : ''}Name: ${S.d.first} ${S.d.last}\nPhone: ${S.d.phone}\n${S.d.notes ? 'Notes: ' + S.d.notes + '\n' : ''}\nThank you!`) : '';
     return `<div class="done-ico"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5L20 7"/></svg></div>
-      <h2>${ask ? 'Request <em>ready</em>' : 'You’re <em>booked</em>'}, ${esc(S.d.first)}</h2>
+      <h2>${ask ? (S.ticket ? 'Request <em>sent</em>' : 'Request <em>not sent</em>') : 'You’re <em>booked</em>'}, ${esc(S.d.first)}</h2>
       <p class="bk-sub">${ask ? 'Your reference is below.' : `${S.paid ? (S.paid.method === 'klarna' ? `First Klarna payment of ${gbp(Math.floor(S.paid.amount / 3 * 100) / 100)} taken, 2 more to follow. ` : `${gbp(S.paid.amount)} paid by card. `) : ''}We’ve emailed your confirmation to ${esc(S.d.email)}.<br><span style="font-size:13px">Stripe test payment ${S.paid ? S.paid.id : ''} · no money was taken.</span>`}</p>
       <div class="ref">${S.ref}</div>
       ${S.plan && S.plan.length ? `<div class="pay" style="margin:14px auto;max-width:460px;text-align:left"><div class="bk-group" style="margin-top:0">Your treatment times</div><p>${timesList(S.plan)}</p><p class="cal-note">Set by our booking system around your ${P[S.p].rule ? 'stay' : 'visit'}. We’ll email these too.</p></div>` : ''}
       <ol class="next">${ask
-        ? `<li>Press “Email your request” to send it to us from your email.</li><li>We’ll check the date and reply with a price.</li><li>Confirm and pay to secure your booking.</li>`
+        ? (S.ticket ? `<li>Your request is with the team (reference ${esc(S.ticket.id)}).</li><li>We’ll check the date and reply with a price, by email.</li><li>Confirm and pay to secure your booking.</li>` : `<li>We couldn’t send your request just now${S.sendErr ? ' (' + esc(S.sendErr) + ')' : ''}. Please call us on 01933 580 100 and quote ${esc(S.ref)}.</li>`)
         : `<li>Look out for your confirmation email with session times and directions.</li><li>${p.treat || treatCost().n ? 'Complete the short consultation form for each guest before your visit.' : 'Bring your swimwear; towels and robes are waiting for you.'}</li>${pr && pr.bal ? `<li>Your balance of ${gbp(pr.bal)} is due by ${nice(pr.balDue, { year:'numeric' })}.</li>` : ''}<li>${p.rule ? (stayTimes(S.p, S.date, S.nights)[0] || ['Check-in', ''])[0] + ' ' + (stayTimes(S.p, S.date, S.nights)[0] || ['', 'from 16:00'])[1] + ' on ' + nice(S.date) + '.' : 'Arrive a few minutes before your session (' + sesLabel() + ') on ' + nice(S.date) + '.'}</li>`}</ol>
-      <div class="hero-cta">${ask ? `<a class="btn btn-solid" href="${mail}">Email your request <span class="arrow">&rarr;</span></a>` : ''}<button class="btn btn-ghost" data-close>Back to the site</button></div>`;
+      <div class="hero-cta">${ask && S.ticket ? `<a class="btn btn-solid" href="ticket.html?t=${S.ticket.id}&k=${S.ticket.k}">See your request <span class="arrow">&rarr;</span></a>` : ''}<button class="btn btn-ghost" data-close>Back to the site</button></div>`;
   }
 
   // ---------- validation ----------
@@ -647,7 +645,16 @@
     // Test mode: simulate a successful Stripe payment. No request is sent anywhere.
     { const pr = price(); S.paid = pr ? { method: S.pm, amount: pr.now, id: 'pi_test_' + Math.random().toString(36).slice(2, 14) } : null; }
     S.paying = true; navView();
-    setTimeout(() => { S.paying = false; S.ref = 'YC-' + Math.random().toString(36).slice(2, 8).toUpperCase(); draw(); }, P[S.p].kind === 'ask' ? 400 : 1400);
+    // an enquiry goes to the team as a support message (user, 2026-11-26), with a link for the guest to follow it
+    if (P[S.p].kind === 'ask') {
+      const p = P[S.p], ref = 'YC-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+      const msg = [`Enquiry: ${p.name}`, p.rule ? `Arriving ${nice(S.date, { year: 'numeric' })}, ${S.nights} night${S.nights > 1 ? 's' : ''}` : `Date: ${nice(S.date, { year: 'numeric' })}${S.session ? ', ' + S.session : ''}`, `Guests: ${S.guests}${(S.names || []).filter(Boolean).length ? ' (' + S.names.filter(Boolean).join(', ') + ')' : ''}`, treatLines('; ', true) ? 'Treatments: ' + treatLines('; ', true) : '', S.d.notes ? 'Notes: ' + S.d.notes : '', `Website reference: ${ref}`].filter(Boolean).join('\n');
+      (window.YCSupport ? window.YCSupport.send({ name: `${S.d.first} ${S.d.last}`.trim(), email: S.d.email, phone: S.d.phone, topic: 'Booking enquiry', ref, message: msg }) : Promise.reject(new Error('not available')))
+        .then(t => { S.ticket = t; }).catch(e => { S.sendErr = e.message || 'Could not send'; })
+        .finally(() => { S.paying = false; S.ref = ref; draw(); });
+      return;
+    }
+    setTimeout(() => { S.paying = false; S.ref = 'YC-' + Math.random().toString(36).slice(2, 8).toUpperCase(); draw(); }, 1400);
   }
   loadLive();
 

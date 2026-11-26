@@ -1,7 +1,7 @@
 /* York Cottage AI chat - on every page.
    Answers from the spa's own facts. If YC_CHAT.endpoint is set (see chat-worker/), questions go to Claude
    through that small server; otherwise the built-in answers below are used. Email is always the last resort. */
-window.YC_CHAT = Object.assign({ endpoint: '', email: 'info@yorkcottagespa.com', phone: '01933 580 100' }, window.YC_CHAT || {});
+window.YC_CHAT = Object.assign({ endpoint: '', email: 'our contact form', phone: '01933 580 100' }, window.YC_CHAT || {});
 
 (() => {
   const C = window.YC_CHAT;
@@ -88,7 +88,7 @@ window.YC_CHAT = Object.assign({ endpoint: '', email: 'info@yorkcottagespa.com',
     const box = document.createElement('div'); box.className = 'ycc-acts';
     if (e.book){ const b = document.createElement('a'); b.href = '#book'; b.dataset.book = e.book; b.textContent = 'Book now'; b.className = 'ycc-act'; box.appendChild(b); }
     if (e.link){ const l = document.createElement('a'); l.href = e.link[1]; l.textContent = e.link[0]; l.className = 'ycc-act ghost'; if (/^https?:/.test(e.link[1])){ l.target = '_blank'; l.rel = 'noopener'; } box.appendChild(l); }
-    if (e.human){ const h = document.createElement('a'); h.href = mailHref(); h.textContent = 'Email the team'; h.className = 'ycc-act ghost'; box.appendChild(h); }
+    if (e.human){ const h = document.createElement('a'); h.href = 'contact.html#cform'; h.textContent = 'Message the team'; h.className = 'ycc-act ghost'; box.appendChild(h); }
     return box.children.length ? box : null;
   }
   function mailHref(){

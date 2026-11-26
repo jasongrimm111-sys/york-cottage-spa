@@ -67,10 +67,5 @@
     lb.onclick = () => lb.remove(); document.body.appendChild(lb);
   });
   addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.lb').forEach(x => x.remove()); });
-  const f = document.getElementById('cform');
-  if (f) f.addEventListener('submit', e => {
-    e.preventDefault();
-    const v = id => document.getElementById(id).value;
-    location.href = 'mailto:info@yorkcottagespa.com?subject=' + encodeURIComponent('Website enquiry from ' + v('cf_n')) + '&body=' + encodeURIComponent(v('cf_m') + '\n\n' + v('cf_n') + '\n' + v('cf_e'));
-  });
+  // the contact form is handled by support.js (it opens a support ticket)
 })();
