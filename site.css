@@ -1159,3 +1159,14 @@ body.book-page header{position:absolute}
 .rp-g.on{background:var(--forest);border-color:var(--forest);color:var(--cream)}
 .rp-g.away{opacity:.45}
 .rp-g[disabled]{opacity:.3;cursor:not-allowed}
+
+/* booking page: no Book buttons or floating Book bar (you're already booking), and a clean top on phones (user, 2026-11-27) */
+body.book-page .mbar{display:none!important}
+body.book-page header .menu .btn[data-book]{display:none}
+@media (max-width:900px){
+  body.book-page .book-intro{display:none}
+  body.book-page .book-main{padding-top:64px;background:var(--paper)}
+  body.book-page header{background:var(--paper);box-shadow:0 1px 0 var(--line);backdrop-filter:none}
+  body.book-page header .hdr-book,body.book-page header .btn[data-book]{display:none}
+}
+body.book-page .hdr-book{display:none}
