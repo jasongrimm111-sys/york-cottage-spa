@@ -363,7 +363,7 @@
     S.picks.length = S.guests; syncAdds();
     const quick = [...new Set([minG, 2, 4, 6, 8, 10, 12, 16].filter(n => n >= minG && n <= p.max))].slice(0, 6);
     const note = S.p === 'break' ? `${Math.ceil(S.guests / 2)} king ensuite room${S.guests > 2 ? 's' : ''} · prices are based on 2 sharing`
-      : S.p === 'group' ? 'Groups of 7 to 16 · 6 or fewer? Choose an Overnight Spa Break'
+      : S.p === 'group' ? 'Groups of 7 to 16 guests.</p><p class="gc-alt">6 or fewer? <button type="button" class="linkbtn-site" data-alt="break">Choose an Overnight Spa Break instead</button>'
       : S.p === 'house' ? 'Up to 16 guests · the price is for the whole house'
       : S.p === 'private' ? 'Minimum 4 guests, 6 on Sundays'
       : `Up to ${p.max} guests per booking`;
@@ -548,7 +548,7 @@
     if (S.ref){ nav.innerHTML = '<span></span><button class="bk-close">Close</button>'; $('.bk-close', nav).onclick = close; return; }
     const last = S.step === LAST, ask = S.p && P[S.p].kind === 'ask', pr = price();
     const label = last ? (ask ? 'Send request' : S.pm === 'klarna' ? 'Continue with Klarna' : `Pay ${gbp(pr.now)}`) : S.step === CHOICES && S.tg < S.guests - 1 ? `Next: Guest ${S.tg + 2}` : 'Continue';
-    nav.innerHTML = `${S.step ? '<button class="back">← Back</button>' : '<span></span>'}<span class="bk-msg"></span>${S.p && !S.ref ? '<button class="bk-reset" title="Clear everything and start again">Start again</button>' : ''}${PAGE ? '' : '<button class="bk-close" title="Your choices are saved">Close</button>'}<button class="btn btn-solid go">${S.paying ? '<span class="spin"></span> ' + (S.pm === 'klarna' && !ask ? 'Opening Klarna…' : 'Processing…') : label + ' <span class="arrow">→</span>'}</button>`;
+    nav.innerHTML = `<span class="bk-msg"></span>${PAGE ? '' : '<button class="bk-close" title="Your choices are saved">Close</button>'}${S.step ? '<button class="back">← Back</button>' : ''}<button class="btn btn-solid go">${S.paying ? '<span class="spin"></span> ' + (S.pm === 'klarna' && !ask ? 'Opening Klarna…' : 'Processing…') : label + ' <span class="arrow">→</span>'}</button>`;
   }
 
   function sideWire(){ const x = $('.side-x', side); if (x) x.onclick = close; side.querySelectorAll('[data-sgoto]').forEach(b => b.onclick = () => { S.step = +b.dataset.sgoto; draw(); }); }
@@ -572,7 +572,7 @@
     side.innerHTML = `<div class="side-top"><div class="eyebrow">Your booking</div><button class="side-x" aria-label="Close booking" title="Close (your choices are saved)">&times;</button></div><h3>${p.name}</h3><ul class="sum">${rows.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join('')}</ul>
       <div class="sum-tot">${tot}<button class="sum-toggle">Details</button></div>
       <p class="sum-pol">${{ house:'50% deposit. Move your dates with 6+ months’ notice.', break:'Refundable with 30+ days’ notice.', group:'Refundable with 30+ days’ notice.' }[S.p] || (p.only ? 'Pay today. Move your appointment with 30+ days’ notice.' : 'Non-refundable, but you can move your visit with 30+ days’ notice.')}</p>
-      <p class="foot-note">Questions? Call 01933 580 100 or message us on WhatsApp.</p>`;
+      <p class="foot-note">Questions? Call 01933 580 100 or message us on WhatsApp.${S.p && !S.ref ? '<br><button class="bk-reset" title="Clear everything and start again">Start again</button>' : ''}</p>`;
     const t = $('.sum-toggle', side); if (t) t.onclick = () => side.classList.toggle('full');
   }
 
@@ -581,7 +581,7 @@
     body.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => {
       const g = b.dataset.cat || null, opts = Object.keys(P).filter(k => P[k].group === g);
       if (g && opts.length === 1 && opts[0] !== S.p){ const pend = S.pending; reset(opts[0]); S.pending = pend; syncAdds(); }
-      S.cat = g; S.step = 0; draw(); const o = $('#bkOpts', body); if (o && innerWidth < 900) o.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+      S.cat = g; S.step = 0; draw(); const o = $('#bkOpts', body); if (o) setTimeout(() => o.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); });
     body.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { const k = b.dataset.p; if (k !== S.p){ const pend = S.pending, cat = S.cat; reset(k); S.pending = pend; S.cat = cat; syncAdds(); } S.cat = P[k].group; S.step = 0; draw(); });
     body.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + +b.dataset.m, 1); draw(); });
     body.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.d.split('-').map(Number); const D = new Date(y, m - 1, d);
@@ -614,7 +614,7 @@
     const go = $('.go', nav); if (go) go.onclick = next;
     const cl = $('.bk-close', nav); if (cl) cl.onclick = close;
     // start again: a second press confirms, so one stray tap doesn't lose the booking (user, 2026-11-26)
-    const rs = $('.bk-reset', nav); if (rs) rs.onclick = () => { if (!rs.dataset.sure) { rs.dataset.sure = '1'; rs.textContent = 'Sure? Clear it all'; rs.classList.add('sure'); setTimeout(() => { if (rs.isConnected) { delete rs.dataset.sure; rs.textContent = 'Start again'; rs.classList.remove('sure'); } }, 4000); return; }
+    const rs = $('.bk-reset', side); if (rs) rs.onclick = () => { if (!rs.dataset.sure) { rs.dataset.sure = '1'; rs.textContent = 'Sure? Clear it all'; rs.classList.add('sure'); setTimeout(() => { if (rs.isConnected) { delete rs.dataset.sure; rs.textContent = 'Start again'; rs.classList.remove('sure'); } }, 4000); return; }
       try { sessionStorage.removeItem(SKEY); } catch (e) {} reset(null); S.cat = null; S.promo = null; S.d = {}; S.names = []; S.roomOf = []; draw(); window.scrollTo({ top: 0 }); };
     const va = $('#bkVApply', body); if (va) va.onclick = async () => {
       if (S.promo) { S.promo = null; S.promoMsg = ''; draw(); return; }
@@ -623,6 +623,7 @@
       if (pr) { const why = YE.promoCheck(L.cfg, { ...pr, code }, engineBooking()); if (why) { S.promoMsg = why; S.promo = null; } else { S.promo = { code: code.toUpperCase(), type: pr.type, value: pr.value, on: pr.on }; S.promoMsg = ''; S.voucher = ''; } }
       else { S.voucher = code; S.promo = null; S.promoMsg = /^YCV-/i.test(code) ? '' : 'We don’t recognise that discount code, so we’ll treat it as a gift voucher and check it before your visit.'; }
       draw(); };
+    body.querySelectorAll('[data-alt]').forEach(b => b.onclick = () => { const k = b.dataset.alt; if (!P[k]) return; const pend = S.pending; reset(k); S.pending = pend; S.cat = P[k].group; syncAdds(); S.step = GUESTS; draw(); });
     body.querySelectorAll('[data-gq]').forEach(b => b.onclick = () => { S.guests = +b.dataset.gq; S.gOK = true; if (S.date && !dateOK(S.p, S.date)){ S.date = null; S.end = null; } draw(); });
     const same = body.querySelector('[data-same]'); if (same) same.onclick = () => { S.picks = S.picks.map(() => ({ ...S.picks[0] })); S.adds = S.adds.map(() => [...S.adds[0]]); S.seen = {}; for (let i = 0; i < S.guests; i++) S.seen[i] = 1; S.step = DETAILS; draw(); };
   }

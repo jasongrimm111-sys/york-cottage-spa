@@ -1132,3 +1132,14 @@ html{-webkit-text-size-adjust:100%;touch-action:manipulation}
 /* booking page: the summary panel runs the full height of the booking, from the top (user, 2026-11-26) */
 .bk.page .bk-box{align-items:stretch}
 .bk.page .bk-side{position:relative!important;top:auto!important;align-self:stretch!important;height:auto!important;max-height:none!important;margin:0!important}
+
+/* booking page: the top bar scrolls away with the page; Back sits by Continue; Start again is a quiet link in the summary */
+body.book-page header{position:absolute}
+.bk.page .bk-nav{display:flex;align-items:center;gap:10px}
+.bk.page .bk-nav .bk-msg{margin-right:auto}
+.bk-side .bk-reset{color:rgba(246,241,233,.7);padding:8px 0 0;font-size:12.5px}
+.bk-side .bk-reset:hover{color:var(--cream)}
+.bk-side .bk-reset.sure{color:#f3b9a9}
+
+.gc-alt{margin-top:6px}
+.linkbtn-site{background:none;border:0;padding:0;font:inherit;color:var(--clay);font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
