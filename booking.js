@@ -356,6 +356,8 @@
 
   const pricePart = () => '';
   const INCLUDED = { day:'treat', private:'treat', break:'massage', group:'massage' };
+  // most extra treatments one guest can add online (set per booking type in the admin; staff can add more)
+  const maxExtras = () => { const q = L.cfg && L.cfg.products[S.p]; if (q && q.maxExtras) return q.maxExtras; return P[S.p].rule ? 3 * ((S.nights || 1) + 1) : 3; };
   // included treatments for a booking type (from the admin): 'treat' = guests choose one, 'massage' = everyone has them
   const incList = k => YE && L.cfg ? YE.includedFor(L.cfg, k) : null;
   const incMode = k => { const l = incList(k); if (!l) return INCLUDED[k]; if (!l.length) return null; return l.length > 1 && YE.includedPick(L.cfg, k) === 'one' ? 'treat' : 'massage'; };
@@ -373,13 +375,13 @@
     if (p.food) h += `<div class="bk-group">Food</div>${choice('food', (p.foods || ['Afternoon tea', 'Sweet & savoury grazing board']).map(v => [v, v === 'Afternoon tea' ? 'Sweet & savoury treats' : v === 'Grazing board' ? 'Meats, cheese & sweet treats' : 'Meats, cheese & sweet treats · vegan available']))}`;
     const cats = [...new Set(TR.map(t => t.cat))];
     const extras = cats.map(c => `<div class="tr-cat">${c}${c === 'Japanese Head Spa' && !p.only ? ' <span>10% off with your booking</span>' : ''}</div><div class="tr-list">` + TR.filter(t => t.cat === c).map(t => {
-      const on = S.adds[g].includes(t.id), full = !on && S.adds[g].length >= 3;
+      const on = S.adds[g].includes(t.id), full = !on && S.adds[g].length >= maxExtras();
       const pr = t.head && !p.only ? `<s>${gbp(t.price)}</s> ${gbp(t.price * (1 - HEAD_OFF))}` : gbp(t.price);
       return `<button class="tr-opt ${on ? 'sel' : ''}" data-add="${t.id}" data-gi="${g}" ${full ? 'disabled' : ''}><span class="tr-tick">${on ? '✓' : '+'}</span><span class="tr-txt"><b>${t.name}</b><span>${t.desc}</span></span><span class="tr-pr"><b>${pr}</b><small>${t.min} min</small></span></button>`;
     }).join('') + '</div>').join('');
     h += p.only
-      ? `<p class="bk-sub" style="margin-top:6px">Pick one or more treatments${n > 1 ? ' for this guest' : ''}. We’ll confirm your appointment times by email.</p>${extras}`
-      : `<div class="extra-box"><div class="extra-h"><b>Add extra treatments <span>optional</span></b><p>${INCLUDED[S.p] ? 'Your booking already includes a 20-minute treatment. Want more time? Add any of these.' : 'Add a massage, facial or Japanese head spa to your visit.'} We’ll fit them around your ${p.rule ? 'stay' : 'session'}.</p></div>${extras}</div>`;
+      ? `<p class="bk-sub" style="margin-top:6px">Pick up to ${maxExtras()} treatments${n > 1 ? ' for this guest' : ''}, then choose a start time.</p>${S.adds[g].length >= maxExtras() ? `<div class="notice">That’s the most we can book online for one guest. For more, call us on 01933 580 100.</div>` : ''}${extras}`
+      : `<div class="extra-box"><div class="extra-h"><b>Add extra treatments <span>optional</span></b><p>${incMode(S.p) ? 'Your booking already includes a treatment. Want more time? Add any of these.' : 'Add a massage, facial or Japanese head spa to your visit.'} Up to ${maxExtras()} per guest${p.rule ? ' across your stay' : ''}; we’ll fit them around your ${p.rule ? 'stay' : 'session'}.</p></div>${S.adds[g].length >= maxExtras() ? `<div class="notice">That’s the most we can book online for one guest. For more, call us on 01933 580 100.</div>` : ''}${extras}</div>`;
     if (n > 1 && g === 0) h += `<button class="bk-backlink" data-same style="margin-top:14px">Give everyone the same choices as Guest 1</button>`;
     if (p.only && g === n - 1 && YE && L.cfg && S.adds.every(a => a.length)) {
       const slots = YE.treatSlots(L.cfg, L.ix, { ...engineBooking(), treatStart: null });
@@ -549,7 +551,7 @@
     body.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { const p = P[S.p]; S.guests = Math.min(p.max, Math.max(gMin(), S.guests + +b.dataset.g)); S.gOK = true; if (S.date && !dateOK(S.p, S.date)){ S.date = null; S.end = null; } draw(); });
     const bf = $('#bkBf', body); if (bf) bf.onchange = () => { S.bfast = bf.checked; draw(); };
     body.querySelectorAll('[data-pk]').forEach(b => b.onclick = () => { S.picks[+b.dataset.pk][b.dataset.f] = b.dataset.v; draw(); });
-    body.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const g = S.adds[+b.dataset.gi], id = b.dataset.add, i = g.indexOf(id); if (i >= 0) g.splice(i, 1); else if (g.length < 3) g.push(id); draw(); });
+    body.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const g = S.adds[+b.dataset.gi], id = b.dataset.add, i = g.indexOf(id); if (i >= 0) g.splice(i, 1); else if (g.length < maxExtras()) g.push(id); draw(); });
     body.querySelectorAll('[data-pm]').forEach(b => b.onclick = () => { S.pm = b.dataset.pm; draw(); });
     body.querySelectorAll('[data-ts]').forEach(b => b.onclick = () => { S.treatStart = b.dataset.ts; draw(); });
     body.querySelectorAll('[data-gt]').forEach(b => b.onclick = () => { (S.seen = S.seen || {})[S.tg] = 1; S.tg = +b.dataset.gt; draw(); });
