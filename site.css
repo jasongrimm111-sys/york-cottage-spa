@@ -1128,3 +1128,7 @@ html{-webkit-text-size-adjust:100%;touch-action:manipulation}
 .bk-reset{background:none;border:0;color:var(--muted);font:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:8px 10px;text-decoration:underline;text-underline-offset:3px}
 .bk-reset:hover{color:var(--ink)}
 .bk-reset.sure{color:#8c2f2c}
+
+/* booking page: the summary panel runs the full height of the booking, from the top (user, 2026-11-26) */
+.bk.page .bk-box{align-items:stretch}
+.bk.page .bk-side{position:relative!important;top:auto!important;align-self:stretch!important;height:auto!important;max-height:none!important;margin:0!important}

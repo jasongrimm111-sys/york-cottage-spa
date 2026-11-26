@@ -548,7 +548,7 @@
     if (S.ref){ nav.innerHTML = '<span></span><button class="bk-close">Close</button>'; $('.bk-close', nav).onclick = close; return; }
     const last = S.step === LAST, ask = S.p && P[S.p].kind === 'ask', pr = price();
     const label = last ? (ask ? 'Send request' : S.pm === 'klarna' ? 'Continue with Klarna' : `Pay ${gbp(pr.now)}`) : S.step === CHOICES && S.tg < S.guests - 1 ? `Next: Guest ${S.tg + 2}` : 'Continue';
-    nav.innerHTML = `${S.step ? '<button class="back">← Back</button>' : '<span></span>'}<span class="bk-msg"></span>${S.p && !S.ref ? '<button class="bk-reset" title="Clear everything and start again">Start again</button>' : ''}<button class="bk-close" title="Your choices are saved">${PAGE ? 'Back to the site' : 'Close'}</button><button class="btn btn-solid go">${S.paying ? '<span class="spin"></span> ' + (S.pm === 'klarna' && !ask ? 'Opening Klarna…' : 'Processing…') : label + ' <span class="arrow">→</span>'}</button>`;
+    nav.innerHTML = `${S.step ? '<button class="back">← Back</button>' : '<span></span>'}<span class="bk-msg"></span>${S.p && !S.ref ? '<button class="bk-reset" title="Clear everything and start again">Start again</button>' : ''}${PAGE ? '' : '<button class="bk-close" title="Your choices are saved">Close</button>'}<button class="btn btn-solid go">${S.paying ? '<span class="spin"></span> ' + (S.pm === 'klarna' && !ask ? 'Opening Klarna…' : 'Processing…') : label + ' <span class="arrow">→</span>'}</button>`;
   }
 
   function sideWire(){ const x = $('.side-x', side); if (x) x.onclick = close; side.querySelectorAll('[data-sgoto]').forEach(b => b.onclick = () => { S.step = +b.dataset.sgoto; draw(); }); }
