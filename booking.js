@@ -586,7 +586,7 @@
       g && ['Guests', S.guests],
       pr && !p.only && (S.p === 'house' ? S.nights : g) && ['Price', unit],
       pr && pr.bf && ['Breakfast', gbp(pr.bf)],
-      tc.n && ['Treatments', `${tc.n} · ${gbp(tc.sub)}`], tc.off && [`Head spa ${Math.round(HEAD_OFF * 100)}% off`, '−' + gbp(tc.off)], pr && pr.promo && ['Code ' + esc(S.promo.code), '−' + gbp(pr.promo)]].filter(Boolean);
+      ...S.adds.flatMap((a, gi) => a.map(id => { const t = TRi[id]; if (!t) return null; const head = t.head && !P[S.p].only; return [`${esc(t.name)}${S.guests > 1 ? `<small class="sum-who">${esc(gName(gi))}</small>` : ''}`, head ? `<s>${gbp(t.price)}</s> ${gbp(t.price * (1 - HEAD_OFF))}` : gbp(t.price)]; })), pr && pr.promo && ['Code ' + esc(S.promo.code), '−' + gbp(pr.promo)]].filter(Boolean);
     const ready = pr && (S.p === 'house' ? S.nights >= 2 : g || p.only);
     const tot = p.kind === 'ask'
       ? `<div class="big"><span>${g ? 'Estimate' : 'From'}</span><b>${g ? gbp(est) : gbp(p.est)}</b></div><p>${g ? 'We’ll confirm the exact price.' : 'per person'} Nothing to pay now.</p>`

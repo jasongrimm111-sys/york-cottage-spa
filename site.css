@@ -1170,3 +1170,6 @@ body.book-page header .menu .btn[data-book]{display:none}
   body.book-page header .hdr-book,body.book-page header .btn[data-book]{display:none}
 }
 body.book-page .hdr-book{display:none}
+
+.sum-who{display:block;font-size:11.5px;opacity:.7;font-weight:400}
+.sum li s{opacity:.6;margin-right:4px}
