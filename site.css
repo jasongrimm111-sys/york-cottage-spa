@@ -1079,3 +1079,11 @@ html{-webkit-text-size-adjust:100%;touch-action:manipulation}
 .rp-room{border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:#fff;display:flex;gap:8px;align-items:baseline;font-size:14px}
 .rp-room span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .rp-sel{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit}
+
+/* the booking page (book.html) */
+.book-main{padding:110px 0 70px;background:var(--cream,#f6f1e9);min-height:70vh}
+.bk.page{position:static;display:block;background:none;backdrop-filter:none;padding:0;overflow:visible;animation:none;z-index:auto}
+.bk.page .bk-box{height:auto!important;max-height:none!important;min-height:0!important;box-shadow:0 30px 70px -40px rgba(25,30,26,.35)}
+.bk.page .bk-main,.bk.page .bk-body{overflow:visible!important;max-height:none!important}
+.bk.page .bk-side{position:sticky;top:90px;align-self:start;max-height:none}
+@media (max-width:900px){.book-main{padding:80px 0 40px}.bk.page .bk-box{border-radius:0}.book-main .wrap{padding-left:0;padding-right:0}}

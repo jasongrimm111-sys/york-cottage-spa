@@ -192,8 +192,8 @@
   const reset = k => Object.assign(S, { p:k || null, step:0, date:null, nights:k && P[k].nights ? P[k].nights[0] : 1, session:null,
     guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, gOK:false, treatStart:null, plan:null, times:{}, tpDate:{}, names:[], g0Own:false, roomOf:[], promo:S.promo || null, promoMsg:'', end:null, bfast:false, picks:[], adds:[], pending:null, tg:0, cat:undefined, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
 
-  const steps = () => ['Type', 'Option', 'Guests', 'Date', 'Guest choices', 'Treatment times', 'Details', S.p && P[S.p].kind === 'ask' ? 'Send' : 'Pay'];
-  const LAST = 7, DETAILS = 6, TIMES = 5, CHOICES = 4, DATE = 3, GUESTS = 2;
+  const steps = () => ['Type', 'Option', 'Guests', 'Date', 'Guest choices', 'Details', S.p && P[S.p].kind === 'ask' ? 'Send' : 'Pay'];
+  const LAST = 6, DETAILS = 5, TIMES = -1, CHOICES = 4, DATE = 3, GUESTS = 2;
   // the times step is skipped when nothing needs a time (e.g. a session with no treatments)
   const hasTimes = () => !!(YE && L.cfg && S.date && siteNeeds().length);
   function syncAdds(){
@@ -229,10 +229,11 @@
   }
 
   // ---------- shell ----------
+  const PAGE = document.body.dataset.page === 'book';
   const box = document.createElement('div');
-  box.className = 'bk'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Book York Cottage Spa');
+  box.className = PAGE ? 'bk page on' : 'bk'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Book York Cottage Spa');
   box.innerHTML = `<div class="bk-box"><div class="bk-main"><div class="bk-head"><ol class="bk-steps"></ol></div><div class="bk-body"></div><div class="bk-nav"></div></div><aside class="bk-side"></aside></div>`;
-  document.body.appendChild(box);
+  (PAGE ? (document.querySelector('#bookPage .wrap') || document.body) : document.body).appendChild(box);
   const body = $('.bk-body', box), nav = $('.bk-nav', box), side = $('.bk-side', box), stepsEl = $('.bk-steps', box);
 
   // keep an unfinished booking when the checkout is closed, also across pages (this browser tab only)
@@ -260,14 +261,17 @@
     if (!keep){ reset(P[k] ? k : null); }
     if (TRi[tr]){ S.pending = tr; if (keep && S.step > CHOICES) S.step = CHOICES; }
     if (S.p) syncAdds();
-    box.classList.add('on'); document.body.classList.add('bk-open'); draw(); const fb = $('.bk-close', nav); if (fb) fb.focus({ preventScroll:true });
+    box.classList.add('on'); if (!PAGE) document.body.classList.add('bk-open'); draw(); const fb = $('.bk-close', nav); if (fb) fb.focus({ preventScroll:true });
   }
-  function close(){ box.classList.remove('on'); document.body.classList.remove('bk-open'); if (S.ref) reset(null); save(); }
-  box.addEventListener('click', e => { if (e.target === box) close(); });
-  addEventListener('keydown', e => { if (e.key === 'Escape' && box.classList.contains('on')) close(); });
+  function close(){
+    if (PAGE) { if (S.ref) reset(null); save(); const back = document.referrer && new URL(document.referrer).origin === location.origin && !/book\.html/.test(document.referrer); if (back) history.back(); else location.href = 'index.html'; return; }
+    box.classList.remove('on'); document.body.classList.remove('bk-open'); if (S.ref) reset(null); save(); }
+  if (!PAGE) { box.addEventListener('click', e => { if (e.target === box) close(); });
+    addEventListener('keydown', e => { if (e.key === 'Escape' && box.classList.contains('on')) close(); }); }
   document.addEventListener('click', e => {
     const a = e.target.closest('[data-book]'); if (!a) return;
     e.preventDefault(); document.body.classList.remove('open');
+    if (!PAGE) { const q = new URLSearchParams(); if (a.dataset.book) q.set('b', a.dataset.book); if (a.dataset.tr) q.set('tr', a.dataset.tr); if (a.dataset.promo) q.set('promo', a.dataset.promo); location.href = 'book.html' + (q.toString() ? '?' + q : ''); return; }
     if (a.dataset.promo) findPromo(a.dataset.promo).then(pr => { if (pr) { S.promo = { code: a.dataset.promo.toUpperCase(), type: pr.type, value: pr.value, on: pr.on }; draw(); } });
     open(a.dataset.book, a.dataset.tr);
   });
@@ -279,11 +283,11 @@
     stepsEl.innerHTML = S.ref ? '' : st.map((t, i) => `<li class="${i === S.step ? 'now' : i < S.step ? 'done' : ''}">${i < S.step ? `<button data-goto="${i}" title="Back to ${t}">` : '<span>'}<i>${i < S.step ? '✓' : i + 1}</i><b>${t}</b>${i < S.step ? '</button>' : '</span>'}</li>`).join('');
     stepsEl.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => { S.step = +b.dataset.goto; draw(); });
     const bar = S.step > 1 && !S.ref ? selBar() : '';
-    body.innerHTML = bar + (S.ref ? doneView() : [typeView, optionView, guestView, dateView, treatView, timesView, detailView, payView][S.step]());
+    body.innerHTML = bar + (S.ref ? doneView() : [typeView, optionView, guestView, dateView, treatView, detailView, payView][S.step]());
     body.querySelectorAll('.sel-bar [data-goto]').forEach(b => b.onclick = () => { S.step = +b.dataset.goto; draw(); });
     navView(); sideView(); sideWire(); wire(); save();
     const at = S.step + ':' + (S.tg || 0) + ':' + !!S.ref;  // only jump to the top on a new step or guest
-    if (at !== lastAt){ body.scrollTop = 0; $('.bk-main', box).scrollTop = 0; box.scrollTop = 0; side.scrollTop = 0; lastAt = at; }
+    if (at !== lastAt){ if (PAGE && lastAt) { const y = box.getBoundingClientRect().top + scrollY - 90; if (scrollY > y) scrollTo({ top: Math.max(0, y) }); } else { body.scrollTop = 0; $('.bk-main', box).scrollTop = 0; box.scrollTop = 0; side.scrollTop = 0; } lastAt = at; }
   }
 
   const TYPE_NAMES = { Spa:'Spa day', Treat:'Treatments only', Stay:'Overnight stay', House:'Exclusive use' };
@@ -408,18 +412,12 @@
       return `<button class="tr-opt ${on ? 'sel' : ''}" data-add="${t.id}" data-gi="${g}" ${full ? 'disabled' : ''}><span class="tr-tick">${on ? '✓' : '+'}</span><span class="tr-txt"><b>${t.name}</b><span>${t.desc}</span></span><span class="tr-pr"><b>${pr}</b><small>${none ? 'No time left' : t.min + ' min'}</small></span></button>`;
     }).join('') + '</div>').join('');
     h += p.only
-      ? `<p class="bk-sub" style="margin-top:6px">Pick up to ${maxExtras()} treatments${n > 1 ? ' for this guest' : ''}, then choose the times on the next step.</p>${S.adds[g].length >= maxExtras() ? `<div class="notice">That’s the most we can book online for one guest. For more, call us on 01933 580 100.</div>` : ''}${extras}`
+      ? `<p class="bk-sub" style="margin-top:6px">Pick up to ${maxExtras()} treatments${n > 1 ? ' for this guest' : ''}, then choose a time for each one below.</p>${S.adds[g].length >= maxExtras() ? `<div class="notice">That’s the most we can book online for one guest. For more, call us on 01933 580 100.</div>` : ''}${extras}`
       : `<div class="extra-box"><div class="extra-h"><b>Add extra treatments <span>optional</span></b><p>${incMode(S.p) ? 'Your booking already includes a treatment. Want more time? Add any of these.' : 'Add a massage, facial or Japanese head spa to your visit.'} Up to ${maxExtras()} per guest${p.rule ? ' across your stay' : ''}; we’ll fit them around your ${p.rule ? 'stay' : 'session'}.</p></div>${S.adds[g].length >= maxExtras() ? `<div class="notice">That’s the most we can book online for one guest. For more, call us on 01933 580 100.</div>` : ''}${extras}</div>`;
     if (n > 1 && g === 0) h += `<button class="bk-backlink" data-same style="margin-top:14px">Give everyone the same choices as Guest 1</button>`;
-    return h;
-  }
-
-  function timesView(){
-    const n = S.guests; let h = `<div class="gc-head"><h2>Choose your <em>treatment times</em></h2></div>`;
-    if (!hasTimes()) return h + `<p class="bk-sub">Nothing to choose here: there are no treatments in this booking.</p>`;
-    {
+    // ---- this guest's treatment times, right under their treatments ----
+    if (YE && L.cfg && S.date) {
       S.times = S.times || {}; S.tpDate = S.tpDate || {};
-      for (let g = 0; g < n; g++) {
       const mine = siteNeeds().filter(x => x.guest === g);
       if (mine.length) {
         h += `<div class="bk-group">${n > 1 ? `Guest ${g + 1}’s` : 'Your'} treatment times</div><p class="cal-note" style="margin:-4px 0 10px">Pick a time for each treatment. Only times when a therapist and a treatment room are free are shown${P[S.p].rule ? ', on any day of your stay' : ''}.</p>`;
@@ -433,8 +431,7 @@
                 <div class="pills tp-times">${(sl.find(d => d.date === day) || { times: [] }).times.map(x => `<button class="pill ${(S.times[need.key] || {}).start === x.start && (S.times[need.key] || {}).date === day ? 'sel' : ''}" data-tp="${need.key}|${day}|${x.start}">${x.start}</button>`).join('')}</div>`}</div>`;
         }
       }
-          }
-    }
+        }
     return h;
   }
 
@@ -536,8 +533,7 @@
     if (S.step === DATE){ if (!S.date) return p.rule ? 'Choose your arrival day' : 'Choose a day'; if (p.rule === 'range' && !S.end) return 'Choose your check-out day'; if (p.sessions && !p.only && !S.session) return 'Choose a session'; }
     if (S.step === GUESTS) S.gOK = true;
     if (S.step === CHOICES && P[S.p].only && !S.adds[S.tg].length) return 'Choose at least one treatment for this guest';
-    if (S.step === TIMES && YE && L.cfg) { const miss = siteNeeds().filter(x => !(S.times || {})[x.key]); if (miss.length) return 'Choose a time for ' + (S.guests > 1 ? `Guest ${miss[0].guest + 1}’s ` : '') + (YE.tr(L.cfg, miss[0].tid) || {}).name;
-      const r = planNow(); if (r && !r.ok) return 'Those times no longer fit together. Please choose another time.'; }
+    if (S.step === CHOICES && YE && L.cfg) { const miss = siteNeeds().filter(x => x.guest === S.tg && !(S.times || {})[x.key]); if (miss.length) return 'Choose a time for ' + (YE.tr(L.cfg, miss[0].tid) || {}).name; }
     if (S.step === CHOICES && S.tg >= S.guests - 1 && YE && L.cfg) {
       const r = planNow(); if (r && !r.ok) return `Sorry, we can’t fit ${r.fail && r.fail.name ? r.fail.name : 'all the treatments'} in on this ${P[S.p].rule ? 'stay' : 'day'}. Try fewer treatments or another ${P[S.p].rule ? 'date' : 'session'}.`;
     }
@@ -621,7 +617,7 @@
     body.querySelectorAll('[id^="bk_g"]').forEach(el => { if (!/^bk_g\d+$/.test(el.id)) return; el.oninput = () => { const i = +el.id.slice(4); S.names = S.names || []; S.names[i] = el.value; if (i === 0) S.g0Own = true; el.closest('.bk-field').classList.remove('bad'); }; });
     [['#bkAdult','adult'],['#bkAgree','agree'],['#bkMkt','mkt'],['#bkBlue','blue']].forEach(([s, k]) => { const el = $(s, body); if (el) el.onchange = () => { S[k] = el.checked; el.closest('.check').classList.remove('bad'); }; });
     const c = body.querySelector('[data-close]'); if (c) c.onclick = close;
-    const back = $('.back', nav); if (back) back.onclick = () => { if (S.step === CHOICES && S.tg > 0){ S.tg--; draw(); return; } S.step--; if (S.step === TIMES && !hasTimes()) S.step--; if (S.step === CHOICES) S.tg = S.guests - 1; draw(); };
+    const back = $('.back', nav); if (back) back.onclick = () => { if (S.step === CHOICES && S.tg > 0){ S.tg--; draw(); return; } S.step--; if (S.step === CHOICES) S.tg = S.guests - 1; draw(); };
     const go = $('.go', nav); if (go) go.onclick = next;
     const cl = $('.bk-close', nav); if (cl) cl.onclick = close;
     const va = $('#bkVApply', body); if (va) va.onclick = async () => {
@@ -632,7 +628,7 @@
       else { S.voucher = code; S.promo = null; S.promoMsg = /^YCV-/i.test(code) ? '' : 'We don’t recognise that discount code, so we’ll treat it as a gift voucher and check it before your visit.'; }
       draw(); };
     body.querySelectorAll('[data-gq]').forEach(b => b.onclick = () => { S.guests = +b.dataset.gq; S.gOK = true; if (S.date && !dateOK(S.p, S.date)){ S.date = null; S.end = null; } draw(); });
-    const same = body.querySelector('[data-same]'); if (same) same.onclick = () => { S.picks = S.picks.map(() => ({ ...S.picks[0] })); S.adds = S.adds.map(() => [...S.adds[0]]); S.seen = {}; for (let i = 0; i < S.guests; i++) S.seen[i] = 1; S.step = hasTimes() ? TIMES : DETAILS; draw(); };
+    const same = body.querySelector('[data-same]'); if (same) same.onclick = () => { S.picks = S.picks.map(() => ({ ...S.picks[0] })); S.adds = S.adds.map(() => [...S.adds[0]]); S.seen = {}; for (let i = 0; i < S.guests; i++) S.seen[i] = 1; S.step = DETAILS; draw(); };
   }
 
   function next(){
@@ -646,7 +642,7 @@
     if (S.step === CHOICES && S.tg < S.guests - 1){ (S.seen = S.seen || {})[S.tg] = 1; S.tg++; draw(); return; }
     if (S.step === DATE) S.tg = 0;
     if (S.step === DETAILS && YE && L.cfg) { const r = planNow(); if (r && !r.ok) { msg.textContent = 'Those treatments no longer fit on that day. Please go back and choose another time.'; return; } }
-    if (S.step < LAST){ S.step++; if (S.step === TIMES && !hasTimes()) S.step++; draw(); return; }
+    if (S.step < LAST){ S.step++; draw(); return; }
     // CONNECT: create the booking (server) -> Stripe PaymentIntent -> stripe.confirmPayment(); show the confirmation on success.
     // Test mode: simulate a successful Stripe payment. No request is sent anywhere.
     { const pr = price(); S.paid = pr ? { method: S.pm, amount: pr.now, id: 'pi_test_' + Math.random().toString(36).slice(2, 14) } : null; }
@@ -654,4 +650,11 @@
     setTimeout(() => { S.paying = false; S.ref = 'YC-' + Math.random().toString(36).slice(2, 8).toUpperCase(); draw(); }, P[S.p].kind === 'ask' ? 400 : 1400);
   }
   loadLive();
+
+  if (PAGE) {
+    const q = new URLSearchParams(location.search), k = q.get('b'), tr = q.get('tr'), pr = q.get('promo');
+    if (pr) findPromo(pr).then(x => { if (x) { S.promo = { code: pr.toUpperCase(), type: x.type, value: x.value, on: x.on }; draw(); } });
+    open(k || undefined, tr || undefined);
+    if (k || tr) history.replaceState(null, '', 'book.html');   // a reload keeps the booking in progress instead of starting again
+  }
 })();
