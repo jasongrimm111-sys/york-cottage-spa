@@ -1181,3 +1181,15 @@ body.book-page .hdr-book{display:none}
 @media (max-width:700px){.logo .logo-mark{width:38px}.logo{gap:8px}}
 /* "SPA · BOZEAT" lines up with the Y of York (the Y's arm makes the name look set in) */
 .logo .logo-t > span{padding-left:.32em}
+
+/* treatments list: price column stays compact; notes sit under the description (2026-11-27) */
+.tr-pr{flex:none;white-space:nowrap;text-align:right}
+.tr-txt{min-width:0}
+.tr-note{display:block;font-style:normal;font-size:12px;font-weight:600;color:var(--forest);margin-top:3px}
+.tr-note.off{color:#8c2f2c}
+/* summary panel: long treatment names wrap */
+.sum li{align-items:flex-start;gap:10px}
+.sum li > span{min-width:0;overflow-wrap:anywhere}
+.sum li > b{flex:none;white-space:nowrap}
+/* step bar: finished steps shrink to their tick so the bar stays on one line */
+@media (max-width:1280px){ .bk.page .bk-steps li.done b{display:none} .bk.page .bk-steps{gap:4px} }
