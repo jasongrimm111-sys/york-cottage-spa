@@ -192,8 +192,8 @@
   const reset = k => Object.assign(S, { p:k || null, step:0, date:null, nights:k && P[k].nights ? P[k].nights[0] : 1, session:null,
     guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, gOK:false, treatStart:null, plan:null, times:{}, tpDate:{}, names:[], g0Own:false, roomOf:[], promo:S.promo || null, promoMsg:'', end:null, bfast:false, picks:[], adds:[], pending:null, tg:0, cat:undefined, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
 
-  const steps = () => ['Type', 'Option', 'Guests', 'Date', 'Guest choices', 'Details', S.p && P[S.p].kind === 'ask' ? 'Send' : 'Pay'];
-  const LAST = 6, DETAILS = 5, TIMES = -1, CHOICES = 4, DATE = 3, GUESTS = 2;
+  const steps = () => ['Booking', 'Guests', 'Date', 'Guest choices', 'Details', S.p && P[S.p].kind === 'ask' ? 'Send' : 'Pay'];
+  const LAST = 5, DETAILS = 4, TIMES = -1, CHOICES = 3, DATE = 2, GUESTS = 1;
   // the times step is skipped when nothing needs a time (e.g. a session with no treatments)
   const hasTimes = () => !!(YE && L.cfg && S.date && siteNeeds().length);
   function syncAdds(){
@@ -250,7 +250,7 @@
     try {
       const o = JSON.parse(sessionStorage.getItem(SKEY) || 'null'); if (!o || !P[o.p]) return false;
       DATES.forEach(k => o[k] = o[k] ? new Date(o[k]) : null);
-      if (o.date && o.date < first){ o.date = null; o.end = null; if (o.step > 3) o.step = 3; }
+      if (o.date && o.date < first){ o.date = null; o.end = null; if (o.step > DATE) o.step = DATE; }
       Object.assign(S, o); return true;
     } catch (e) { return false; }
   }
@@ -282,8 +282,8 @@
     const st = steps();
     stepsEl.innerHTML = S.ref ? '' : st.map((t, i) => `<li class="${i === S.step ? 'now' : i < S.step ? 'done' : ''}">${i < S.step ? `<button data-goto="${i}" title="Back to ${t}">` : '<span>'}<i>${i < S.step ? '✓' : i + 1}</i><b>${t}</b>${i < S.step ? '</button>' : '</span>'}</li>`).join('');
     stepsEl.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => { S.step = +b.dataset.goto; draw(); });
-    const bar = S.step > 1 && !S.ref ? selBar() : '';
-    body.innerHTML = bar + (S.ref ? doneView() : [typeView, optionView, guestView, dateView, treatView, detailView, payView][S.step]());
+    const bar = S.step > 0 && !S.ref ? selBar() : '';
+    body.innerHTML = bar + (S.ref ? doneView() : [chooseView, guestView, dateView, treatView, detailView, payView][S.step]());
     body.querySelectorAll('.sel-bar [data-goto]').forEach(b => b.onclick = () => { S.step = +b.dataset.goto; draw(); });
     navView(); sideView(); sideWire(); wire(); save();
     const at = S.step + ':' + (S.tg || 0) + ':' + !!S.ref;  // only jump to the top on a new step or guest
@@ -294,7 +294,7 @@
   function selBar(){
     if (!S.cat) return '';
     const p = S.p && P[S.p] && P[S.p].group === S.cat ? P[S.p] : null;
-    return `<div class="sel-bar"><span>Your selection</span><button data-goto="0" title="Change booking type">${TYPE_NAMES[S.cat]} <i>✎</i></button>${p && S.step > 1 ? `<button data-goto="1" title="Change option">${p.name} <i>✎</i></button>` : ''}</div>`;
+    return p ? `<div class="sel-bar"><span>You’re booking</span><button data-goto="0" title="Change what you’re booking">${p.name} <i>✎</i></button></div>` : '';
   }
   const typeView = () => chooseView(), optionView = () => chooseView();
   function chooseView(){
@@ -307,12 +307,8 @@
       ['Stay', 'Overnight stay', 'Spa breaks for 2 or groups of 7+', 'From £145 pp', 'https://static.wixstatic.com/media/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg'],
       ['House', 'Exclusive use', 'The whole house & spa, up to 16 guests', 'From £1,840 / night', 'https://static.wixstatic.com/media/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg']];
     if (S.cat === undefined) S.cat = S.p ? P[S.p].group : null;
-    if (S.step === 0){
-      return `<h2>What would you like to <em>book</em>?</h2>${pend}<div class="bk-types">${TYPES.map(([g, t, d, f, img]) => `<button class="bk-type ${S.cat === g ? 'sel' : ''}" data-cat="${g}"><span class="bt-img" style="background-image:url('${img}')"></span><b>${t}</b><span>${d}</span><em>${f}</em><span class="opt-cta">${S.cat === g ? 'Selected' : 'Choose'} <span class="arrow">→</span></span></button>`).join('')}</div>`;
-    }
-    const T = TYPES.find(t => t[0] === S.cat);
-    return `${selBar()}<h2>${T[1]}: choose an <em>option</em></h2>${pend}
-      <div class="bk-opts">${grp(S.cat)}</div>`;
+    const T = TYPES.find(t => t[0] === S.cat), many = S.cat && Object.values(P).filter(x => x.group === S.cat && !x.off).length > 1;
+    return `<h2>What would you like to <em>book</em>?</h2>${pend}<div class="bk-types">${TYPES.map(([g, t, d, f, img]) => `<button class="bk-type ${S.cat === g ? 'sel' : ''}" data-cat="${g}"><span class="bt-img" style="background-image:url('${img}')"></span><b>${t}</b><span>${d}</span><em>${f}</em><span class="opt-cta">${S.cat === g ? 'Selected' : 'Choose'} <span class="arrow">→</span></span></button>`).join('')}</div>${T && many ? `<div class="bk-group bk-opts-h" id="bkOpts">${T[1]}: choose one</div><div class="bk-opts">${grp(S.cat)}</div>` : ''}`;
   }
 
   function dateView(){
@@ -526,8 +522,7 @@
   // ---------- validation ----------
   function problem(){
     const p = P[S.p];
-    if (S.step === 0) return S.cat ? '' : 'Choose what you’d like to book';
-    if (S.step === 1) return S.p && P[S.p].group === S.cat ? '' : 'Choose an option';
+    if (S.step === 0) return !S.cat ? 'Choose what you’d like to book' : S.p && P[S.p].group === S.cat ? '' : 'Choose an option';
     if (S.step === DATE){ if (!S.date) return p.rule ? 'Choose your arrival day' : 'Choose a day'; if (p.rule === 'range' && !S.end) return 'Choose your check-out day'; if (p.sessions && !p.only && !S.session) return 'Choose a session'; }
     if (S.step === GUESTS) S.gOK = true;
     if (S.step === CHOICES && P[S.p].only && !S.adds[S.tg].length) return 'Choose at least one treatment for this guest';
@@ -553,7 +548,7 @@
     if (S.ref){ nav.innerHTML = '<span></span><button class="bk-close">Close</button>'; $('.bk-close', nav).onclick = close; return; }
     const last = S.step === LAST, ask = S.p && P[S.p].kind === 'ask', pr = price();
     const label = last ? (ask ? 'Send request' : S.pm === 'klarna' ? 'Continue with Klarna' : `Pay ${gbp(pr.now)}`) : S.step === CHOICES && S.tg < S.guests - 1 ? `Next: Guest ${S.tg + 2}` : 'Continue';
-    nav.innerHTML = `${S.step ? '<button class="back">← Back</button>' : '<span></span>'}<span class="bk-msg"></span><button class="bk-close" title="Your choices are saved">Close</button><button class="btn btn-solid go">${S.paying ? '<span class="spin"></span> ' + (S.pm === 'klarna' && !ask ? 'Opening Klarna…' : 'Processing…') : label + ' <span class="arrow">→</span>'}</button>`;
+    nav.innerHTML = `${S.step ? '<button class="back">← Back</button>' : '<span></span>'}<span class="bk-msg"></span>${S.p && !S.ref ? '<button class="bk-reset" title="Clear everything and start again">Start again</button>' : ''}<button class="bk-close" title="Your choices are saved">${PAGE ? 'Back to the site' : 'Close'}</button><button class="btn btn-solid go">${S.paying ? '<span class="spin"></span> ' + (S.pm === 'klarna' && !ask ? 'Opening Klarna…' : 'Processing…') : label + ' <span class="arrow">→</span>'}</button>`;
   }
 
   function sideWire(){ const x = $('.side-x', side); if (x) x.onclick = close; side.querySelectorAll('[data-sgoto]').forEach(b => b.onclick = () => { S.step = +b.dataset.sgoto; draw(); }); }
@@ -562,7 +557,7 @@
     if (!p){ side.innerHTML = `<div class="side-top"><div class="eyebrow">Your booking</div><button class="side-x" aria-label="Close booking">&times;</button></div><h3>Nothing chosen yet</h3><p class="sum-empty">Pick a spa day, a stay or a treatment to see your total here.</p><p class="foot-note">Questions? Call 01933 580 100 or message us on WhatsApp.</p>`; return; }
     const tc = treatCost(), g = S.gOK;
     const unit = S.p === 'house' ? `${gbp(p.night)} × ${S.nights} nights` : p.priceN ? `${gbp(p.priceN[S.nights])} × ${S.guests}` : `${gbp(p.price)} × ${S.guests}`;
-    const rows = [['Booking', `${p.name} <button class="side-edit" data-sgoto="1" title="Change">✎</button>`],
+    const rows = [['Booking', p.name],
       S.date && ['Date', p.rule ? `${nice(S.date)}${endDate() ? ' → ' + nice(endDate()) : ''}` : nice(S.date)],
       S.session && ['Session', sesLabel()],
       g && ['Guests', S.guests],
@@ -586,8 +581,8 @@
     body.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => {
       const g = b.dataset.cat || null, opts = Object.keys(P).filter(k => P[k].group === g);
       if (g && opts.length === 1 && opts[0] !== S.p){ const pend = S.pending; reset(opts[0]); S.pending = pend; syncAdds(); }
-      S.cat = g; S.step = 0; draw(); });
-    body.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { const k = b.dataset.p; if (k !== S.p){ const pend = S.pending, cat = S.cat; reset(k); S.pending = pend; S.cat = cat; syncAdds(); } S.cat = P[k].group; S.step = 1; draw(); });
+      S.cat = g; S.step = 0; draw(); const o = $('#bkOpts', body); if (o && innerWidth < 900) o.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    body.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { const k = b.dataset.p; if (k !== S.p){ const pend = S.pending, cat = S.cat; reset(k); S.pending = pend; S.cat = cat; syncAdds(); } S.cat = P[k].group; S.step = 0; draw(); });
     body.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + +b.dataset.m, 1); draw(); });
     body.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.d.split('-').map(Number); const D = new Date(y, m - 1, d);
       if (S.p === 'house'){
@@ -618,6 +613,9 @@
     const back = $('.back', nav); if (back) back.onclick = () => { if (S.step === CHOICES && S.tg > 0){ S.tg--; draw(); return; } S.step--; if (S.step === CHOICES) S.tg = S.guests - 1; draw(); };
     const go = $('.go', nav); if (go) go.onclick = next;
     const cl = $('.bk-close', nav); if (cl) cl.onclick = close;
+    // start again: a second press confirms, so one stray tap doesn't lose the booking (user, 2026-11-26)
+    const rs = $('.bk-reset', nav); if (rs) rs.onclick = () => { if (!rs.dataset.sure) { rs.dataset.sure = '1'; rs.textContent = 'Sure? Clear it all'; rs.classList.add('sure'); setTimeout(() => { if (rs.isConnected) { delete rs.dataset.sure; rs.textContent = 'Start again'; rs.classList.remove('sure'); } }, 4000); return; }
+      try { sessionStorage.removeItem(SKEY); } catch (e) {} reset(null); S.cat = null; S.promo = null; S.d = {}; S.names = []; S.roomOf = []; draw(); window.scrollTo({ top: 0 }); };
     const va = $('#bkVApply', body); if (va) va.onclick = async () => {
       if (S.promo) { S.promo = null; S.promoMsg = ''; draw(); return; }
       const code = ($('#bkVoucher', body).value || '').trim(); if (!code) return;
@@ -633,7 +631,7 @@
     if (S.paying) return;
     const pb = problem(), msg = $('.bk-msg', nav);
     if (pb){
-      if (typeof pb === 'string'){ msg.textContent = pb; const o = $(S.step === 0 ? '.bk-types' : '.bk-opts', body); if (o && S.step < 2){ o.classList.remove('nudge'); void o.offsetWidth; o.classList.add('nudge'); } return; }
+      if (typeof pb === 'string'){ msg.textContent = pb; const o = $(S.cat ? '.bk-opts' : '.bk-types', body); if (o && S.step === 0){ o.classList.remove('nudge'); void o.offsetWidth; o.classList.add('nudge'); } return; }
       if (pb.bad){ pb.bad.forEach(k => $(`[data-fd="${k}"]`, body).classList.add('bad')); msg.textContent = 'Please check the highlighted fields'; $(`#bk_${pb.bad[0]}`, body).focus(); return; }
       if (pb.ck){ $(`[data-ck="${pb.ck}"]`, body).classList.add('bad'); msg.textContent = pb.ck === 'adult' ? 'Please confirm the age requirement' : 'Please agree to the terms to continue'; return; }
     }

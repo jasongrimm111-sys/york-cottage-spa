@@ -1107,3 +1107,24 @@ html{-webkit-text-size-adjust:100%;touch-action:manipulation}
 .tk-who{font-size:12px;color:var(--muted);margin-bottom:4px}
 .tk-text{line-height:1.5}
 .tk-reply{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px}
+
+/* booking page polish (2026-11-26): sizes for a page, not a pop-up */
+.bk.page .bk-body h2{font-size:clamp(26px,3vw,34px);margin-bottom:6px}
+.bk.page .sum-tot .big b,.sum-tot .big b{font-size:30px}
+.gc-num b{font-size:30px}
+.bk.page .bk-head{padding-bottom:6px}
+.bk.page .bk-steps{gap:6px}
+.bk.page .bk-steps li i{width:22px;height:22px;font-size:11px}
+.bk.page .bk-box{grid-template-columns:minmax(0,1fr) 320px}
+.bk.page .bk-side{position:sticky;top:90px;border-radius:0 22px 22px 0}
+.bk.page .side-x{display:none}
+.bk.page .bk-opts-h{margin-top:22px}
+.book-intro{max-width:1120px;margin:0 auto 18px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.book-intro h1{font-size:clamp(30px,3.6vw,44px);margin:4px 0 0}
+.book-intro a{font-weight:600;color:var(--muted);text-decoration:none}
+.book-intro a:hover{color:var(--ink)}
+@media (max-width:900px){.bk.page .bk-box{grid-template-columns:1fr}.bk.page .bk-side{position:static;border-radius:0}.book-intro{padding:0 16px}}
+
+.bk-reset{background:none;border:0;color:var(--muted);font:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:8px 10px;text-decoration:underline;text-underline-offset:3px}
+.bk-reset:hover{color:var(--ink)}
+.bk-reset.sure{color:#8c2f2c}
