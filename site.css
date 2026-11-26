@@ -1202,3 +1202,17 @@ body.book-page .hdr-book{display:none}
   .bk.page .bk-body{scroll-margin-top:80px}
   .bk.page .bk-body h2,.bk.page .gc,.bk.page .bk-field,.bk.page .bk-field input{scroll-margin-top:110px}
 }
+
+/* treatment time left, on the calendar and sessions (2026-11-27) */
+.cal-g button.r-some::before,.cal-g button.r-none::before{content:"";position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%}
+.cal-g button.r-some::before{background:#d9a441}
+.cal-g button.r-none::before{border:1.5px solid #b0563f;width:4px;height:4px}
+.cal-g button.sel.r-some::before{background:#f0c66a}
+.cal-g button.sel.r-none::before{border-color:#f3b49f}
+.cal-note i.k-some{background:#d9a441}
+.cal-note i.k-none{background:transparent;border:1.5px solid #b0563f;width:6px;height:6px}
+.ses-opt{flex-wrap:wrap}
+.ses-room{flex-basis:100%;font-style:normal;font-size:12.5px;font-weight:600;color:#9a6a12;margin-top:-4px}
+.room-note{font-size:13px;color:#9a6a12;font-weight:600;margin:4px 0 8px}
+.more-time{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;background:#fbf3e3;border:1px solid #ecd9b0;border-radius:12px;padding:10px 14px;margin:6px 0 12px;font-size:14px}
+.more-time .bk-backlink{margin:0;font-weight:700}
