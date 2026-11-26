@@ -458,7 +458,7 @@
       : `<div class="extra-box"><div class="extra-h"><b>Add extra treatments <span>optional</span></b><p>${incMode(S.p) ? 'Your booking already includes a treatment. Want more time? Add any of these.' : 'Add a massage, facial or Japanese head spa to your visit.'} Up to ${maxExtras()} per guest${p.rule ? ' across your stay' : ''}; we’ll fit them around your ${p.rule ? 'stay' : 'session'}.</p></div>${S.adds[g].length >= maxExtras() ? `<div class="notice">That’s the most we can book online for one guest. For more, call us on 01933 580 100.</div>` : ''}${extras}</div>`;
     if (anyNone) h = h.replace('<div class="tr-cat">', `<div class="more-time"><span>Some treatments have no available times ${p.rule ? 'on these dates' : 'in this session'}.</span><button type="button" class="bk-backlink" data-gostep="${DATE}">Change your ${p.sessions ? 'day or session' : 'dates'} for more availability →</button></div><div class="tr-cat">`);
     if (S.sameNote && g > 0) { h = `<div class="notice">${esc(S.sameNote)}</div>` + h; if (g === n - 1) S.sameNote = ''; }
-    if (n > 1 && g === 0) h += `<button class="bk-backlink" data-same style="margin-top:14px">Give everyone the same choices as Guest 1</button>`;
+    if (n > 1 && g === 0) h += `<button class="bk-backlink" data-same style="margin-top:14px">Give everyone the same ${P[S.p].food ? 'included treatment and food' : 'included treatment'} as ${esc(gName(0))}</button>`;
     // ---- this guest's treatment times, right under their treatments ----
     if (YE && L.cfg && S.date) {
       S.times = S.times || {}; S.tpDate = S.tpDate || {};
@@ -678,12 +678,14 @@
     body.querySelectorAll('[data-alt]').forEach(b => b.onclick = () => { const k = b.dataset.alt; if (!P[k]) return; const pend = S.pending; reset(k); S.pending = pend; S.cat = P[k].group; syncAdds(); S.step = GUESTS; draw(); });
     body.querySelectorAll('[data-gq]').forEach(b => b.onclick = () => { S.guests = +b.dataset.gq; S.gOK = true; if (S.date && !dateOK(S.p, S.date)){ S.date = null; S.end = null; } draw(); });
     const same = body.querySelector('[data-same]'); if (same) same.onclick = () => {
-      S.picks = S.picks.map((x, i) => i === 0 ? x : { ...S.picks[0] });
-      // the others' own times go (they choose again); extras are copied one by one, only while everyone's treatments still fit
-      if (S.times) Object.keys(S.times).filter(k => !k.startsWith('g0-')).forEach(k => delete S.times[k]);
+      // copies guest 1's included treatment and food only; extras stay each guest's own choice (user 2026-11-27)
       const left = [];
-      for (let i = 1; i < S.guests; i++) { S.adds[i] = []; for (const id of S.adds[0]) { if (!YE || !L.cfg || fitsWith(i, x => ({ ...x, extras: x.extras.concat(id) }), 'same' + i + ':' + S.adds[i].join(',') + '+' + id)) S.adds[i].push(id); else left.push(`${(TRi[id] || {}).name} for ${gName(i)}`); } }
-      S.sameNote = left.length ? `Copied. There wasn’t time for: ${left.join('; ')}.` : 'Copied to everyone. Now choose a time for each guest.';
+      for (let i = 1; i < S.guests; i++) { const want = { ...(S.picks[i] || {}), ...S.picks[0] };
+        const t = incMode(S.p) === 'treat' ? (incList(S.p) || []).find(x => x.name === want.treat) : null;
+        if (t && YE && L.cfg && !fitsWith(i, x => ({ ...x, included: t.id }), 'samei' + i + '=' + t.id)) { left.push(gName(i)); want.treat = (S.picks[i] || {}).treat; }
+        S.picks[i] = want; }
+      if (S.times) Object.keys(S.times).filter(k => !k.startsWith('g0-')).forEach(k => delete S.times[k]);
+      S.sameNote = left.length ? `Copied. There wasn’t time for the same treatment for ${left.join(', ')}, so they keep their own.` : `Copied ${gName(0)}’s ${P[S.p].food ? 'treatment and food' : 'treatment'} to everyone. Now choose any extras and a time for each guest.`;
       S.seen = {}; S.seen[0] = 1; S.tg = 1; draw(); };
   }
 
