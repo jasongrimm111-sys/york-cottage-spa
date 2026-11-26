@@ -419,7 +419,9 @@
     const cats = [...new Set(TR.map(t => t.cat))];
     const extras = cats.map(c => `<div class="tr-cat">${c}${c === 'Japanese Head Spa' && !p.only ? ' <span>10% off with your booking</span>' : ''}</div><div class="tr-list">` + TR.filter(t => t.cat === c).map(t => {
       const on = S.adds[g].includes(t.id), max = !on && S.adds[g].length >= maxExtras();
-      const none = !on && YE && L.cfg && S.date && !nSlots(slotsFor({ key: 'try', guest: g, tid: t.id, min: t.min }, '__none__'));
+      // a same-kind extra makes the included treatment longer, so check the longer treatment still fits
+      const incN = YE && L.cfg && S.date ? siteNeeds().find(n => n.guest === g && n.included) : null, sameKind = incN && (L.cfg.rules || {}).combineIncluded !== false && (YE.tr(L.cfg, incN.tid) || {}).cat === t.cat;
+      const none = !on && YE && L.cfg && S.date && !nSlots(sameKind ? YE.slotsFor(L.cfg, L.ix, engineBooking(), { ...incN, with: (incN.with || []).concat(t.id), min: incN.min + t.min }, pickedItems(incN.key)) : slotsFor({ key: 'try', guest: g, tid: t.id, min: t.min }, '__none__'));
       const full = max || none;
       const pr = t.head && !p.only ? `<s>${gbp(t.price)}</s> ${gbp(t.price * (1 - HEAD_OFF))}` : gbp(t.price);
       return `<button class="tr-opt ${on ? 'sel' : ''}" data-add="${t.id}" data-gi="${g}" ${full ? 'disabled' : ''}><span class="tr-tick">${on ? '✓' : '+'}</span><span class="tr-txt"><b>${t.name}</b><span>${t.desc}</span></span><span class="tr-pr"><b>${pr}</b><small>${none ? 'No time left' : t.min + ' min'}</small></span></button>`;
