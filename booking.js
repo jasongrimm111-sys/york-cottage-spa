@@ -125,6 +125,8 @@
   }
   const slotsFor = (need, exceptKey) => cached('slots:' + need.key + ':' + need.tid + ':' + (exceptKey || need.key), () => (exceptKey && exceptKey !== need.key ? YE.slotsFor : YE.slotsAhead)(L.cfg, L.ix, engineBooking(), need, pickedItems(exceptKey || need.key)));
   const nSlots = sl => sl.reduce((a, d) => a + d.times.length, 0);
+  // would the whole booking still fit (every guest's treatments, times already picked) with this change to one guest?
+  const fitsWith = (g, change, key) => cached('fits:' + g + ':' + key, () => { const b = engineBooking(); b.guestList = b.guestList.map((x, i) => i === g ? change({ ...x, extras: (x.extras || []).slice() }) : x); return YE.plan(L.cfg, L.ix, b, { needs: YE.treatmentNeeds(L.cfg, b) }).ok; });
   function planNow() { if (!YE || !L.cfg || !S.date) return null; const r = YE.plan(L.cfg, L.ix, engineBooking()); S.plan = r.ok ? r.items : null; return r; }
   const fdShort = d => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   function timesList(items) {
@@ -410,7 +412,7 @@
     const g = Math.min(Math.max(S.tg || 0, 0), S.guests - 1); S.tg = g;
     const pick = S.picks[g], n = S.guests;
     const dots = n > 1 ? `<div class="gsteps">${Array.from({ length:n }, (_, i) => `<button class="gstep ${i === g ? 'now' : ''} ${i < g || (i !== g && S.seen && S.seen[i]) ? 'done' : ''}" data-gt="${i}">${i < g || (S.seen && S.seen[i] && i !== g) ? '✓' : i + 1}</button>`).join('<i></i>')}</div>` : '';
-    const incOff = v => { if (!(YE && L.cfg && S.date)) return false; const t = (incList(S.p) || []).find(x => x.name === v); return t ? !nSlots(slotsFor({ key: `g${g}-inc`, guest: g, tid: t.id, min: t.min, included: true })) : false; };
+    const incOff = v => { if (!(YE && L.cfg && S.date)) return false; const t = (incList(S.p) || []).find(x => x.name === v); return t ? !fitsWith(g, x => ({ ...x, included: t.id }), 'inc=' + t.id) : false; };
     const choice = (fld, opts) => `<div class="choice">${opts.map(([v, sub]) => { const off = fld === 'treat' && pick.treat !== v && incOff(v); return `<button class="ch ${pick[fld] === v ? 'sel' : ''}" data-pk="${g}" data-f="${fld}" data-v="${v}" ${off ? 'disabled' : ''}><span class="ch-r"></span><b>${v}</b>${off ? '<small>No time left in this session</small>' : sub ? `<small>${sub}</small>` : ''}</button>`; }).join('')}</div>`;
     let h = `<div class="gc-head"><h2>${n > 1 ? `${esc(gName(g))} <em>· ${g + 1} of ${n}</em>` : p.only ? 'Choose your <em>treatments</em>' : 'Your <em>choices</em>'}</h2>${dots}</div>`;
     const il = incList(S.p);
@@ -420,9 +422,8 @@
     const cats = [...new Set(TR.map(t => t.cat))];
     const extras = cats.map(c => `<div class="tr-cat">${c}${c === 'Japanese Head Spa' && !p.only ? ' <span>10% off with your booking</span>' : ''}</div><div class="tr-list">` + TR.filter(t => t.cat === c).map(t => {
       const on = S.adds[g].includes(t.id), max = !on && S.adds[g].length >= maxExtras();
-      // a same-kind extra makes the included treatment longer, so check the longer treatment still fits
-      const incN = YE && L.cfg && S.date ? siteNeeds().find(n => n.guest === g && n.included) : null, sameKind = incN && (L.cfg.rules || {}).combineIncluded !== false && (YE.tr(L.cfg, incN.tid) || {}).cat === t.cat;
-      const none = !on && YE && L.cfg && S.date && !nSlots(sameKind ? YE.slotsFor(L.cfg, L.ix, engineBooking(), { ...incN, with: (incN.with || []).concat(t.id), min: incN.min + t.min }, pickedItems(incN.key)) : slotsFor({ key: 'try', guest: g, tid: t.id, min: t.min }, '__none__'));
+      // only offered if the whole booking still fits with it, so no guest is left without a time for their included treatment
+      const none = !on && YE && L.cfg && S.date && !fitsWith(g, x => ({ ...x, extras: x.extras.concat(t.id) }), 'x+' + t.id);
       const full = max || none;
       const pr = t.head && !p.only ? `<s>${gbp(t.price)}</s> ${gbp(t.price * (1 - HEAD_OFF))}` : gbp(t.price);
       return `<button class="tr-opt ${on ? 'sel' : ''}" data-add="${t.id}" data-gi="${g}" ${full ? 'disabled' : ''}><span class="tr-tick">${on ? '✓' : '+'}</span><span class="tr-txt"><b>${t.name}</b><span>${t.desc}</span></span><span class="tr-pr"><b>${pr}</b><small>${none ? 'No time left' : t.min + ' min'}</small></span></button>`;
