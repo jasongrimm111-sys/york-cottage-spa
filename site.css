@@ -1179,3 +1179,5 @@ body.book-page .hdr-book{display:none}
 .logo .logo-mark{width:46px;height:auto;flex:none;display:block}
 .logo .logo-t{display:flex;flex-direction:column;font-size:inherit;letter-spacing:normal;text-transform:none;margin:0;opacity:1}
 @media (max-width:700px){.logo .logo-mark{width:38px}.logo{gap:8px}}
+/* "SPA · BOZEAT" lines up with the Y of York (the Y's arm makes the name look set in) */
+.logo .logo-t > span{padding-left:.32em}
