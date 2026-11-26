@@ -131,7 +131,7 @@
     if (!items || !items.length) return '';
     const multi = items.some(i => i.date !== iso(S.date));
     return Array.from({ length: S.guests }, (_, g) => { const its = items.filter(i => i.guest === g).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start)); if (!its.length) return '';
-      return `${S.guests > 1 ? `<b>Guest ${g + 1}</b><br>` : ''}${its.map(i => `${multi ? fdShort(i.date) + ' ' : ''}${i.start} · ${esc((YE.tr(L.cfg, i.tid) || {}).name || i.tid)} (${i.min} min)`).join('<br>')}`; }).filter(Boolean).join('<br>');
+      return `${S.guests > 1 ? `<b>${esc(gName(g))}</b><br>` : ''}${its.map(i => `${multi ? fdShort(i.date) + ' ' : ''}${i.start} · ${esc(YE.itemName(L.cfg, i))} (${i.min} min)`).join('<br>')}`; }).filter(Boolean).join('<br>');
   }
   // discount codes: the public copy only has a fingerprint of each code
   const fp = async code => { const d = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('yc:' + code.trim().toUpperCase()))); let b = ''; d.forEach(x => b += String.fromCharCode(x)); return btoa(b).replace(/=+$/, ''); };
@@ -435,7 +435,7 @@
       if (mine.length) {
         h += `<div class="bk-group">${n > 1 ? `${esc(gName(g))}’s` : 'Your'} treatment times</div><p class="cal-note" style="margin:-4px 0 10px">Pick a time for each treatment. Only times when a therapist and a treatment room are free are shown${P[S.p].rule ? ', on any day of your stay' : ''}.</p>`;
         for (const need of mine) {
-          const t = YE.tr(L.cfg, need.tid) || {}, sl = slotsFor(need), cur = S.times[need.key];
+          const t = { ...(YE.tr(L.cfg, need.tid) || {}), name: YE.itemName(L.cfg, need) }, sl = slotsFor(need), cur = S.times[need.key];
           if (cur && !sl.some(d => d.date === cur.date && d.times.some(x => x.start === cur.start))) delete S.times[need.key];
           const days = sl.filter(d => d.times.length), day = (S.times[need.key] || {}).date || S.tpDate[need.key] || (days[0] || {}).date;
           h += `<div class="tpick ${S.times[need.key] ? 'done' : ''}"><div class="tp-h"><b>${esc(t.name)}</b><span>${need.min || t.min} min${need.included ? ' · included' : ''}</span>${S.times[need.key] ? `<em>✓ ${sl.length > 1 ? fdShort(S.times[need.key].date) + ' ' : ''}${S.times[need.key].start}</em>` : ''}</div>
