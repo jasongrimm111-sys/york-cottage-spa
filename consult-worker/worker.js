@@ -11,6 +11,8 @@
 //  POST /voucher     checks a gift voucher code privately and returns only its balance and expiry (user 2026-11-27).
 //                    Codes and balances never go in the public data. Tries are limited per visitor.
 //                    /hold then reserves the amount used for 30 minutes, and
+//  GET  /booking     "Manage my booking": one booking, by its private link (ref + month + token from the emails) (user 2026-11-27)
+//  POST /booking-request   a guest asking to move, cancel or change it: becomes a support ticket linked to the booking
 //  POST /redeem      after payment, takes it off the voucher (vouchers.json, GitHub version check), keeping what's left.
 // Everything is filed in the private data store, where the booking jobs pick it up.
 // Secrets: GITHUB_TOKEN (fine-grained, york-cottage-spa-data only, Contents: read and write).
@@ -67,6 +69,33 @@ async function redeem(env, holdId, ref) {
   return { ok: false, why: 'Busy just now' };
 }
 
+// ---- manage my booking ----
+async function findBooking(env, ref, m, k) {
+  if (!/^YC-[A-Z0-9]{4,8}$/.test(ref) || !/^\d{4}-\d\d$/.test(m) || !/^[a-z0-9]{12,40}$/.test(k)) return null;
+  const { data } = await raw(env, `bookings/${m}.json`);
+  return (data || []).find(b => b.ref === ref && b.manageToken && b.manageToken === k) || null;
+}
+function bookingView(cfg, b, today) {
+  const p = cfg.products[b.product] || {}, q = b.quote || E.quote(cfg, b), paid = E.paid(b), ses = E.session(cfg, b.sessionId);
+  const tn = id => (E.tr(cfg, id) || {}).name || '';
+  const fn = id => ((cfg.foods || []).find(f => f.id === id) || {}).name || '';
+  const st = p.times ? E.stayTimes(cfg, b.product, b.date, b.nights) : null;
+  const c = cfg.consult || {}, consult = c.endpoint && c.publicKey && b.consultToken ? `consult.html?ref=${encodeURIComponent(b.ref)}&t=${b.consultToken}` : '';
+  const terms = E.live(b) ? E.cancelTerms(cfg, b, today) : null;
+  const kind = p.kind === 'house' ? 'house' : p.kind === 'stay' ? 'stay' : 'spa';
+  return {
+    ref: b.ref, status: b.status, product: p.name || b.product, kind: p.kind, date: b.date, nights: b.nights || 0, end: b.nights ? E.addD(b.date, b.nights) : b.date,
+    session: ses ? { name: ses.name, start: ses.start, end: ses.end, arrive: ses.arrive || ses.start } : null, stay: st, guests: b.guests,
+    lead: (b.customer || {}).first || '',
+    guestList: (b.guestList || []).map((g, i) => ({ name: (g.name || (i ? '' : `${(b.customer || {}).first || ''} ${(b.customer || {}).last || ''}`)).trim().split(' ')[0] || `Guest ${i + 1}`,
+      food: g.food ? fn(g.food) : '', consult: g.consult === 'done',
+      items: (b.items || []).filter(x => x.guest === i).sort((a, z) => ((a.date || b.date) + a.start).localeCompare((z.date || b.date) + z.start)).map(x => ({ name: E.itemName ? E.itemName(cfg, x) : tn(x.tid), date: x.date || b.date, start: x.start, min: x.min })) })),
+    total: q.total, paid, due: Math.round((q.total - paid) * 100) / 100, balanceDue: q.balanceDue || null,
+    policy: (cfg.policies || {})[kind] || '', terms: terms ? { text: terms.text, refund: terms.refund, canMove: terms.canMove, days: terms.days } : null,
+    consult, business: { name: (cfg.business || {}).name, phone: (cfg.business || {}).phone, email: (cfg.business || {}).email, address: (cfg.business || {}).address }
+  };
+}
+
 async function takeHold(env, b, release, voucher) {
   for (let attempt = 0; attempt < 5; attempt++) {
     const [{ data: cfg }, holds, vs] = await Promise.all([raw(env, 'config.json'), raw(env, 'holds/active.json'), voucher ? raw(env, 'vouchers.json') : Promise.resolve({ data: null })]);
@@ -120,6 +149,16 @@ export default {
       if (!t) return out({ pending: true });   // just sent: not filed yet
       return out({ id: t.id, status: t.status, topic: t.topic, name: (t.name || '').split(' ')[0], messages: t.messages.map(m => ({ from: m.from, at: m.at, text: m.text, by: m.from === 'staff' ? (m.by || 'York Cottage') : undefined })) });
     }
+    if (request.method === 'GET' && url.pathname === '/booking') {
+      const ref = clean(url.searchParams.get('ref'), 12).toUpperCase(), m = clean(url.searchParams.get('m'), 7), k = clean(url.searchParams.get('k'), 40);
+      if (tooMany('b' + (request.headers.get('CF-Connecting-IP') || 'x'))) return out({ error: 'Too many tries. Please wait 10 minutes.' }, 429);
+      try {
+        const b = await findBooking(env, ref, m, k);
+        if (!b) return out({ error: 'We can’t find that booking. Please use the link in your email.' }, 404);
+        const { data: cfg } = await raw(env, 'config.json'); E.migrate(cfg);
+        return out({ ok: true, booking: bookingView(cfg, b, todayUK()) });
+      } catch (e) { return out({ error: 'We couldn’t load your booking just now. Please try again.' }, 502); }
+    }
     if (request.method === 'GET' && url.pathname === '/holds') {
       const { data } = await raw(env, 'holds/active.json');
       return out({ holds: live(data).map(holdView) });
@@ -158,6 +197,21 @@ export default {
     if (url.pathname === '/redeem') {
       const h = clean(body.hold, 12); if (!/^H-[A-Z0-9]{8}$/.test(h)) return out({ error: 'Bad request' }, 400);
       try { return out(await redeem(env, h, body.ref)); } catch (e) { return out({ error: 'Could not update the voucher' }, 502); }
+    }
+    // a guest asking to change their booking: checked against the private link, then filed as a support ticket
+    if (url.pathname === '/booking-request') {
+      const ref = clean(body.ref, 12).toUpperCase(), m = clean(body.m, 7), k = clean(body.k, 40);
+      const KINDS = { move: 'Move my booking', cancel: 'Cancel my booking', add: 'Add to my booking', other: 'Question about my booking' };
+      const kind = KINDS[body.kind] ? body.kind : 'other', message = clean(body.message, 3000);
+      try {
+        const b = await findBooking(env, ref, m, k);
+        if (!b) return out({ error: 'We can’t find that booking. Please use the link in your email.' }, 404);
+        const c = b.customer || {};
+        const rec = { kind: 'new', id: 'T-' + rid(), k: key(), at: new Date().toISOString(), name: `${c.first || ''} ${c.last || ''}`.trim(), email: c.email || '', phone: c.phone || '', topic: KINDS[kind], ref: b.ref, request: kind,
+          message: `${KINDS[kind]} (${b.ref})${message ? '\n\n' + message : ''}` };
+        if (!(await file(env, `support/inbox/${Date.now()}-${rec.id}.json`, rec, `Booking request ${rec.id} for ${b.ref}`))) return out({ error: 'Could not save' }, 502);
+        return out({ ok: true, id: rec.id, k: rec.k });
+      } catch (e) { return out({ error: 'We couldn’t send that just now. Please try again.' }, 502); }
     }
     // a new message from the contact form
     if (url.pathname === '/contact') {

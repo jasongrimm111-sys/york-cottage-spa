@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Your booking | York Cottage Spa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css?v=171128s">
+<style>
+  body{background:var(--cream)}
+  .pp{max-width:680px;margin:0 auto;padding:40px 18px 80px}
+  .pp-brand{text-align:center;margin-bottom:22px;text-decoration:none;display:block}
+  .pp-brand b{font-family:var(--serif);font-size:34px;font-weight:500;color:var(--forest)}
+  .pp-brand small{display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--clay);font-weight:600}
+  .pp-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 30px 60px -40px rgba(35,40,35,.45)}
+  .pp-card h1{font-family:var(--serif);font-size:36px;font-weight:500;margin-bottom:6px}
+  .pp .btn{justify-content:center;margin-top:16px;width:100%}
+  .gpick{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 18px}
+  .gpick button{border:1px solid var(--line);border-radius:99px;padding:8px 16px;background:#fff;font:inherit;cursor:pointer}
+  .gpick button.on{background:var(--forest);color:#fff;border-color:var(--forest)}
+  .lockline{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);margin-top:12px}
+</style>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="img/favicon-48.png" sizes="48x48" type="image/png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#2f3b32">
+<style>
+  .mb-when{font-size:15px;margin:2px 0 14px}
+  .mb-st{display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;padding:4px 10px;border-radius:99px;background:#e8f1e8;color:#24452c;margin-left:8px;vertical-align:middle}
+  .mb-st.cancelled{background:#f6e3dd;color:#8a3b25}
+  .mb-sec{border-top:1px solid var(--line);padding-top:14px;margin-top:16px}
+  .mb-sec h2{font-family:var(--serif);font-size:24px;font-weight:500;margin-bottom:8px}
+  .mb-g{margin:10px 0}
+  .mb-g b{display:block;font-size:15px}
+  .mb-g ul{list-style:none;padding:0;margin:4px 0 0}
+  .mb-g li{display:flex;gap:10px;font-size:14px;padding:3px 0}
+  .mb-g li time{font-weight:700;min-width:96px;color:var(--forest)}
+  .mb-money{display:grid;grid-template-columns:1fr auto;gap:4px 16px;font-size:14px}
+  .mb-money b{text-align:right}
+  .mb-acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:8px}
+  .mb-acts button,.mb-acts a{border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px 12px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink);text-decoration:none}
+  .mb-acts button:hover,.mb-acts a:hover{border-color:var(--forest)}
+  .mb-acts .on{background:var(--forest);color:#fff;border-color:var(--forest)}
+  .mb-req textarea{width:100%;box-sizing:border-box;font:inherit;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
+  .mb-ok{background:#eef5ee;border:1px solid #cfe3d0;border-radius:12px;padding:12px 14px;font-size:14px;margin-top:10px}
+  .mb-tick{color:#1f7a3a;font-weight:700}
+</style>
+</head>
+<body>
+<div class="pp">
+  <a class="pp-brand" href="index.html"><small>Bozeat, Northamptonshire</small><b>York Cottage Spa</b></a>
+  <div class="pp-card" id="mb"><p>Loading your booking…</p></div>
+  <p class="cal-note" style="text-align:center;margin-top:16px">Questions? Call 01933 580 100</p>
+</div>
+<script>
+// Manage my booking (user 2026-11-27): the private link from the booking emails shows the booking, treatment times,
+// consultation forms and money, and lets the guest ask to move, cancel or add to it. Requests become support tickets.
+(async () => {
+  const el = document.getElementById('mb'), q = new URLSearchParams(location.search);
+  const ref = (q.get('ref') || '').replace(/[^A-Z0-9-]/gi, '').toUpperCase().slice(0, 12), m = (q.get('m') || '').replace(/[^0-9-]/g, '').slice(0, 7), k = (q.get('k') || '').replace(/[^a-z0-9]/gi, '').slice(0, 40);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const gbp = n => '£' + (+n || 0).toFixed(2).replace(/\.00$/, '');
+  const fd = (iso, o) => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', o || { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const fds = iso => fd(iso, { weekday: 'short', day: 'numeric', month: 'short' });
+  if (!ref || !m || !k) { el.innerHTML = '<h1>This link isn’t complete</h1><p class="bk-sub">Please use the “Manage your booking” link in your booking email.</p>'; return; }
+  let cfg = null;
+  try { cfg = await fetch('https://raw.githubusercontent.com/jasongrimm111-sys/york-cottage-spa-live/main/config.json?v=' + Math.floor(Date.now() / 60000), { cache: 'no-store' }).then(r => r.json()); } catch (e) {}
+  const ep = cfg && cfg.consult && cfg.consult.endpoint ? cfg.consult.endpoint.replace(/\/$/, '') : '';
+  if (!ep) { el.innerHTML = '<h1>Not available yet</h1><p class="bk-sub">Managing bookings online isn’t switched on yet. Please call us on 01933 580 100.</p>'; return; }
+  let B;
+  try { const r = await fetch(`${ep}/booking?ref=${encodeURIComponent(ref)}&m=${m}&k=${k}`); const j = await r.json(); if (!j.ok) throw new Error(j.error || 'Not found'); B = j.booking; }
+  catch (e) { el.innerHTML = `<h1>We can’t open this booking</h1><p class="bk-sub">${esc(e.message)}</p>`; return; }
+  const live = B.status !== 'cancelled', past = B.end < new Date().toISOString().slice(0, 10);
+  let mode = null, sent = null;
+
+  // an .ics file so the visit goes in their calendar
+  const ics = () => {
+    const hm = (d, t) => d.replace(/-/g, '') + 'T' + (t || '10:00').replace(':', '') + '00';
+    const first = ((B.guestList[0] || {}).items || [])[0] || {};
+    const start = B.session ? hm(B.date, B.session.arrive) : B.stay ? hm(B.date, B.stay.checkIn) : hm(B.date, first.start);
+    const end = B.session ? hm(B.date, B.session.end) : B.stay ? hm(B.end, B.stay.checkOut) : hm(B.date, '18:00');
+    const txt = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//York Cottage Spa//EN', 'BEGIN:VEVENT', 'UID:' + B.ref + '@yorkcottages', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z',
+      'DTSTART;TZID=Europe/London:' + start, 'DTEND;TZID=Europe/London:' + end, 'SUMMARY:' + B.product + ' at York Cottage Spa', 'LOCATION:' + (B.business.address || '').replace(/,/g, '\\,'), 'DESCRIPTION:Booking ' + B.ref, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/calendar' })); a.download = 'york-cottage-' + B.ref + '.ics'; a.click();
+  };
+  const draw = () => {
+    const when = B.session ? `${fd(B.date)} · ${esc(B.session.name)} ${B.session.start}–${B.session.end}` : B.nights ? `${fd(B.date)} → ${fd(B.end)} · ${B.nights} night${B.nights > 1 ? 's' : ''}` : fd(B.date);
+    const times = B.session ? `<p class="cal-note">Please arrive at ${B.session.arrive}.</p>` : B.stay ? `<p class="cal-note">Check-in from ${B.stay.checkIn} · check-out ${B.stay.checkOut}</p>` : '';
+    const guests = B.guestList.map(g => `<div class="mb-g"><b>${esc(g.name)}${g.food ? ` <span class="cal-note" style="font-weight:400">· ${esc(g.food)}</span>` : ''}</b>${g.items.length ? `<ul>${g.items.map(i => `<li><time>${B.nights ? fds(i.date) + ' ' : ''}${i.start}</time><span>${esc(i.name)}</span></li>`).join('')}</ul>` : '<p class="cal-note">No treatments booked</p>'}</div>`).join('');
+    const consult = B.consult && live && !past ? `<div class="mb-sec"><h2>Consultation forms</h2><p class="cal-note">Each guest having a treatment fills in a short form before the visit.</p>
+      <ul style="list-style:none;padding:0;margin:8px 0">${B.guestList.map(g => `<li style="padding:3px 0">${g.consult ? '<span class="mb-tick">✓</span>' : '○'} ${esc(g.name)}${g.consult ? ' · done' : ''}</li>`).join('')}</ul>
+      ${B.guestList.some(g => !g.consult) ? `<div class="mb-acts"><a href="${esc(B.consult)}">Fill in a form</a></div>` : ''}</div>` : '';
+    const money = `<div class="mb-sec"><h2>Payment</h2><div class="mb-money"><span>Total</span><b>${gbp(B.total)}</b><span>Paid</span><b>${gbp(B.paid)}</b>${B.due > 0 ? `<span>Still to pay${B.balanceDue ? ' by ' + fd(B.balanceDue, { day: 'numeric', month: 'long' }) : ''}</span><b>${gbp(B.due)}</b>` : ''}</div></div>`;
+    const OPTS = [['move', 'Move to another date'], ['add', 'Add treatments or guests'], ['cancel', 'Cancel'], ['other', 'Ask a question']];
+    const PH = { move: 'Which dates would suit you?', add: 'What would you like to add?', cancel: 'Anything we should know? (optional)', other: 'Your question' };
+    const req = !live || past ? '' : `<div class="mb-sec mb-req"><h2>Need to change something?</h2>
+      ${sent ? `<div class="mb-ok">Thanks, we’ve got your request and will reply by email, usually within a day. <a href="ticket.html?t=${sent.id}&k=${sent.k}">See your request</a></div>` : `
+      <div class="mb-acts">${OPTS.map(([k2, t]) => `<button type="button" data-k="${k2}" class="${mode === k2 ? 'on' : ''}">${t}</button>`).join('')}</div>
+      ${mode ? `${mode === 'cancel' || mode === 'move' ? `<p class="cal-note" style="margin-top:10px">${B.terms ? esc(B.terms.text) + '. ' : ''}${esc(B.policy)}</p>` : ''}
+      <textarea id="msg" rows="3" placeholder="${PH[mode]}"></textarea>
+      <button class="btn btn-solid" id="send">${mode === 'cancel' ? 'Ask to cancel' : 'Send request'} <span class="arrow">→</span></button><p class="cal-note" id="err"></p>` : ''}`}</div>`;
+    el.innerHTML = `<div class="eyebrow">Booking ${esc(B.ref)}<span class="mb-st ${live ? '' : 'cancelled'}">${live ? (past ? 'Visited' : 'Confirmed') : 'Cancelled'}</span></div>
+      <h1>${esc(B.product)}</h1><p class="mb-when">${when}</p>${times}
+      ${live && !past ? `<div class="mb-acts"><button type="button" id="cal">Add to my calendar</button><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(B.business.address || 'York Cottage Spa Bozeat')}" target="_blank" rel="noopener">Directions</a></div>` : ''}
+      <div class="mb-sec"><h2>${B.guests > 1 ? `${B.guests} guests` : 'Your visit'}</h2>${guests}</div>${consult}${money}${req}`;
+    const c = document.getElementById('cal'); if (c) c.onclick = ics;
+    el.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { mode = mode === b.dataset.k ? null : b.dataset.k; draw(); });
+    const s = document.getElementById('send'); if (s) s.onclick = async () => {
+      const msg = document.getElementById('msg').value.trim(), err = document.getElementById('err');
+      if (mode !== 'cancel' && msg.length < 2) { err.textContent = 'Please add a few words so we know what you need.'; return; }
+      s.disabled = true; s.textContent = 'Sending…';
+      try { const r = await fetch(ep + '/booking-request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref, m, k, kind: mode, message: msg }) }); const j = await r.json(); if (!j.ok) throw new Error(j.error || 'Could not send'); sent = j; draw(); }
+      catch (e) { s.disabled = false; s.textContent = 'Send request'; err.textContent = e.message; }
+    };
+  };
+  draw();
+})();
+</script>
+</body>
+</html>

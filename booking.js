@@ -834,6 +834,14 @@
     const q = new URLSearchParams(location.search), k = q.get('b'), tr = q.get('tr'), pr = q.get('promo');
     if (pr) findPromo(pr).then(x => { if (x) { S.promo = { code: pr.toUpperCase(), type: x.type, value: x.value, on: x.on }; draw(); } });
     open(k || undefined, tr || undefined);
+    // a waitlist email's link: the date, guests (and nights) they asked for (user 2026-11-27)
+    const qd = q.get('d'), qg = +q.get('g'), qn = +q.get('n');
+    if (P[k] && /^\d{4}-\d\d-\d\d$/.test(qd || '')) {
+      const [y, mo, da] = qd.split('-').map(Number), D = new Date(y, mo - 1, da);
+      if (qg) { S.guests = Math.min(P[k].max || qg, Math.max(P[k].min || 1, qg)); S.gOK = true; }
+      if (qn && P[k].rule) S.nights = qn;
+      S.date = D; S.end = null; S.month = new Date(y, mo - 1, 1); S.step = DATE; draw();
+    }
     if (k || tr) history.replaceState(null, '', 'book.html');   // a reload keeps the booking in progress instead of starting again
   }
 })();
