@@ -415,7 +415,7 @@
         <div class="gc-side"><p>${note}</p></div>
       </div>
       <div class="bk-group">Who’s coming?</div><p class="cal-note" style="margin:-4px 0 10px">The full name of each guest, so we can welcome everyone and your therapists know who they’re treating.</p>
-      <div class="bk-2 gnames">${Array.from({ length: S.guests }, (_, i) => `<div class="bk-field" data-fd="g${i}"><label for="bk_g${i}">Guest ${i + 1}${i === 0 ? ' (lead guest)' : ''}</label><input id="bk_g${i}" type="text" autocomplete="${i === 0 ? 'name' : 'off'}" value="${esc((S.names || [])[i] || '')}" placeholder="First and last name"><small class="err">Please enter this guest’s name</small></div>`).join('')}</div>`;
+      <div class="bk-2 gnames">${Array.from({ length: S.guests }, (_, i) => `<div class="bk-field" data-fd="g${i}"><label for="bk_g${i}">Guest ${i + 1}${i === 0 ? ' (lead guest)' : ''}</label><input id="bk_g${i}" type="text" autocomplete="${i === 0 ? 'name' : 'off'}" value="${esc((S.names || [])[i] || '')}" placeholder="First and last name"><small class="err">Please enter this guest’s name</small></div>`).join('')}</div>${incMode(S.p) && (!L.cfg || (L.cfg.rules || {}).blueLight !== false) ? `<label class="check blue-q"><input type="checkbox" id="bkBlue" ${S.blue ? 'checked' : ''}> Someone in the group has a Blue Light Card <span class="opt">included treatments become ${(L.cfg && L.cfg.rules.blueLightMin) || 30} minutes, free</span></label>` : ''}`;
     if (p.bfast && (S.p === 'group' || S.nights > 1))
       h += `<label class="check opt-line"><input type="checkbox" id="bkBf" ${S.bfast ? 'checked' : ''}> Add continental breakfast · £${BFAST} per person, per morning</label>`;
     return h;
@@ -522,7 +522,6 @@
           <div class="bk-2">${f('first', 'First name', 'text', 'given-name')}${f('last', 'Last name', 'text', 'family-name')}</div>
           <div class="bk-2">${f('email', 'Email', 'email', 'email', 'Please enter a valid email')}${f('phone', 'Mobile', 'tel', 'tel', 'Please enter a phone number')}</div>
           <div class="bk-field"><label for="bk_notes">Dietary needs, celebrations or anything else <span class="opt">optional</span></label><textarea id="bk_notes" rows="2" placeholder="e.g. one vegan, a birthday">${esc(S.d.notes)}</textarea></div>
-          <label class="check"><input type="checkbox" id="bkBlue" ${S.blue ? 'checked' : ''}> I have a Blue Light Card (free upgrade to 30-minute treatments)</label>
         </div>
         <div class="det-card soft"><div class="bk-group" style="margin-top:0">Before you book</div>
           <p class="det-pol">${pol}</p>
@@ -567,14 +566,34 @@
         : S.p === 'house' ? `<div class="notice"><b>Paying in full today</b> because your stay is within 6 weeks. A £500 damage deposit will be pre-authorised before arrival.</div>` : ''}`;
   }
 
+  // the last check before paying: everything chosen, guest by guest (user 2026-11-27)
   function reviewList(){
-    const p = P[S.p], d = S.d;
-    const when = p.rule ? `${nice(S.date)} – ${nice(endDate(), { year:'numeric' })} (${S.nights} night${S.nights > 1 ? 's' : ''})<br>${stayTimes(S.p, S.date, S.nights).map(([a, b]) => a + ' ' + b).join(' · ')}` : `${nice(S.date, { year:'numeric' })} · ${sesLabel()}`;
-    const picks = (incMode(S.p) === 'treat' || p.food) ? S.picks.map((g, i) => `Guest ${i + 1}: ${[incMode(S.p) === 'treat' && g.treat, p.food && g.food].filter(Boolean).join(', ')}`).join('<br>') : '';
-    const rows = [['Booking', p.name], ['When', when], ['Guests', S.guests + (/^break/.test(S.p) ? ` · ${Math.ceil(S.guests / 2)} room${S.guests > 2 ? 's' : ''}` : '')], picks && ['Included', picks], treatCost().n && ['Treatments', treatLines('<br>', true)], S.bfast && p.bfast && ['Breakfast', `Continental, ${S.nights} morning${S.nights > 1 ? 's' : ''}`], S.blue && ['Blue Light Card', 'Treatments upgraded to 30 minutes'], S.voucher && ['Gift voucher', esc(S.voucher) + ' (checked before your visit)'],
-      S.plan && S.plan.length && ['Your treatment times', timesList(S.plan)],
-      ['Name', esc(d.first + ' ' + d.last)], ['Contact', esc(d.email) + '<br>' + esc(d.phone)], d.notes && ['Notes', esc(d.notes)]].filter(Boolean);
-    return `<div class="pay" style="margin-bottom:18px"><ul class="sum" style="color:var(--ink)">${rows.map(([a, b]) => `<li><span style="color:var(--muted)">${a}</span><b>${b}</b></li>`).join('')}</ul></div>`;
+    const p = P[S.p], d = S.d, multi = S.guests > 1, pr = price();
+    const when = p.rule ? `${nice(S.date)} – ${nice(endDate(), { year:'numeric' })} (${S.nights} night${S.nights > 1 ? 's' : ''})<br><small>${stayTimes(S.p, S.date, S.nights).map(([a, b]) => a + ' ' + b).join(' · ')}</small>` : `${nice(S.date, { year:'numeric' })} · ${sesLabel()}`;
+    const top = [['Booking', esc(p.name)], ['When', when], ['Guests', String(S.guests)], S.bfast && p.bfast && ['Breakfast', `Continental, ${S.nights} morning${S.nights > 1 ? 's' : ''}`], S.blue && ['Blue Light Card', 'Longer included treatments'], S.promo && S.promo.code && ['Discount code', esc(S.promo.code)]].filter(Boolean);
+    const items = (YE && L.cfg && S.plan) || [], roomName = id => esc((((L.cfg || {}).treatRooms || []).find(r => r.id === id) || {}).name || '');
+    const bed = id => { const r = ((L.cfg || {}).rooms || []).find(x => x.id === id); return r ? esc(r.name) : ''; };
+    const line = (it, extra) => { const nm = YE ? YE.itemName(L.cfg, it) : (TRi[it.tid] || {}).name, mate = it.pair ? items.find(o => o !== it && o.pair === it.pair) : null;
+      return `<li><div><b>${esc(nm)}</b>${extra ? ` <span class="rv-tag">${extra}</span>` : ''}<small>${it.date && p.rule ? fdShort(it.date) + ', ' : ''}${it.start} · ${it.min} min${roomName(it.troom) ? ' · ' + roomName(it.troom) : ''}</small>${mate ? `<small class="rv-pair">Together with ${esc(gName(mate.guest))}, same room, each with your own therapist</small>` : ''}</div></li>`; };
+    const guestBox = i => { const mine = items.filter(it => it.guest === i).sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.start.localeCompare(b.start)), pk = S.picks[i] || {};
+      const charge = id => { const c = chargeOf(i, id); return c ? c.price : (TRi[id] || {}).price || 0; };
+      const extras = (S.adds[i] || []).filter(id => !mine.some(it => (it.with || []).includes(id)));
+      const rows = [
+        ...mine.map(it => { const inc = /-inc/.test(it.key), ext = (it.with || []).length; return line(it, inc ? (ext ? `included 20 min + extension ${gbp(charge(it.with[0]))}` : 'included') : gbp(charge(it.tid))); }),
+        ...(!mine.length ? extras.map(id => `<li><div><b>${esc((TRi[id] || {}).name)}</b> <span class="rv-tag">${gbp(charge(id))}</span></div></li>`) : [])
+      ];
+      const facts = [p.food && pk.food && ['Food', esc(pk.food)], p.rule && (S.roomOf || [])[i] && ['Bedroom', bed(S.roomOf[i])]].filter(Boolean);
+      return `<div class="rv-guest"><div class="rv-gh"><b>${esc(gName(i))}</b>${multi && i === 0 ? '<span>Lead guest</span>' : ''}</div>
+        ${rows.length ? `<ul class="rv-tr">${rows.join('')}</ul>` : '<p class="small muted">No treatments</p>'}
+        ${facts.length ? `<dl class="rv-facts">${facts.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>` : ''}</div>`; };
+    const plines = pr ? [[S.p === 'house' ? `Whole house · ${S.nights} night${S.nights > 1 ? 's' : ''}` : `${p.name} · ${S.guests} × ${gbp(pr.base / S.guests)}`, pr.base], pr.bf && ['Breakfast', pr.bf], pr.tc.sub && ['Extra treatments', pr.tc.sub], pr.tc.off && ['Head spa discount', -pr.tc.off], pr.promo && ['Discount code', -pr.promo]].filter(x => x && x[1]) : [];
+    const money = pr ? `<ul class="sum rv-money">${plines.map(([l, v]) => `<li><span>${l}</span><b>${v < 0 ? '−' : ''}${gbp(Math.abs(v))}</b></li>`).join('')}<li class="rv-total"><span>Total</span><b>${gbp(pr.total)}</b></li>${pr.now !== pr.total ? `<li><span>Paying today</span><b>${gbp(pr.now)}</b></li>` : ''}</ul>` : '';
+    return `<div class="pay rv" style="margin-bottom:18px">
+      <ul class="sum" style="color:var(--ink)">${top.map(([a, b]) => `<li><span style="color:var(--muted)">${a}</span><b>${b}</b></li>`).join('')}</ul>
+      <div class="bk-group">${multi ? 'Each guest' : 'Your treatments'}</div><div class="rv-guests">${Array.from({ length: S.guests }, (_, i) => guestBox(i)).join('')}</div>
+      ${money ? `<div class="bk-group">Price</div>${money}` : ''}
+      <div class="bk-group">Your details</div><ul class="sum" style="color:var(--ink)">${[['Name', esc(d.first + ' ' + d.last)], ['Email', esc(d.email)], ['Phone', esc(d.phone)], d.notes && ['Notes', esc(d.notes)]].filter(Boolean).map(([a, b]) => `<li><span style="color:var(--muted)">${a}</span><b>${b}</b></li>`).join('')}</ul>
+      <button type="button" class="bk-backlink" data-gostep="${CHOICES}">Change treatments or times</button></div>`;
   }
 
   function doneView(){
@@ -686,7 +705,8 @@
       if ((k === 'first' || k === 'last') && !S.g0Own) { S.names = S.names || []; S.names[0] = `${S.d.first || ''} ${S.d.last || ''}`.trim(); const g0 = $('#bk_g0', body); if (g0) g0.value = S.names[0]; } }; });
     body.querySelectorAll('[data-rg]').forEach(b => b.onclick = () => { const [r, i] = b.dataset.rg.split('|'); S.roomOf = S.roomOf || []; S.roomOf[+i] = S.roomOf[+i] === r ? '' : r; draw(); });
     body.querySelectorAll('[id^="bk_g"]').forEach(el => { if (!/^bk_g\d+$/.test(el.id)) return; el.oninput = () => { const i = +el.id.slice(4); S.names = S.names || []; S.names[i] = el.value; if (i === 0) S.g0Own = true; el.closest('.bk-field').classList.remove('bad'); }; });
-    [['#bkAdult','adult'],['#bkAgree','agree'],['#bkMkt','mkt'],['#bkBlue','blue']].forEach(([s, k]) => { const el = $(s, body); if (el) el.onchange = () => { S[k] = el.checked; el.closest('.check').classList.remove('bad'); }; });
+    [['#bkAdult','adult'],['#bkAgree','agree'],['#bkMkt','mkt']].forEach(([s, k]) => { const el = $(s, body); if (el) el.onchange = () => { S[k] = el.checked; el.closest('.check').classList.remove('bad'); }; });
+    { const el = $('#bkBlue', body); if (el) el.onchange = () => { if (S.blue !== el.checked) { S.times = {}; S.pairs = {}; } S.blue = el.checked; draw(); }; }
     const c = body.querySelector('[data-close]'); if (c) c.onclick = close;
     const back = $('.back', nav); if (back) back.onclick = () => { if (S.step === CHOICES && S.tg > 0){ S.tg--; draw(); return; } S.step--; if (S.step === ROOMS && !needRooms()) S.step--; if (S.step === CHOICES) S.tg = S.guests - 1; draw(); };
     const go = $('.go', nav); if (go) go.onclick = next;

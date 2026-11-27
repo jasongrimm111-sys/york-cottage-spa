@@ -1226,3 +1226,23 @@ body.book-page .hdr-book{display:none}
 .tp-mates .tp-none{flex-basis:100%;margin:4px 0 0}
 .tp-with{margin:6px 0 4px;font-size:13.5px}
 .tp-pair .bk-backlink{margin:0}
+/* review before paying: guest by guest (2026-11-27) */
+.rv .bk-group{margin-top:18px}
+.rv-guests{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.rv-guest{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.rv-gh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.rv-gh b{font-family:var(--serif);font-size:19px;font-weight:500}
+.rv-gh span{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.rv-tr{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.rv-tr li{border-left:2px solid var(--sand);padding-left:10px}
+.rv-tr b{font-weight:600;font-size:14px}
+.rv-tr small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.rv-tr .rv-pair{color:var(--forest);font-weight:600}
+.rv-tag{display:inline-block;font-size:11.5px;font-weight:600;background:var(--cream);border-radius:999px;padding:1px 8px;margin-left:4px;color:var(--ink)}
+.rv-facts{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:10px 0 0;font-size:13px}
+.rv-facts dt{color:var(--muted)}
+.rv-facts dd{margin:0;font-weight:600}
+.rv-money .rv-total{border-top:1px solid var(--line);padding-top:6px;font-size:16px}
+.rv .bk-backlink{margin-top:12px}
+.blue-q{margin-top:14px}
+.blue-q .opt{display:block;font-size:12.5px;color:var(--muted);margin-left:26px}
