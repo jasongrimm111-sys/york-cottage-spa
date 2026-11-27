@@ -35,7 +35,7 @@
   <div class="pp-card" id="pp"><p>Loading the form…</p></div>
   <p class="cal-note" style="text-align:center;margin-top:16px">Questions? Call 01933 580 100 or email our contact form</p>
 </div>
-<script src="consult.js?v=171201u"></script>
+<script src="consult.js?v=171201x"></script>
 <script>
 // Each guest fills this in before their treatments. Answers are encrypted in this browser with York Cottage's public key,
 // so only the spa's admin portal can read them. The receiving service only ever sees the encrypted form.
@@ -58,7 +58,7 @@
   const draw = () => {
     el.innerHTML = `<div class="eyebrow">Booking ${esc(ref)}</div><h1>Consultation form</h1><p class="bk-sub">So your therapist can make your treatment safe and just right for you. Each guest fills in their own form.</p>
       <div class="bk-group">Which guest are you?</div><div class="gpick">${Array.from({ length: nGuests }, (_, i) => `<button type="button" data-g="${i}" class="${i === g ? 'on' : ''}">${i === 0 ? 'I booked' : 'Guest ' + (i + 1)}</button>`).join('')}</div>
-      ${C.formHTML(qs)}<button class="btn btn-solid" id="go">Send my form <span class="arrow">→</span></button>
+      ${C.formHTML(qs, { consent: c.consentText })}<button class="btn btn-solid" id="go">Send my form <span class="arrow">→</span></button>
       <div class="lockline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Your answers are encrypted on this device and only York Cottage can read them. We keep them for ${c.retentionMonths || 24} months.</div>`;
     C.wireForm(el);
     el.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { const nq = qsFor(+b.dataset.g); g = +b.dataset.g; if (JSON.stringify(nq) !== JSON.stringify(qs)) { qs = nq; draw(); return; } el.querySelectorAll('[data-g]').forEach(x => x.classList.toggle('on', x === b)); });
@@ -68,7 +68,7 @@
       e.target.disabled = true; e.target.innerHTML = '<span class="spin"></span> Sending…';
       try {
         const sealed = await C.seal(c.publicKey, v.answers);
-        const r = await fetch(c.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref, t: tok, g, sealed }) });
+        const r = await fetch(c.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref, t: tok, g, sealed, optin: v.optin && v.optin.email ? v.optin : null }) });
         if (!r.ok) throw new Error('send');
         el.innerHTML = `<div style="text-align:center"><div class="done-ico" style="margin:0 auto 14px"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5L20 7"/></svg></div><h1>Thank you</h1><p class="bk-sub">Your form is with your therapist. If anyone else in your group hasn’t filled theirs in, they can use the same link.</p><button class="btn btn-ghost" id="another" style="width:auto">Fill in another guest’s form</button></div>`;
         document.getElementById('another').onclick = () => { g = Math.min(nGuests - 1, g + 1); qs = qsFor(g); draw(); scrollTo(0, 0); };
