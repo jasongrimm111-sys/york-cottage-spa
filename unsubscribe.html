@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Unsubscribe | York Cottage Spa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css?v=171201j">
+<style>
+  body{background:var(--cream)}
+  .pp{max-width:680px;margin:0 auto;padding:40px 18px 80px}
+  .pp-brand{text-align:center;margin-bottom:22px;text-decoration:none;display:block}
+  .pp-brand b{font-family:var(--serif);font-size:34px;font-weight:500;color:var(--forest)}
+  .pp-brand small{display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--clay);font-weight:600}
+  .pp-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 30px 60px -40px rgba(35,40,35,.45)}
+  .pp-card h1{font-family:var(--serif);font-size:36px;font-weight:500;margin-bottom:6px}
+  .pp .btn{justify-content:center;margin-top:16px;width:100%}
+  .gpick{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 18px}
+  .gpick button{border:1px solid var(--line);border-radius:99px;padding:8px 16px;background:#fff;font:inherit;cursor:pointer}
+  .gpick button.on{background:var(--forest);color:#fff;border-color:var(--forest)}
+  .lockline{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);margin-top:12px}
+</style>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="img/favicon-48.png" sizes="48x48" type="image/png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#2f3b32">
+</head>
+<body>
+<div class="pp">
+  <a class="pp-brand" href="index.html"><small>Bozeat, Northamptonshire</small><b>York Cottage Spa</b></a>
+  <div class="pp-card" id="un"><p>One moment…</p></div>
+</div>
+<script>
+// Unsubscribe from York Cottage marketing emails (user 2026-11-27). Booking emails (confirmations, reminders) still arrive.
+(async () => {
+  const el = document.getElementById('un'), q = new URLSearchParams(location.search), e = (q.get('e') || '').trim(), k = (q.get('k') || '').trim();
+  const show = (h, p) => { el.innerHTML = '<h1>' + h + '</h1><p class="bk-sub">' + p + '</p>'; };
+  if (!e || !k) return show('Unsubscribe', 'Please use the unsubscribe link at the bottom of one of our emails, or reply to any email and we’ll take you off the list.');
+  let cfg = null; try { cfg = await fetch('https://raw.githubusercontent.com/jasongrimm111-sys/york-cottage-spa-live/main/config.json?v=' + Math.floor(Date.now() / 60000), { cache: 'no-store' }).then(r => r.json()); } catch (x) {}
+  const ep = cfg && cfg.consult && cfg.consult.endpoint ? cfg.consult.endpoint.replace(/\/$/, '') : '';
+  if (!ep) return show('Unsubscribe', 'Please reply to any of our emails, or email info@yorkcottagespa.com, and we’ll take you off the list straight away.');
+  el.innerHTML = '<h1>Unsubscribe?</h1><p class="bk-sub">You’ll stop getting news and offers from York Cottage Spa at <b></b>. Emails about your bookings will still arrive.</p><button class="btn btn-solid" id="go">Unsubscribe me <span class="arrow">→</span></button><p class="cal-note" id="err"></p>';
+  el.querySelector('b').textContent = e;
+  document.getElementById('go').onclick = async () => {
+    const b = document.getElementById('go'); b.disabled = true; b.textContent = 'One moment…';
+    try { const r = await fetch(ep + '/unsubscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ e, k }) }); const j = await r.json(); if (!j.ok) throw new Error(j.error || 'Something went wrong');
+      show('You’re unsubscribed', 'You won’t get any more news and offers from us. If you change your mind, just let us know when you next book.'); }
+    catch (x) { b.disabled = false; b.textContent = 'Unsubscribe me'; document.getElementById('err').textContent = x.message; }
+  };
+})();
+</script>
+</body>
+</html>

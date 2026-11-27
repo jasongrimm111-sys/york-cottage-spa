@@ -214,6 +214,18 @@ export default {
         return out({ ok: true, id: rec.id, k: rec.k });
       } catch (e) { return out({ error: 'We couldn’t send that just now. Please try again.' }, 502); }
     }
+    // unsubscribe from marketing emails (user 2026-11-27): checked against the guest's own key, then filed for the email job
+    if (url.pathname === '/unsubscribe') {
+      const e = clean(body.e, 200).toLowerCase(), k = clean(body.k, 40);
+      if (!/^\S+@\S+\.\S+$/.test(e) || !/^[a-f0-9]{24}$/.test(k)) return out({ error: 'This unsubscribe link isn’t complete. Please reply to any of our emails and we’ll take you off the list.' }, 400);
+      try {
+        const { data } = await raw(env, 'customers.json'); const kk = Object.keys(data || {}).find(x => x.toLowerCase() === e);
+        if (!kk || data[kk].unsubKey !== k) return out({ error: 'We couldn’t match this link. Please reply to any of our emails and we’ll take you off the list.' }, 404);
+        if (data[kk].marketing === false && data[kk].unsubscribedAt) return out({ ok: true, already: true });
+        if (!(await file(env, `marketing/unsub/${Date.now()}-${rid()}.json`, { e, k, at: new Date().toISOString() }, 'Unsubscribe from marketing'))) return out({ error: 'Could not save just now. Please try again.' }, 502);
+        return out({ ok: true });
+      } catch (x) { return out({ error: 'Something went wrong. Please try again in a minute.' }, 502); }
+    }
     // a new message from the contact form
     if (url.pathname === '/contact') {
       if (body.website) return out({ ok: true });   // the hidden trap field: only robots fill it in
