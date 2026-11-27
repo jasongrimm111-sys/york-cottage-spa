@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=171201s">
+<link rel="stylesheet" href="site.css?v=171202e">
 <style>
   body{background:var(--cream)}
   .pp{max-width:680px;margin:0 auto;padding:40px 18px 80px}
@@ -35,7 +35,7 @@
   <div class="pp-card" id="pp"><p>Loading the form…</p></div>
   <p class="cal-note" style="text-align:center;margin-top:16px">Questions? Call 01933 580 100 or email our contact form</p>
 </div>
-<script src="consult.js?v=171202c"></script>
+<script src="consult.js?v=171202e"></script>
 <script>
 // Each guest fills this in before their treatments. Answers are encrypted in this browser with York Cottage's public key,
 // so only the spa's admin portal can read them. The receiving service only ever sees the encrypted form.
@@ -56,15 +56,15 @@
   const st = document.createElement('style'); st.textContent = C.css; document.head.appendChild(st);
   let g = 0;
   const draw = () => {
-    el.innerHTML = `<div class="eyebrow">Booking ${esc(ref)}</div><h1>Consultation form</h1><p class="bk-sub">${(() => { const sp = C.splitIntro(qs); return sp.intro ? esc(sp.intro.help || sp.intro.label).split(String.fromCharCode(10)).join('<br>') : 'So your therapist can make your treatment safe and just right for you.'; })()} Each guest fills in their own form.</p>
+    el.innerHTML = `<div class="eyebrow">Booking ${esc(ref)}</div><h1>Consultation form</h1><p class="bk-sub">${(() => { const sp = C.splitIntro(qs); return sp.intro ? esc(sp.intro.help || sp.intro.label).split(String.fromCharCode(10)).join('</p><p class="bk-sub">') : 'So your therapist can make your treatment safe and just right for you.'; })()} Each guest fills in their own form.</p>
       <div class="bk-group">Which guest are you?</div><div class="gpick">${Array.from({ length: nGuests }, (_, i) => `<button type="button" data-g="${i}" class="${i === g ? 'on' : ''}">${i === 0 ? 'I booked' : 'Guest ' + (i + 1)}</button>`).join('')}</div>
       ${C.formHTML(C.splitIntro(qs).rest, { consent: c.consentText })}<button class="btn btn-solid" id="go">Send my form <span class="arrow">→</span></button>
       <div class="lockline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Your answers are encrypted on this device and only York Cottage can read them. We keep them for ${c.retentionMonths || 24} months.</div>`;
-    C.wireForm(el);
+    C.wireForm(el, qs);
     el.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { const nq = qsFor(+b.dataset.g); g = +b.dataset.g; if (JSON.stringify(nq) !== JSON.stringify(qs)) { qs = nq; draw(); return; } el.querySelectorAll('[data-g]').forEach(x => x.classList.toggle('on', x === b)); });
     document.getElementById('go').onclick = async e => {
       const v = C.readForm(el, qs), msg = el.querySelector('.cq-msg');
-      if (!v.ok) { msg.textContent = v.msg; msg.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+      if (!v.ok) { msg.textContent = v.msg; return; }
       e.target.disabled = true; e.target.innerHTML = '<span class="spin"></span> Sending…';
       try {
         const sealed = await C.seal(c.publicKey, v.answers);

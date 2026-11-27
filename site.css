@@ -1345,3 +1345,7 @@ html.bk-on body.book-page .offer-bar{display:none}
 /* admin text preview: the text being edited (2026-11-27) */
 .yc-hl{outline:3px solid #b4785a;outline-offset:6px;border-radius:4px;background:rgba(180,120,90,.08);transition:outline-color .3s}
 .yc-preview .rv{opacity:1!important;transform:none!important}
+
+/* email boxes that aren't a valid address */
+input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,.12)}
+.em-err{display:block;color:#b0413e;font-size:13px;font-weight:600;margin-top:5px}

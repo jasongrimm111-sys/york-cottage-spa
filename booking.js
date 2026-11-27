@@ -663,7 +663,7 @@
     if (S.step === DETAILS){
       const d = S.d, bad = [];
       if (!(d.first || '').trim()) bad.push('first'); if (!(d.last || '').trim()) bad.push('last');
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email || '')) bad.push('email');
+      if (!(window.YCValidEmail ? window.YCValidEmail(d.email) : /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email || ''))) bad.push('email');
       if ((d.phone || '').replace(/\D/g, '').length < 10) bad.push('phone');
 
       if (bad.length) return { bad };

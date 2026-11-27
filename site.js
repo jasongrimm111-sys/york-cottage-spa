@@ -1,3 +1,10 @@
+/* email addresses are checked the same way everywhere (user 2026-11-27) */
+window.YCValidEmail = (v => { v = String(v || '').trim(); if (!v || v.length > 254) return false; const m = /^([A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+)@((?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,})$/.exec(v); return !!m && m[1].length <= 64 && m[1][0] !== '.' && m[1].slice(-1) !== '.' && !m[1].includes('..'); });
+document.addEventListener('focusout', e => { const i = e.target; if (!i.matches || !i.matches('input[type=email]') || i.closest('.cform-q')) return;
+  const bad = i.value.trim() && !window.YCValidEmail(i.value); i.classList.toggle('em-bad', !!bad); i.setAttribute('aria-invalid', bad ? 'true' : 'false');
+  let m = i.parentElement.querySelector(':scope > .em-err'); if (bad && !m) { m = document.createElement('small'); m.className = 'em-err'; m.setAttribute('role', 'alert'); i.after(m); }
+  if (m) { if (bad) m.textContent = 'That doesn’t look like an email address, e.g. name@example.com'; else m.remove(); } });
+document.addEventListener('input', e => { const i = e.target; if (i.matches && i.matches('input[type=email].em-bad') && window.YCValidEmail(i.value)) { i.classList.remove('em-bad'); const m = i.parentElement.querySelector(':scope > .em-err'); if (m) m.remove(); } });
 (() => {
   const h = document.querySelector('header'), b = document.querySelector('.burger');
   const onScroll = () => {

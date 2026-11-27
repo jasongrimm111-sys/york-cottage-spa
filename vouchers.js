@@ -70,7 +70,7 @@
       const msg = $('.bk-msg', nav);
       if (S.step === 0 && !S.k){ msg.textContent = 'Choose a voucher'; return; }
       if (S.step === 1){
-        const need = ['to', 'from', 'email'].concat(S.d.send === 'them' ? ['toEmail'] : []), bad = need.filter(k => k.toLowerCase().includes('email') ? !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(S.d[k] || '') : !(S.d[k] || '').trim());
+        const need = ['to', 'from', 'email'].concat(S.d.send === 'them' ? ['toEmail'] : []), bad = need.filter(k => k.toLowerCase().includes('email') ? !(window.YCValidEmail ? window.YCValidEmail(S.d[k]) : /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(S.d[k] || '')) : !(S.d[k] || '').trim());
         if (bad.length){ bad.forEach(k => $(`[data-fd="${k}"]`, body).classList.add('bad')); msg.textContent = 'Please check the highlighted fields'; return; }
       }
       if (S.step < 2){ S.step++; draw(); return; }

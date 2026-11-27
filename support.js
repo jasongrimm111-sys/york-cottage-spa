@@ -20,6 +20,7 @@
       e.preventDefault();
       const v = id => (f.querySelector('#' + id) || {}).value || '', st = f.querySelector('.cf-status'), btn = f.querySelector('button[type=submit], button:not([type])');
       const body = { name: v('cf_n'), email: v('cf_e'), phone: v('cf_p'), topic: v('cf_t'), ref: v('cf_r'), message: v('cf_m'), website: v('cf_w') };
+      if (window.YCValidEmail && !window.YCValidEmail(body.email)) { st.textContent = 'Please check your email address, e.g. name@example.com'; st.className = 'cf-status bad'; const i = f.querySelector('#cf_e'); if (i) i.focus(); return; }
       const url = await endpoint(); if (!url) { st.innerHTML = off; st.className = 'cf-status bad'; return; }
       btn.disabled = true; st.className = 'cf-status'; st.textContent = 'Sending…';
       try {
