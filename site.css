@@ -1302,3 +1302,8 @@ html.bk-on body.book-page .offer-bar{display:none}
 .fh-scale i.on{background:#1f7a3a;color:#fff;width:22px;font-size:13px;border-radius:999px}
 @media (max-width:600px){.fh-chip{margin-left:0;margin-top:10px}}
 .g-chip{vertical-align:top}
+
+/* close button on the offer bar (2026-11-27) */
+.offer-bar{position:relative;padding-right:48px}
+.offer-bar .offer-x{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:28px;height:28px;padding:0;border-radius:50%;background:transparent;color:#fff;font-size:22px;line-height:1;font-weight:400;display:grid;place-items:center;opacity:.85}
+.offer-bar .offer-x:hover{background:rgba(255,255,255,.18);opacity:1}

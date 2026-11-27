@@ -149,8 +149,13 @@
   function banner() {
     if (!YE || !L.cfg || document.querySelector('.offer-bar')) return;
     const list = YE.promoBanners(L.cfg); if (!list.length) return;
-    const o = list[0], bar = document.createElement('div'); bar.className = 'offer-bar';
-    bar.innerHTML = `<span>${esc(o.banner.text)}</span><button type="button" data-book="${(o.products || [])[0] || ''}" data-promo="${esc(o.show || '')}">Book now</button>`;
+    const o = list[0], HIDE = 'yc-offer-hide', DAYS = 3;
+    // closed recently? stay hidden for a few days (user 2026-11-27)
+    try { const h = JSON.parse(localStorage.getItem(HIDE) || 'null'); if (h && h.id === o.id && h.until > Date.now()) return; } catch (e) {}
+    const bar = document.createElement('div'); bar.className = 'offer-bar';
+    bar.innerHTML = `<span>${esc(o.banner.text)}</span><button type="button" data-book="${(o.products || [])[0] || ''}" data-promo="${esc(o.show || '')}">Book now</button><button type="button" class="offer-x" aria-label="Close this offer">×</button>`;
+    bar.querySelector('.offer-x').onclick = () => { bar.remove(); document.documentElement.classList.remove('has-offer'); document.documentElement.style.setProperty('--offer-h', '0px');
+      try { localStorage.setItem(HIDE, JSON.stringify({ id: o.id, until: Date.now() + DAYS * 864e5 })); } catch (e) {} };
     const hd = document.querySelector('header'); if (hd) hd.prepend(bar); else document.body.prepend(bar);
     document.documentElement.classList.add('has-offer');
     const fit = () => document.documentElement.style.setProperty('--offer-h', bar.offsetHeight + 'px'); fit(); addEventListener('resize', fit);
