@@ -14,11 +14,11 @@
               sessions:[['Morning','time confirmed by email'],['Afternoon','time confirmed by email']],
               blurb:'The spa just for your group, with food, drinks and a 20-minute massage or luxury facial each. Minimum 4 guests (6 on Sundays, from 11:30).' },
     break:  { name:'1-Night Spa Break', group:'Stay', kind:'pay', priceN:{1:145}, per:'per person', from:'£145 per person', min:2, max:6, rule:'mid', nights:[1], bfast:true,
-              blurb:'One night, from £145 per person based on 2 sharing. King ensuite room, grazing board, a 20-minute aromatherapy massage each and spa access. Sunday to Thursday.' },
+              blurb:'One night, from £145 per person based on 2 sharing. King ensuite room, grazing board, a 20-minute aromatherapy massage or facial each and spa access. Sunday to Thursday.' },
     break2: { name:'2-Night Spa Break', group:'Stay', kind:'pay', priceN:{2:220}, per:'per person', from:'£220 per person', min:2, max:6, rule:'mid', nights:[2], bfast:true,
-              blurb:'Two nights, from £220 per person based on 2 sharing. King ensuite room, grazing board, 20-minute aromatherapy massages and spa access. Arrive Sunday to Wednesday.' },
+              blurb:'Two nights, from £220 per person based on 2 sharing. King ensuite room, grazing board, a 20-minute aromatherapy massage or facial each and spa access. Arrive Sunday to Wednesday.' },
     group:  { name:'Group Spa Break', group:'Stay', kind:'pay', priceN:{1:145}, per:'per person', from:'from £145 per person', min:7, max:16, rule:'mid', nights:[1], food:true, foods:['Grazing board','Afternoon tea'], bfast:true,
-              blurb:'7+ guests, Sunday to Thursday. Up to 8 rooms, the spa just for your group, a grazing board or afternoon tea and a 20-minute aromatherapy massage each.' },
+              blurb:'7+ guests, Sunday to Thursday. Up to 8 rooms, the spa just for your group, a grazing board or afternoon tea and a 20-minute aromatherapy massage or facial each.' },
     house:  { name:'Whole House & Spa', group:'House', kind:'pay', night:1840, per:'per night', from:'from £1,840 per night', min:1, max:16, rule:'range', minN:2, maxN:30,
               blurb:'Exclusive use of the house and spa for up to 16 guests: 8 bedrooms, kitchen, 2 living rooms, hot tub and sauna. 2-night minimum.' },
     treat:  { name:'Treatments only', group:'Treat', kind:'pay', price:0, per:'', from:'from £50', min:1, max:6, only:true,
@@ -326,6 +326,7 @@
   // the first day that can be booked (with a session free, for session bookings), chosen for the guest (user, 2026-11-26)
   // could these two treatments be had together (same room, same time)? at the other guest's time if they've picked one
   const canPair = (k, w) => cached('pair:' + k + '>' + w, () => { const b = { ...engineBooking(), pairs: { ...(S.pairs || {}), [k]: w } }, tm = { ...(b.times || {}) }; delete tm[k]; b.times = tm; return YE.plan(L.cfg, L.ix, b, { needs: YE.treatmentNeeds(L.cfg, b) }).ok; });
+  const blueName = n => S.blue && YE && L.cfg && YE.minName && L.cfg.rules.blueLight ? YE.minName(n, L.cfg.rules.blueLightMin || 30) : n;
   const resetAfter = () => { S.pairs = {}; S.times = {}; S.tpDate = {}; S.adds = S.adds.map(() => []); S.picks = []; S.roomOf = []; S.seen = {}; S.tg = 0; S.sameNote = ''; };
   function firstFree(){
     const p = P[S.p];
@@ -422,7 +423,7 @@
   }
 
   const pricePart = () => '';
-  const INCLUDED = { day:'treat', private:'treat', break:'massage', break2:'massage', group:'massage' };
+  const INCLUDED = { day:'treat', private:'treat', break:'treat', break2:'treat', group:'treat' };
   // most extra treatments one guest can add online (set per booking type in the admin; staff can add more)
   const maxExtras = () => { const q = L.cfg && L.cfg.products[S.p]; if (q && q.maxExtras) return q.maxExtras; return P[S.p].rule ? 3 * ((S.nights || 1) + 1) : 3; };
   // included treatments for a booking type (from the admin): 'treat' = guests choose one, 'massage' = everyone has them
@@ -435,11 +436,11 @@
     const pick = S.picks[g], n = S.guests;
     const dots = n > 1 ? `<div class="gsteps">${Array.from({ length:n }, (_, i) => `<button class="gstep ${i === g ? 'now' : ''} ${i < g || (i !== g && S.seen && S.seen[i]) ? 'done' : ''}" data-gt="${i}">${i < g || (S.seen && S.seen[i] && i !== g) ? '✓' : i + 1}</button>`).join('<i></i>')}</div>` : '';
     const incOff = v => { if (!(YE && L.cfg && S.date)) return false; const t = (incList(S.p) || []).find(x => x.name === v); return t ? !fitsWith(g, x => ({ ...x, included: t.id }), 'inc=' + t.id) : false; };
-    const choice = (fld, opts) => `<div class="choice">${opts.map(([v, sub]) => { const off = fld === 'treat' && pick.treat !== v && incOff(v); return `<button class="ch ${pick[fld] === v ? 'sel' : ''}" data-pk="${g}" data-f="${fld}" data-v="${v}" ${off ? 'disabled' : ''}><span class="ch-r"></span><b>${v}</b>${off ? '<small>No available times in this session</small>' : sub ? `<small>${sub}</small>` : ''}</button>`; }).join('')}</div>`;
+    const choice = (fld, opts) => `<div class="choice">${opts.map(([v, sub]) => { const off = fld === 'treat' && pick.treat !== v && incOff(v); return `<button class="ch ${pick[fld] === v ? 'sel' : ''}" data-pk="${g}" data-f="${fld}" data-v="${v}" ${off ? 'disabled' : ''}><span class="ch-r"></span><b>${fld === 'treat' ? blueName(v) : v}</b>${off ? '<small>No available times in this session</small>' : sub ? `<small>${sub}</small>` : ''}</button>`; }).join('')}</div>`;
     let h = `<div class="gc-head"><h2>${n > 1 ? `${esc(gName(g))} <em>· ${g + 1} of ${n}</em>` : p.only ? 'Choose your <em>treatments</em>' : 'Your <em>choices</em>'}</h2>${dots}</div>`;
     const il = incList(S.p);
     if (incMode(S.p) === 'treat') { if (il && !il.some(t => t.name === pick.treat)) pick.treat = il[0].name; h += `<div class="bk-group">Included treatment: choose one</div>${choice('treat', il ? il.map(t => [t.name, t.desc || `${t.min} minutes`]) : [['Aromatherapy massage', 'Relaxing, with aromatherapy oils'], [p.facial || 'Facial', S.p === 'private' ? 'A luxury facial' : 'An aromatherapy facial']])}`; }
-    if (incMode(S.p) === 'massage') h += `<div class="inc-line"><span>✓</span> ${il ? esc(il.map(t => t.name).join(' and ')) + (il.length > 1 ? ' are' : ' is') : 'A 20-minute aromatherapy massage is'} included</div>`;
+    if (incMode(S.p) === 'massage') h += `<div class="inc-line"><span>✓</span> ${il ? esc(il.map(t => blueName(t.name)).join(' and ')) + (il.length > 1 ? ' are' : ' is') : 'A 20-minute aromatherapy massage is'} included</div>`;
     if (p.food) h += `<div class="bk-group">Food</div>${choice('food', (p.foods || ['Afternoon tea', 'Sweet & savoury grazing board']).map(v => [v, v === 'Afternoon tea' ? 'Sweet & savoury treats' : v === 'Grazing board' ? 'Meats, cheese & sweet treats' : 'Meats, cheese & sweet treats · vegan available']))}`;
     const cats = [...new Set(TR.map(t => t.cat))];
     let anyNone = false;
