@@ -1,3 +1,5 @@
+/* digits in headings use the plain sans font (the serif 1 looked like a Roman numeral I) */
+@font-face{font-family:"YC Digits";font-style:normal;font-weight:400 700;font-display:swap;src:url(https://fonts.gstatic.com/s/manrope/v23/xn7gYHE41ni1AdIRggexSg.woff2) format('woff2');unicode-range:U+0030-0039;size-adjust:90%}
 :root{
   --cream:#f6f1e9;
   --paper:#fbf8f3;
@@ -10,7 +12,7 @@
   --ink:#232823;
   --muted:#6b6f68;
   --line:rgba(35,40,35,.12);
-  --serif:"Cormorant Garamond", Georgia, serif;
+  --serif:"YC Digits", "Cormorant Garamond", Georgia, serif;
   --sans:"Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
   --wrap:1200px;
   --r:18px;
@@ -1324,3 +1326,6 @@ html.bk-on body.book-page .offer-bar{display:none}
 .seg-pick{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}
 .seg-pick button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 16px;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
 .seg-pick button.on{background:var(--forest);border-color:var(--forest);color:#fff}
+
+/* normal (lining) numbers everywhere: the serif font's old-style 1 looked like a Roman numeral I (user 2026-11-27) */
+*,*::before,*::after{font-feature-settings:"lnum" 1}
