@@ -539,6 +539,7 @@
         <div class="det-card"><div class="bk-group" style="margin-top:0">Lead guest</div>
           <div class="bk-2">${f('first', 'First name', 'text', 'given-name')}${f('last', 'Last name', 'text', 'family-name')}</div>
           <div class="bk-2">${f('email', 'Email', 'email', 'email', 'Please enter a valid email')}${f('phone', 'Mobile', 'tel', 'tel', 'Please enter a phone number')}</div>
+          ${L.cfg && L.cfg.sms && L.cfg.sms.on ? `<div class="bk-field"><label>How should we keep you updated?</label><div class="seg-pick">${[['email', 'Email'], ['sms', 'Text message'], ['both', 'Both']].map(([k, t]) => `<button type="button" class="${(S.notify || 'email') === k ? 'on' : ''}" data-notify="${k}">${t}</button>`).join('')}</div><small class="cal-note">Booking confirmation, reminders and any changes. We’ll always email your receipt.</small></div>` : ''}
           <div class="bk-field"><label for="bk_notes">Dietary needs, celebrations or anything else <span class="opt">optional</span></label><textarea id="bk_notes" rows="2" placeholder="e.g. one vegan, a birthday">${esc(S.d.notes)}</textarea></div>
         </div>
         <div class="det-card soft"><div class="bk-group" style="margin-top:0">Before you book</div>
@@ -622,7 +623,7 @@
       <ul class="sum" style="color:var(--ink)">${top.map(([a, b]) => `<li><span style="color:var(--muted)">${a}</span><b>${b}</b></li>`).join('')}</ul>
       <div class="bk-group">${multi ? 'Each guest' : 'Your treatments'}</div><div class="rv-guests">${Array.from({ length: S.guests }, (_, i) => guestBox(i)).join('')}</div>
       ${money ? `<div class="bk-group">Price</div>${money}` : ''}
-      <div class="bk-group">Your details</div><ul class="sum" style="color:var(--ink)">${[['Name', esc(d.first + ' ' + d.last)], ['Email', esc(d.email)], ['Phone', esc(d.phone)], d.notes && ['Notes', esc(d.notes)]].filter(Boolean).map(([a, b]) => `<li><span style="color:var(--muted)">${a}</span><b>${b}</b></li>`).join('')}</ul>
+      <div class="bk-group">Your details</div><ul class="sum" style="color:var(--ink)">${[['Name', esc(d.first + ' ' + d.last)], ['Email', esc(d.email)], ['Phone', esc(d.phone)], L.cfg && L.cfg.sms && L.cfg.sms.on && ['Updates by', { email: 'Email', sms: 'Text message', both: 'Email and text' }[S.notify || 'email']], d.notes && ['Notes', esc(d.notes)]].filter(Boolean).map(([a, b]) => `<li><span style="color:var(--muted)">${a}</span><b>${b}</b></li>`).join('')}</ul>
       <button type="button" class="bk-backlink" data-gostep="${CHOICES}">Change treatments or times</button></div>`;
   }
 
@@ -738,6 +739,7 @@
     body.querySelectorAll('[data-tp]').forEach(b => b.onclick = () => { const [k, d, t] = b.dataset.tp.split('|'); S.times = S.times || {}; S.times[k] = { date: d, start: t }; draw(); });
     body.querySelectorAll('[data-tpd]').forEach(b => b.onclick = () => { const [k, d] = b.dataset.tpd.split('|'); S.tpDate = S.tpDate || {}; S.tpDate[k] = d; draw(); });
     body.querySelectorAll('[data-gt]').forEach(b => b.onclick = () => { (S.seen = S.seen || {})[S.tg] = 1; S.tg = +b.dataset.gt; draw(); });
+    body.querySelectorAll('[data-notify]').forEach(b => b.onclick = () => { S.notify = b.dataset.notify; body.querySelectorAll('[data-notify]').forEach(x => x.classList.toggle('on', x === b)); });
     ['first','last','email','phone','notes'].forEach(k => { const el = $('#bk_' + k, body); if (el) el.oninput = () => { S.d[k] = el.value; el.closest('.bk-field').classList.remove('bad');
       if ((k === 'first' || k === 'last') && !S.g0Own) { S.names = S.names || []; S.names[0] = `${S.d.first || ''} ${S.d.last || ''}`.trim(); const g0 = $('#bk_g0', body); if (g0) g0.value = S.names[0]; } }; });
     body.querySelectorAll('[data-rg]').forEach(b => b.onclick = () => { const [r, i] = b.dataset.rg.split('|'); S.roomOf = S.roomOf || []; S.roomOf[+i] = S.roomOf[+i] === r ? '' : r; draw(); });

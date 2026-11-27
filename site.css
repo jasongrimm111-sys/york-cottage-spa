@@ -1319,3 +1319,8 @@ html.bk-on body.book-page .offer-bar{display:none}
 .bk.page .pay-grid.pay-two{align-items:stretch}
 .pay-two .pay-col,.pay-two .vcode{width:100%;box-sizing:border-box}
 .vbar.done{grid-template-columns:1fr}
+
+/* email / text / both choice (2026-11-27) */
+.seg-pick{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}
+.seg-pick button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 16px;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.seg-pick button.on{background:var(--forest);border-color:var(--forest);color:#fff}
