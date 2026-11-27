@@ -736,6 +736,8 @@
     if (S.step === CHOICES && S.tg < S.guests - 1){ (S.seen = S.seen || {})[S.tg] = 1; S.tg++; draw(); return; }
     if (S.step === DATE) S.tg = 0;
     if (S.step === DETAILS && YE && L.cfg) { const r = planNow(); if (r && !r.ok) { msg.textContent = 'Those treatments no longer fit on that day. Please go back and choose another time.'; return; } }
+    // the lead guest's name from the Guests step fills in their details (user 2026-11-27)
+    if (S.step + 1 === DETAILS || (S.step < DETAILS && S.step + 1 > DETAILS)) { const nm = ((S.names || [])[0] || '').trim().split(/\s+/); S.d = S.d || {}; if (nm[0] && !S.d.first && !S.d.last) { S.d.first = nm[0]; S.d.last = nm.slice(1).join(' '); } }
     if (S.step < LAST){ S.step++; if (S.step === ROOMS && !needRooms()) { autoRooms(stayRooms()); S.step++; } draw(); return; }
     if (P[S.p].kind !== 'ask' && !S.holdOK) { holdThenPay(); return; }
     S.holdOK = false;
