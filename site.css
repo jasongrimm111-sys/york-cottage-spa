@@ -1301,3 +1301,4 @@ html.bk-on body.book-page .offer-bar{display:none}
 .fh-scale i{font-style:normal;font-size:10px;font-weight:700;width:15px;height:20px;display:grid;place-items:center;border-radius:4px;color:#8a8f86}
 .fh-scale i.on{background:#1f7a3a;color:#fff;width:22px;font-size:13px;border-radius:999px}
 @media (max-width:600px){.fh-chip{margin-left:0;margin-top:10px}}
+.g-chip{vertical-align:top}
