@@ -78,7 +78,7 @@
   const norm = s => String(s || '').replace(/\s+/g, ' ').trim();
   const hash = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36); };
   const page = (location.pathname.split('/').pop() || 'index.html').replace(/\.html$/, '') || 'index';
-  const OK_INLINE = /^(EM|I|STRONG|B|BR|SPAN|SMALL)$/;
+  const OK_INLINE = /^(EM|I|STRONG|B|BR)$/;
   const kindOf = el => /^H1$/.test(el.tagName) ? 'Main heading' : /^H[2-4]$/.test(el.tagName) ? 'Heading' : el.tagName === 'LI' ? 'List item' : el.tagName === 'SUMMARY' ? 'Question' : el.matches('.btn,button') ? 'Button' : el.matches('[class*=eyebrow],[class*=kicker],small') ? 'Small heading' : 'Text';
   const items = [];
   const SEL = 'h1,h2,h3,h4,p,li,summary,a.btn,blockquote,figcaption,dd,dt,[class*=eyebrow],[class*=kicker]';
