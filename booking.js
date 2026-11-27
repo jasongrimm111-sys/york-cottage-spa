@@ -243,7 +243,13 @@
     const total = base + bf + tc.sub - tc.off - promo;
     let now = total, bal = 0, balDue = null;
     if (S.p === 'house' && S.date && (S.date - today) / 864e5 > 42){ now = total / 2; bal = total - now; balDue = add(S.date, -42); }
-    return { base, bf, tc, total, now, bal, balDue, nights, promo, codeBeaten };
+    // a checked gift voucher pays today's amount first, then any balance; what's left stays on the voucher (user 2026-11-27)
+    if (typeof S.voucher === 'string') S.voucher = S.voucher ? { code: S.voucher, balance: null } : null;
+    const r2 = x => Math.round(x * 100) / 100;
+    const voucher = S.voucher && S.voucher.balance != null ? r2(Math.min(S.voucher.balance, total)) : 0;
+    const vNow = Math.min(voucher, now); now = r2(now - vNow); bal = r2(bal - (voucher - vNow));
+    const voucherLeft = voucher ? r2(S.voucher.balance - voucher) : 0;
+    return { base, bf, tc, total, now, bal, balDue, nights, promo, codeBeaten, voucher, voucherLeft };
   }
 
   // ---------- shell ----------
@@ -555,7 +561,7 @@
       ${pr.bal ? `<div class="notice"><b>Paying ${gbp(pr.now)} today</b> (50% deposit). The balance of ${gbp(pr.bal)} is due by ${nice(pr.balDue, { year:'numeric' })}. A £500 damage deposit will be pre-authorised before arrival.</div>`
         : S.p === 'house' ? `<div class="notice"><b>Paying in full today</b> because your stay is within 6 weeks. A £500 damage deposit will be pre-authorised before arrival.</div>` : ''}
       </div>
-      <div class="stripe">
+      ${!pr.now ? `<div class="notice vc-covers"><b>Nothing to pay today.</b> Your gift voucher covers ${pr.bal ? 'today’s deposit' : 'the full price'}${pr.voucherLeft > 0 ? `, and ${gbp(pr.voucherLeft)} stays on it for next time` : ''}.${pr.bal ? ` The balance of ${gbp(pr.bal)} is due by ${nice(pr.balDue, { year:'numeric' })}.` : ''}</div>` : `<div class="stripe">
         <div class="stripe-top"><span class="stripe-test">Test mode</span><span>Powered by <b>stripe</b></span></div>
         <!-- CONNECT: replace this mock with the real Stripe Payment Element (stripe.elements({ clientSecret }).create('payment')).
              Card details then go straight to Stripe and never touch this page. Klarna is enabled in the Stripe dashboard. -->
@@ -576,7 +582,7 @@
           <p class="k-small">Test mode: this uses Stripe’s test card, so you can’t enter a real card and nothing is charged.</p>
         </div>`}
         <div class="lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Payments are encrypted and processed securely by Stripe.</div>
-      </div></div>
+      </div>`}</div>
 `;
   }
 
@@ -586,7 +592,7 @@
     const off = S.promo && !pr.codeBeaten, pct = Math.round(HEAD_OFF * 100);
     const chips = [
       S.promo && `<div class="vc-chip ${pr.codeBeaten ? 'muted' : ''}"><span><b>${esc(S.promo.code)}</b> ${pr.codeBeaten ? `isn’t used: only one discount per booking, and your head spa ${pct}% off saves you more` : `applied · ${S.promo.type === 'pct' ? S.promo.value + '% off' : gbp(S.promo.value) + ' off'}${pr.promo ? ` (−${gbp(pr.promo)})` : ''}`}</span><button type="button" class="vc-rm" data-vrm="promo">Remove</button></div>`,
-      S.voucher && `<div class="vc-chip"><span>Gift voucher <b>${esc(S.voucher)}</b> added · we’ll check it and take it off your balance before your visit</span><button type="button" class="vc-rm" data-vrm="voucher">Remove</button></div>`].filter(Boolean).join('');
+      S.voucher && `<div class="vc-chip"><span>Gift voucher <b>${esc(S.voucher.code)}</b> ${S.voucher.balance == null ? 'added · we’ll check it and take it off your balance before your visit' : `· ${gbp(S.voucher.balance)} on it · using ${gbp(pr.voucher)}${pr.voucherLeft > 0 ? `, ${gbp(pr.voucherLeft)} left for next time` : ''}`}</span><button type="button" class="vc-rm" data-vrm="voucher">Remove</button></div>`].filter(Boolean).join('');
     const need = !S.promo && !S.voucher ? 'Discount code or gift voucher' : !S.voucher ? 'Gift voucher' : !S.promo ? 'Discount code' : '';
     const note = S.promoMsg ? esc(S.promoMsg) : !S.promo && !S.voucher ? `One discount code per booking. Gift vouchers are valid for 12 months and can be used with a code.` : '';
     return `<div class="vcode vbar${need ? '' : ' done'}">${need ? `<label for="bkVoucher">${need}</label><div class="vc-row"><input id="bkVoucher" placeholder="Enter code" maxlength="40" autocomplete="off"><button class="pill" id="bkVApply">Apply</button></div>` : ''}${chips ? `<div class="vc-chips">${chips}</div>` : ''}${note ? `<p class="cal-note">${note}</p>` : ''}</div>`;
@@ -611,7 +617,7 @@
         ${rows.length ? `<ul class="rv-tr">${rows.join('')}</ul>` : '<p class="small muted">No treatments</p>'}
         ${facts.length ? `<dl class="rv-facts">${facts.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>` : ''}</div>`; };
     const plines = pr ? [[S.p === 'house' ? `Whole house · ${S.nights} night${S.nights > 1 ? 's' : ''}` : `${p.name} · ${S.guests} × ${gbp(pr.base / S.guests)}`, pr.base], pr.bf && ['Breakfast', pr.bf], pr.tc.sub && ['Extra treatments', pr.tc.sub], pr.tc.off && ['Head spa discount', -pr.tc.off], pr.promo && ['Discount code', -pr.promo]].filter(x => x && x[1]) : [];
-    const money = pr ? `<ul class="sum rv-money">${plines.map(([l, v]) => `<li><span>${l}</span><b>${v < 0 ? '−' : ''}${gbp(Math.abs(v))}</b></li>`).join('')}<li class="rv-total"><span>Total</span><b>${gbp(pr.total)}</b></li>${pr.now !== pr.total ? `<li><span>Paying today</span><b>${gbp(pr.now)}</b></li>` : ''}</ul>` : '';
+    const money = pr ? `<ul class="sum rv-money">${plines.map(([l, v]) => `<li><span>${l}</span><b>${v < 0 ? '−' : ''}${gbp(Math.abs(v))}</b></li>`).join('')}<li class="rv-total"><span>Total</span><b>${gbp(pr.total)}</b></li>${pr.voucher ? `<li><span>Gift voucher ${esc(S.voucher.code)}</span><b>−${gbp(pr.voucher)}</b></li>` : ''}${pr.now !== pr.total ? `<li><span>Paying today</span><b>${gbp(pr.now)}</b></li>` : ''}</ul>` : '';
     return `<div class="pay review">
       <ul class="sum" style="color:var(--ink)">${top.map(([a, b]) => `<li><span style="color:var(--muted)">${a}</span><b>${b}</b></li>`).join('')}</ul>
       <div class="bk-group">${multi ? 'Each guest' : 'Your treatments'}</div><div class="rv-guests">${Array.from({ length: S.guests }, (_, i) => guestBox(i)).join('')}</div>
@@ -624,7 +630,7 @@
     const p = P[S.p], ask = p.kind === 'ask', pr = price();
     return `<div class="done-ico"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5L20 7"/></svg></div>
       <h2>${ask ? (S.ticket ? 'Request <em>sent</em>' : 'Request <em>not sent</em>') : 'You’re <em>booked</em>'}, ${esc(S.d.first)}</h2>
-      <p class="bk-sub">${ask ? 'Your reference is below.' : `${S.paid ? (S.paid.method === 'klarna' ? `First Klarna payment of ${gbp(Math.floor(S.paid.amount / 3 * 100) / 100)} taken, 2 more to follow. ` : `${gbp(S.paid.amount)} paid by card. `) : ''}We’ve emailed your confirmation to ${esc(S.d.email)}.<br><span style="font-size:13px">Stripe test payment ${S.paid ? S.paid.id : ''} · no money was taken.</span>`}</p>
+      <p class="bk-sub">${ask ? 'Your reference is below.' : `${S.paid && S.paid.voucher ? `${gbp(S.paid.voucher.amount)} taken from gift voucher ${esc(S.paid.voucher.code)}${S.paid.voucher.left > 0 ? ` (${gbp(S.paid.voucher.left)} left on it for next time)` : ''}. ` : ''}${S.paid && !S.paid.amount ? '' : S.paid ? (S.paid.method === 'klarna' ? `First Klarna payment of ${gbp(Math.floor(S.paid.amount / 3 * 100) / 100)} taken, 2 more to follow. ` : `${gbp(S.paid.amount)} paid by card. `) : ''}We’ve emailed your confirmation to ${esc(S.d.email)}.<br><span style="font-size:13px">Stripe test payment ${S.paid ? S.paid.id : ''} · no money was taken.</span>`}</p>
       <div class="ref">${S.ref}</div>
       ${S.plan && S.plan.length ? `<div class="pay" style="margin:14px auto;max-width:460px;text-align:left"><div class="bk-group" style="margin-top:0">Your treatment times</div><p>${timesList(S.plan)}</p><p class="cal-note">Set by our booking system around your ${P[S.p].rule ? 'stay' : 'visit'}. We’ll email these too.</p></div>` : ''}
       <ol class="next">${ask
@@ -662,7 +668,7 @@
   function navView(){
     if (S.ref){ nav.innerHTML = '<span></span><button class="bk-close">Close</button>'; $('.bk-close', nav).onclick = close; return; }
     const last = S.step === LAST, ask = S.p && P[S.p].kind === 'ask', pr = price();
-    const label = last ? (ask ? 'Send request' : S.pm === 'klarna' ? 'Continue with Klarna' : `Pay ${gbp(pr.now)}`) : S.step === CHOICES && S.tg < S.guests - 1 ? `Next: ${esc(gName(S.tg + 1).split(' ')[0])}` : 'Continue';
+    const label = last ? (ask ? 'Send request' : !pr.now ? 'Confirm booking' : S.pm === 'klarna' ? 'Continue with Klarna' : `Pay ${gbp(pr.now)}`) : S.step === CHOICES && S.tg < S.guests - 1 ? `Next: ${esc(gName(S.tg + 1).split(' ')[0])}` : 'Continue';
     nav.innerHTML = `<span class="bk-msg"></span>${PAGE ? '' : '<button class="bk-close" title="Your choices are saved">Close</button>'}${S.step ? '<button class="back">← Back</button>' : ''}<button class="btn btn-solid go">${S.paying ? '<span class="spin"></span> ' + (S.pm === 'klarna' && !ask ? 'Opening Klarna…' : 'Processing…') : label + ' <span class="arrow">→</span>'}</button>`;
   }
 
@@ -689,7 +695,7 @@
     const ready = pr && (S.p === 'house' ? S.nights >= 2 : g || p.only);
     const tot = p.kind === 'ask'
       ? `<div class="big"><span>${g ? 'Estimate' : 'From'}</span><b>${g ? gbp(est) : gbp(p.est)}</b></div><p>${g ? 'We’ll confirm the exact price.' : 'per person'} Nothing to pay now.</p>`
-      : ready ? `<div class="big"><span>Total</span><b>${gbp(pr.total)}</b></div>${pr.bal ? `<p>${gbp(pr.now)} deposit today, ${gbp(pr.bal)} by ${nice(pr.balDue)}.</p>` : '<p>Paid in full today. VAT included.</p>'}`
+      : ready ? `<div class="big"><span>Total</span><b>${gbp(pr.total)}</b></div>${pr.voucher ? `<p>Gift voucher −${gbp(pr.voucher)}${pr.voucherLeft > 0 ? ` (${gbp(pr.voucherLeft)} left on it)` : ''}. ${pr.now ? `${gbp(pr.now)} to pay today` : 'Nothing to pay today'}${pr.bal ? `, ${gbp(pr.bal)} by ${nice(pr.balDue)}` : ''}.</p>` : pr.bal ? `<p>${gbp(pr.now)} deposit today, ${gbp(pr.bal)} by ${nice(pr.balDue)}.</p>` : '<p>Paid in full today. VAT included.</p>'}`
       : `<div class="big"><span>From</span><b>${p.from.replace(/^from /, '').split(' ')[0]}</b></div><p>${p.from.replace(/^from /, '').split(' ').slice(1).join(' ')}. Your total appears once you choose ${S.p === 'house' ? 'your dates' : 'your guests'}.</p>`;
     side.innerHTML = `<div class="side-top"><div class="eyebrow">Your booking</div><button class="side-x" aria-label="Close booking" title="Close (your choices are saved)">&times;</button></div><h3>${p.name}</h3><ul class="sum">${rows.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join('')}</ul>
       <div class="sum-tot">${tot}<button class="sum-toggle">Details</button></div>
@@ -753,10 +759,18 @@
       if (pr) { const why = YE.promoCheck(L.cfg, { ...pr, code }, engineBooking()); if (why) { S.promoMsg = why; S.promo = null; } else { S.promo = { code: code.toUpperCase(), type: pr.type, value: pr.value, on: pr.on }; S.promoMsg = '';
         const after = price(); if (after && after.codeBeaten) { S.promo = null; S.promoMsg = `Only one discount can be used per booking, and your head spa ${Math.round(HEAD_OFF * 100)}% off already saves you more, so we’ve kept that.`; }
         else if (after && after.promo && treatCost().off) S.promoMsg = `Only one discount can be used per booking, so this code replaces the head spa ${Math.round(HEAD_OFF * 100)}% off.`; } }
-      else { S.voucher = code; S.promoMsg = /^YCV-/i.test(code) ? '' : 'We don’t recognise that discount code, so we’ll treat it as a gift voucher and check it before your visit.'; }
+      else {
+        const ep = L.cfg && (L.cfg.consult || {}).endpoint;
+        if (ep) {
+          va.disabled = true; va.textContent = 'Checking…';
+          try { const r = await fetch(ep.replace(/\/$/, '') + '/voucher', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) }); const j = await r.json().catch(() => ({}));
+            if (j.ok) { S.voucher = { code: j.code, balance: j.balance, expires: j.expires }; S.promoMsg = ''; } else S.promoMsg = j.why || j.error || 'We couldn’t check that code just now. Please try again.'; }
+          catch (e) { S.promoMsg = 'We couldn’t check that code just now. Please try again.'; }
+        } else { S.voucher = { code: code.toUpperCase(), balance: null }; S.promoMsg = /^YCV-/i.test(code) ? '' : 'We don’t recognise that discount code, so we’ll treat it as a gift voucher and check it before your visit.'; }
+      }
       draw(); };
     const vin = $('#bkVoucher', body); if (vin) vin.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); va && va.click(); } };
-    body.querySelectorAll('[data-vrm]').forEach(b => b.onclick = () => { if (b.dataset.vrm === 'promo') S.promo = null; else S.voucher = ''; S.promoMsg = ''; draw(); });
+    body.querySelectorAll('[data-vrm]').forEach(b => b.onclick = () => { if (b.dataset.vrm === 'promo') S.promo = null; else S.voucher = null; S.promoMsg = ''; draw(); });
     body.querySelectorAll('[data-alt]').forEach(b => b.onclick = () => { const k = b.dataset.alt; if (!P[k]) return; const pend = S.pending; reset(k); S.pending = pend; S.cat = P[k].group; syncAdds(); S.step = GUESTS; draw(); });
     body.querySelectorAll('[data-gq]').forEach(b => b.onclick = () => { S.guests = +b.dataset.gq; S.gOK = true; if (S.date && !dateOK(S.p, S.date)){ S.date = null; S.end = null; } draw(); });
   }
@@ -779,7 +793,7 @@
     S.holdOK = false;
     // CONNECT: create the booking (server) -> Stripe PaymentIntent -> stripe.confirmPayment(); show the confirmation on success.
     // Test mode: simulate a successful Stripe payment. No request is sent anywhere.
-    { const pr = price(); S.paid = pr ? { method: S.pm, amount: pr.now, id: 'pi_test_' + Math.random().toString(36).slice(2, 14) } : null; }
+    { const pr = price(); S.paid = pr ? { method: pr.now ? S.pm : 'voucher', amount: pr.now, id: 'pi_test_' + Math.random().toString(36).slice(2, 14), voucher: pr.voucher ? { code: S.voucher.code, amount: pr.voucher, left: pr.voucherLeft } : null } : null; }
     S.paying = true; navView();
     // an enquiry goes to the team as a support message (user, 2026-11-26), with a link for the guest to follow it
     if (P[S.p].kind === 'ask') {
@@ -790,7 +804,10 @@
         .finally(() => { S.paying = false; S.ref = ref; draw(); });
       return;
     }
-    setTimeout(() => { S.paying = false; S.ref = 'YC-' + Math.random().toString(36).slice(2, 8).toUpperCase(); draw(); }, 1400);
+    const ref = 'YC-' + Math.random().toString(36).slice(2, 8).toUpperCase(), ep = L.cfg && (L.cfg.consult || {}).endpoint;
+    // payment went through: take the gift voucher amount off its balance (held for this booking since the hold)
+    const redeem = S.paid && S.paid.voucher && S.hold && ep ? fetch(ep.replace(/\/$/, '') + '/redeem', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hold: S.hold, ref }) }).then(r => r.json()).then(j => { if (j.ok && S.paid.voucher) S.paid.voucher.left = j.balance; }).catch(() => {}) : Promise.resolve();
+    Promise.all([redeem, new Promise(r => setTimeout(r, 1400))]).then(() => { S.paying = false; S.ref = ref; draw(); });
   }
   // just before paying, the receiver re-checks the times against every booking and anyone else paying right now, and holds
   // them for 30 minutes. If someone got there first, the guest goes back to choose again.
@@ -801,10 +818,12 @@
     try {
       const b = { ...engineBooking(), rooms: P[S.p].rule ? [...new Set((S.roomOf || []).filter(Boolean))] : [] };
       b.guestList = b.guestList.map(g => ({ included: g.included, food: g.food, extras: g.extras }));
-      const r = await fetch(ep.replace(/\/$/, '') + '/hold', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ booking: b, release: S.hold || null }) });
+      const pv = price(), voucher = pv && pv.voucher ? { code: S.voucher.code, amount: pv.voucher } : null;
+      const r = await fetch(ep.replace(/\/$/, '') + '/hold', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ booking: b, release: S.hold || null, voucher }) });
       const j = await r.json().catch(() => ({}));
       S.paying = false;
       if (r.ok && j.ok) { S.hold = j.hold; S.holdOK = true; next(); return; }
+      if (j.voucher) { S.voucher = j.voucher.balance > 0 ? { ...S.voucher, balance: j.voucher.balance } : null; S.promoMsg = j.why; draw(); return; }
       if (j.gone) { await loadLive(); resetAfter(); S.step = DATE; S.goneMsg = (j.why || 'Someone has just booked that time') + '. Please choose again; nothing has been charged.'; draw(); return; }
       navView(); $('.bk-msg', nav).textContent = j.error || j.why || 'We couldn’t check availability just now. Please try again.';
     } catch (e) { S.paying = false; navView(); $('.bk-msg', nav).textContent = 'We couldn’t check availability just now. Please try again.'; }

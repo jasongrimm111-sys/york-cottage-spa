@@ -8,6 +8,10 @@
 //                    same time at the same moment can't both get it: the second is told it's gone (user 2026-11-27)
 //  POST /release     lets a hold go (the guest started again)
 //  GET  /holds       the live holds (times only, no names), so the website counts them as taken
+//  POST /voucher     checks a gift voucher code privately and returns only its balance and expiry (user 2026-11-27).
+//                    Codes and balances never go in the public data. Tries are limited per visitor.
+//                    /hold then reserves the amount used for 30 minutes, and
+//  POST /redeem      after payment, takes it off the voucher (vouchers.json, GitHub version check), keeping what's left.
 // Everything is filed in the private data store, where the booking jobs pick it up.
 // Secrets: GITHUB_TOKEN (fine-grained, york-cottage-spa-data only, Contents: read and write).
 const GH = env => ({ Authorization: 'Bearer ' + env.GITHUB_TOKEN, Accept: 'application/vnd.github+json', 'User-Agent': 'york-cottage-receiver', 'Content-Type': 'application/json' });
@@ -22,10 +26,53 @@ const raw = async (env, path) => { const r = await fetch(`https://api.github.com
 const monthsOf = (date, nights) => [...new Set([0, nights || 0, 31].map(n => E.addD(date, n).slice(0, 7)))];
 const live = list => (list || []).filter(h => new Date(h.expires).getTime() > Date.now());
 const holdView = h => ({ id: h.id, product: h.product, date: h.date, nights: h.nights || 0, sessionId: h.sessionId || null, guests: h.guests, rooms: h.rooms || [], items: (h.items || []).map(i => ({ key: i.key, date: i.date, start: i.start, min: i.min, buffer: i.buffer, staff: i.staff, troom: i.troom, tid: i.tid, guest: i.guest })), food: h.food || null, status: 'hold', expires: h.expires });
-async function takeHold(env, b, release) {
+// ---- gift vouchers: vouchers.json in the data store ----
+const VCODE = /^[A-Z0-9][A-Z0-9-]{3,30}$/;
+const todayUK = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date());
+const reservedOn = (holds, code, except) => live(holds).filter(h => h.voucher && h.voucher.code === code && h.id !== except && !h.voucher.done).reduce((a, h) => a + h.voucher.amount, 0);
+function voucherState(list, holds, code, except) {
+  const v = (list || []).find(x => String(x.code).toUpperCase() === code);
+  if (!v) return { why: 'We can’t find that code. Please check it and try again.' };
+  if (v.status === 'used' || !(v.balance > 0)) return { why: 'That gift voucher has been fully used.' };
+  if (v.status && v.status !== 'active') return { why: 'That gift voucher can’t be used. Please contact us.' };
+  if (v.expires && v.expires < todayUK()) return { why: 'That gift voucher expired on ' + v.expires + '. Please contact us.' };
+  const free = Math.round((v.balance - reservedOn(holds, String(v.code).toUpperCase(), except)) * 100) / 100;
+  if (free <= 0) return { why: 'That gift voucher is being used in another booking right now.' };
+  return { v, free };
+}
+// a few tries per visitor, so codes can't be guessed
+const tries = new Map();
+const tooMany = ip => { const now = Date.now(), t = (tries.get(ip) || []).filter(x => now - x < 10 * 60000); t.push(now); tries.set(ip, t); if (tries.size > 5000) tries.clear(); return t.length > 8; };
+async function redeem(env, holdId, ref) {
   for (let attempt = 0; attempt < 5; attempt++) {
-    const [{ data: cfg }, holds] = await Promise.all([raw(env, 'config.json'), raw(env, 'holds/active.json')]);
+    const [vs, hs] = await Promise.all([raw(env, 'vouchers.json'), raw(env, 'holds/active.json')]);
+    const h = (hs.data || []).find(x => x.id === holdId);
+    if (!h || !h.voucher) return { ok: false, why: 'Nothing to take off' };
+    const list = vs.data || [], v = list.find(x => String(x.code).toUpperCase() === h.voucher.code);
+    if (!v) return { ok: false, why: 'Voucher not found' };
+    if ((v.uses || []).some(u => u.hold === h.id)) return { ok: true, balance: v.balance };   // already done
+    const amount = Math.min(h.voucher.amount, v.balance);
+    v.balance = Math.round((v.balance - amount) * 100) / 100;
+    (v.uses = v.uses || []).push({ at: new Date().toISOString(), amount, ref: clean(ref, 12), hold: h.id, via: 'online' });
+    if (!v.balance) v.status = 'used';
+    const r = await fetch(`https://api.github.com/repos/${env.DATA_REPO}/contents/vouchers.json`, { method: 'PUT', headers: GH(env), body: JSON.stringify({ message: `Voucher ${v.code}: £${amount} used online on ${clean(ref, 12)}`, content: b64(JSON.stringify(list)), sha: vs.sha }) });
+    if (r.ok) {
+      // mark the hold's voucher as done (best effort: the voucher's own record already stops a second deduction)
+      for (let k = 0; k < 3; k++) { const cur = await raw(env, 'holds/active.json'); const x = (cur.data || []).find(y => y.id === holdId); if (!x || !x.voucher) break; x.voucher.done = true;
+        const w = await fetch(`https://api.github.com/repos/${env.DATA_REPO}/contents/holds/active.json`, { method: 'PUT', headers: GH(env), body: JSON.stringify({ message: 'Voucher used on ' + holdId, content: b64(JSON.stringify(cur.data)), sha: cur.sha }) }); if (w.ok) break; }
+      return { ok: true, balance: v.balance };
+    }
+    if (r.status !== 409 && r.status !== 422) throw new Error('save voucher ' + r.status);
+  }
+  return { ok: false, why: 'Busy just now' };
+}
+
+async function takeHold(env, b, release, voucher) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const [{ data: cfg }, holds, vs] = await Promise.all([raw(env, 'config.json'), raw(env, 'holds/active.json'), voucher ? raw(env, 'vouchers.json') : Promise.resolve({ data: null })]);
     let list = live(holds.data).filter(h => h.id !== release);
+    // the gift voucher must still have enough on it, counting other people paying with it right now
+    if (voucher) { const st = voucherState(vs.data, list, voucher.code); if (st.why || st.free + 0.001 < voucher.amount) return { ok: false, voucher: { balance: st.free || 0 }, why: st.why || `That gift voucher now has £${st.free} on it. Please check the price and try again.` }; }
     if (b) {
       E.migrate(cfg);
       const books = (await Promise.all(monthsOf(b.date, b.nights).map(m => raw(env, `bookings/${m}.json`).then(r => r.data || [])))).flat();
@@ -38,6 +85,7 @@ async function takeHold(env, b, release) {
       if (why || !ses.ok || roomsTaken || !plan.ok || moved) return { ok: false, gone: true, why: why || (!ses.ok ? ses.why : roomsTaken ? 'A room you chose has just been booked' : 'Someone has just booked one of your treatment times') };
       const mins = +((cfg.rules || {}).holdMinutes) || 30;
       var hold = holdView({ ...b, id: 'H-' + rid(8), items: plan.items, expires: new Date(Date.now() + mins * 60000).toISOString() });
+      if (voucher) hold.voucher = { code: voucher.code, amount: voucher.amount };
       list = list.concat(hold);
     }
     const r = await fetch(`https://api.github.com/repos/${env.DATA_REPO}/contents/holds/active.json`, { method: 'PUT', headers: GH(env), body: JSON.stringify({ message: b ? 'Hold ' + hold.id : 'Release hold', content: b64(JSON.stringify(list)), ...(holds.sha ? { sha: holds.sha } : {}) }) });
@@ -89,9 +137,27 @@ export default {
         // names and notes are never kept in a hold; only what's needed to keep the times
         const bk = { product: clean(b.product, 20), date: b.date, nights: +b.nights || 0, sessionId: b.sessionId ? clean(b.sessionId, 30) : null, guests: +b.guests, blueLight: !!b.blueLight, rooms: (b.rooms || []).map(r => clean(r, 20)).slice(0, 12), times: b.times || {}, pairs: Object.fromEntries(Object.entries(b.pairs || {}).slice(0, 30).map(([k, v]) => [clean(k, 20), clean(v, 20)])),
           guestList: (b.guestList || []).slice(0, 30).map(g => ({ included: g.included ? clean(g.included, 40) : null, food: g.food ? clean(g.food, 40) : null, extras: (g.extras || []).slice(0, 6).map(x => clean(x, 40)) })) };
-        const r = await takeHold(env, bk, body.release ? clean(body.release, 12) : null);
+        const vcode = body.voucher ? clean(body.voucher.code, 32).toUpperCase() : '';
+        const vc = vcode && VCODE.test(vcode) && +body.voucher.amount > 0 ? { code: vcode, amount: Math.round(+body.voucher.amount * 100) / 100 } : null;
+        const r = await takeHold(env, bk, body.release ? clean(body.release, 12) : null, vc);
         return out(r, r.ok ? 200 : 409);
       } catch (e) { return out({ error: 'Could not check availability just now' }, 502); }
+    }
+    // check a gift voucher: only its balance (less anything held for someone paying right now) and expiry come back
+    if (url.pathname === '/voucher') {
+      const code = clean(body.code, 32).toUpperCase().replace(/\s+/g, '');
+      if (tooMany(request.headers.get('CF-Connecting-IP') || 'x')) return out({ ok: false, why: 'Too many tries. Please wait 10 minutes and try again.' }, 429);
+      if (!VCODE.test(code)) return out({ ok: false, why: 'We can’t find that code. Please check it and try again.' });
+      try {
+        const [vs, hs] = await Promise.all([raw(env, 'vouchers.json'), raw(env, 'holds/active.json')]);
+        const st = voucherState(vs.data, hs.data, code);
+        if (st.why) return out({ ok: false, why: st.why });
+        return out({ ok: true, code: String(st.v.code).toUpperCase(), balance: st.free, expires: st.v.expires || null });
+      } catch (e) { return out({ error: 'We couldn’t check that code just now. Please try again.' }, 502); }
+    }
+    if (url.pathname === '/redeem') {
+      const h = clean(body.hold, 12); if (!/^H-[A-Z0-9]{8}$/.test(h)) return out({ error: 'Bad request' }, 400);
+      try { return out(await redeem(env, h, body.ref)); } catch (e) { return out({ error: 'Could not update the voucher' }, 502); }
     }
     // a new message from the contact form
     if (url.pathname === '/contact') {
