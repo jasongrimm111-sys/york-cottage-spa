@@ -434,7 +434,7 @@
     while (S.picks.length < S.guests) S.picks.push({ treat:'Aromatherapy massage', food:(p.foods || ['Afternoon tea'])[0] });
     const g = Math.min(Math.max(S.tg || 0, 0), S.guests - 1); S.tg = g;
     const pick = S.picks[g], n = S.guests;
-    const dots = n > 1 ? `<div class="gsteps">${Array.from({ length:n }, (_, i) => `<button class="gstep ${i === g ? 'now' : ''} ${i < g || (i !== g && S.seen && S.seen[i]) ? 'done' : ''}" data-gt="${i}">${i < g || (S.seen && S.seen[i] && i !== g) ? '✓' : i + 1}</button>`).join('<i></i>')}</div>` : '';
+    const dots = n > 1 ? `<div class="gtabs">${Array.from({ length:n }, (_, i) => { const done = i !== g && (i < g || (S.seen && S.seen[i])); return `<button class="gtab ${i === g ? 'now' : ''} ${done ? 'done' : ''}" data-gt="${i}">${done ? '<i>✓</i>' : ''}${esc(gName(i))}</button>`; }).join('')}</div>` : '';
     const incOff = v => { if (!(YE && L.cfg && S.date)) return false; const t = (incList(S.p) || []).find(x => x.name === v); return t ? !fitsWith(g, x => ({ ...x, included: t.id }), 'inc=' + t.id) : false; };
     const choice = (fld, opts) => `<div class="choice">${opts.map(([v, sub]) => { const off = fld === 'treat' && pick.treat !== v && incOff(v); return `<button class="ch ${pick[fld] === v ? 'sel' : ''}" data-pk="${g}" data-f="${fld}" data-v="${v}" ${off ? 'disabled' : ''}><span class="ch-r"></span><b>${fld === 'treat' ? blueName(v) : v}</b>${off ? '<small>No available times in this session</small>' : sub ? `<small>${sub}</small>` : ''}</button>`; }).join('')}</div>`;
     let h = `<div class="gc-head"><h2>${n > 1 ? `${esc(gName(g))} <em>· ${g + 1} of ${n}</em>` : p.only ? 'Choose your <em>treatments</em>' : 'Your <em>choices</em>'}</h2>${dots}</div>`;
@@ -490,7 +490,7 @@
           const t = t0, sl = slotsFor(need), cur = S.times[need.key];
           if (cur && !sl.some(d => d.date === cur.date && d.times.some(x => x.start === cur.start))) delete S.times[need.key];
           const days = sl.filter(d => d.times.length), day = (S.times[need.key] || {}).date || S.tpDate[need.key] || (days[0] || {}).date;
-          h += `<div class="tpick ${S.times[need.key] ? 'done' : ''}"><div class="tp-h"><b>${esc(t.name)}</b><span>${need.min || t.min} min${need.included ? ((need.with || []).length ? ` · ${(YE.tr(L.cfg, need.tid) || {}).min} min included + ${(need.min || 0) - ((YE.tr(L.cfg, need.tid) || {}).min || 0)} min extra` : ' · included') : ''}</span>${S.times[need.key] ? `<em>✓ ${sl.length > 1 ? fdShort(S.times[need.key].date) + ' ' : ''}${S.times[need.key].start}</em>` : ''}</div>
+          h += `<div class="tpick ${S.times[need.key] ? 'done' : ''}"><div class="tp-h"><b>${esc(t.name)}</b><span>${need.min || t.min} min${need.included ? ((need.with || []).length ? ` · ${need.baseMin || (YE.tr(L.cfg, need.tid) || {}).min} min included + ${(need.min || 0) - (need.baseMin || (YE.tr(L.cfg, need.tid) || {}).min || 0)} min extra` : ' · included') : ''}</span>${S.times[need.key] ? `<em>✓ ${sl.length > 1 ? fdShort(S.times[need.key].date) + ' ' : ''}${S.times[need.key].start}</em>` : ''}</div>
             ${!days.length ? `<p class="tp-none">Sorry, there are no available times for this treatment${P[S.p].rule ? ' during your stay' : ' in your session'}. ${need.included ? 'Please choose another session or day.' : 'Please remove it or choose another day.'}</p>`
               : `${sl.length > 1 ? `<div class="pills tp-days">${sl.map(d => `<button class="pill ${d.date === day ? 'sel' : ''}" data-tpd="${need.key}|${d.date}" ${d.times.length ? '' : 'disabled'}>${fdShort(d.date)}${d.times.length ? '' : ' · full'}</button>`).join('')}</div>` : ''}
                 <div class="pills tp-times">${(sl.find(d => d.date === day) || { times: [] }).times.map(x => `<button class="pill ${(S.times[need.key] || {}).start === x.start && (S.times[need.key] || {}).date === day ? 'sel' : ''}" data-tp="${need.key}|${day}|${x.start}">${x.start}</button>`).join('')}</div>`}${withHtml}</div>`;
@@ -655,6 +655,10 @@
       g && ['Guests', S.guests],
       pr && !p.only && (S.p === 'house' ? S.nights : g) && ['Price', unit],
       pr && pr.bf && ['Breakfast', gbp(pr.bf)],
+      ...(S.step >= CHOICES ? Array.from({ length: S.guests }, (_, gi) => { const pk = S.picks[gi] || {}, il = incList(S.p) || [];
+        const inc = incMode(S.p) === 'treat' ? (pk.treat || (il[0] || {}).name) : incMode(S.p) ? (il[0] || {}).name : null, food = p.food ? pk.food : null;
+        if (!inc && !food) return null;
+        return [`${inc ? esc(blueName(inc)) : esc(food)}<small class="sum-who">${S.guests > 1 ? esc(gName(gi)) + (inc && food ? ' · ' : '') : ''}${inc && food ? esc(food) : ''}</small>`, 'Included']; }) : []),
       ...S.adds.flatMap((a, gi) => a.map(id => { const t = TRi[id]; if (!t) return null; const head = t.head && !P[S.p].only, c = chargeOf(gi, id), price = c ? c.price : t.price; return [`${esc(t.name)}${c && c.extends && c.mins < t.min ? ` <small class="sum-who">${c.mins} min added to the included treatment</small>` : ''}${S.guests > 1 ? `<small class="sum-who">${esc(gName(gi))}</small>` : ''}`, head ? `<s>${gbp(price)}</s> ${gbp(price * (1 - HEAD_OFF))}` : gbp(price)]; })), pr && pr.promo && ['Code ' + esc(S.promo.code), '−' + gbp(pr.promo)]].filter(Boolean);
     const ready = pr && (S.p === 'house' ? S.nights >= 2 : g || p.only);
     const tot = p.kind === 'ask'

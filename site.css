@@ -1248,3 +1248,9 @@ body.book-page .hdr-book{display:none}
 .blue-q .opt{display:block;font-size:12.5px;color:var(--muted);margin-left:26px}
 /* completed steps keep their names (user 2026-11-27); a little smaller so the bar still fits */
 @media (max-width:1280px){ .bk.page .bk-steps li.done b{display:inline} .bk.page .bk-steps li b{font-size:11.5px;letter-spacing:.06em} .bk.page .bk-steps{gap:2px} }
+/* guest tabs by name (2026-11-27) */
+.gtabs{display:flex;flex-wrap:wrap;gap:6px}
+.gtab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;font:inherit;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.gtab:hover{border-color:var(--ink)}
+.gtab.now{background:var(--ink);border-color:var(--ink);color:#fff}
+.gtab.done i{font-style:normal;color:var(--forest)}
