@@ -42,7 +42,14 @@
   if (!e || !k) return show('Unsubscribe', 'Please use the unsubscribe link at the bottom of one of our emails, or reply to any email and we’ll take you off the list.');
   let cfg = null; try { cfg = await fetch('https://raw.githubusercontent.com/jasongrimm111-sys/york-cottage-spa-live/main/config.json?v=' + Math.floor(Date.now() / 60000), { cache: 'no-store' }).then(r => r.json()); } catch (x) {}
   const ep = cfg && cfg.consult && cfg.consult.endpoint ? cfg.consult.endpoint.replace(/\/$/, '') : '';
-  if (!ep) return show('Unsubscribe', 'Please reply to any of our emails, or email info@yorkcottagespa.com, and we’ll take you off the list straight away.');
+  // no form receiver set up yet: unsubscribe by a ready-written email to the spa (user 2026-11-27)
+  if (!ep) {
+    const to = (cfg && cfg.business && cfg.business.email) || 'info@yorkcottagespa.com';
+    const href = 'mailto:' + to + '?subject=' + encodeURIComponent('Unsubscribe') + '&body=' + encodeURIComponent('Please take ' + e + ' off the York Cottage Spa news and offers list.');
+    el.innerHTML = '<h1>Unsubscribe</h1><p class="bk-sub">Press the button to send us a short email, and we’ll take <b></b> off the news and offers list within two working days. Emails about your bookings will still arrive.</p><a class="btn btn-solid" id="go">Email us to unsubscribe <span class="arrow">→</span></a><p class="cal-note">Or email <a></a> and just say “unsubscribe”.</p>';
+    el.querySelector('b').textContent = e; el.querySelector('#go').href = href; const m = el.querySelector('.cal-note a'); m.href = 'mailto:' + to; m.textContent = to;
+    return;
+  }
   el.innerHTML = '<h1>Unsubscribe?</h1><p class="bk-sub">You’ll stop getting news and offers from York Cottage Spa at <b></b>. Emails about your bookings will still arrive.</p><button class="btn btn-solid" id="go">Unsubscribe me <span class="arrow">→</span></button><p class="cal-note" id="err"></p>';
   el.querySelector('b').textContent = e;
   document.getElementById('go').onclick = async () => {
