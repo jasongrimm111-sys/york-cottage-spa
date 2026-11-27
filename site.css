@@ -1349,3 +1349,6 @@ html.bk-on body.book-page .offer-bar{display:none}
 /* email boxes that aren't a valid address */
 input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,.12)}
 .em-err{display:block;color:#b0413e;font-size:13px;font-weight:600;margin-top:5px}
+
+/* consultation form page: never wider than the phone */
+.pp,.pp-card{max-width:100%;box-sizing:border-box;overflow-x:clip}

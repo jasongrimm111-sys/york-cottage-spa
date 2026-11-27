@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=171202e">
+<link rel="stylesheet" href="site.css?v=171202h">
 <style>
   body{background:var(--cream)}
   .pp{max-width:680px;margin:0 auto;padding:40px 18px 80px}
@@ -35,7 +35,7 @@
   <div class="pp-card" id="pp"><p>Loading the form…</p></div>
   <p class="cal-note" style="text-align:center;margin-top:16px">Questions? Call 01933 580 100 or email our contact form</p>
 </div>
-<script src="consult.js?v=171202f"></script>
+<script src="consult.js?v=171202h"></script>
 <script>
 // Each guest fills this in before their treatments. Answers are encrypted in this browser with York Cottage's public key,
 // so only the spa's admin portal can read them. The receiving service only ever sees the encrypted form.
@@ -68,7 +68,7 @@
       e.target.disabled = true; e.target.innerHTML = '<span class="spin"></span> Sending…';
       try {
         const sealed = await C.seal(c.publicKey, v.answers);
-        const r = await fetch(c.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref, t: tok, g, sealed, optin: v.optin && v.optin.email ? v.optin : null }) });
+        const r = await fetch(c.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref, t: tok, g, sealed, optin: v.optin && v.optin.email ? v.optin : null, flags: C.flags(v.answers.questions, v.answers.a).length }) });
         if (!r.ok) throw new Error('send');
         el.innerHTML = `<div style="text-align:center"><div class="done-ico" style="margin:0 auto 14px"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5L20 7"/></svg></div><h1>Thank you</h1><p class="bk-sub">Your form is with your therapist. If anyone else in your group hasn’t filled theirs in, they can use the same link.</p><button class="btn btn-ghost" id="another" style="width:auto">Fill in another guest’s form</button></div>`;
         document.getElementById('another').onclick = () => { g = Math.min(nGuests - 1, g + 1); qs = qsFor(g); draw(); scrollTo(0, 0); };

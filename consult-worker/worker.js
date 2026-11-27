@@ -249,7 +249,7 @@ export default {
       && sealed && sealed.v === 1 && ['k', 'iv', 'ct'].every(k => typeof sealed[k] === 'string' && /^[A-Za-z0-9+/=]+$/.test(sealed[k]));
     if (!ok) return out({ error: 'Bad request' }, 400);
     const oi = body.optin && typeof body.optin === 'object' && /^\S+@\S+\.\S+$/.test(String(body.optin.email || '')) ? { yes: !!body.optin.yes, email: String(body.optin.email).toLowerCase().slice(0, 200), name: String(body.optin.name || '').slice(0, 120) } : null;
-    const rec = { ref, t, g, via: 'online', at: new Date().toISOString(), ...(oi ? { optin: oi } : {}), sealed: { v: 1, alg: sealed.alg || 'RSA-OAEP-256+A256GCM', k: sealed.k, iv: sealed.iv, ct: sealed.ct } };
+    const rec = { ref, t, g, via: 'online', at: new Date().toISOString(), ...(oi ? { optin: oi } : {}), flags: Math.max(0, Math.min(99, parseInt(body.flags, 10) || 0)), sealed: { v: 1, alg: sealed.alg || 'RSA-OAEP-256+A256GCM', k: sealed.k, iv: sealed.iv, ct: sealed.ct } };
     const path = `consult/inbox/${ref}-g${g}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}.json`;
     if (!(await file(env, path, rec, `Consultation form for ${ref} (encrypted)`))) return out({ error: 'Could not save' }, 502);
     return out({ ok: true });
