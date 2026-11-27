@@ -99,7 +99,13 @@
     const menu = c.treatments.filter(t => YE.sellable(t) && t.online !== false).map(t => ({ id: t.id, cat: t.cat, name: t.name, min: t.min, price: t.price, head: !!t.head, desc: t.desc || '' }));
     if (menu.length) { TR.length = 0; TR.push(...menu); TRi = Object.fromEntries(TR.map(t => [t.id, t])); }
     HEAD_OFF = (c.rules.headSpaOff || 10) / 100; BFAST = c.breakfastPrice || BFAST;
-    banner();
+    banner(); stats();
+  }
+  // visitor stats (user 2026-11-27): GoatCounter, no cookies or personal data, only when a code is set in the admin; never on private pages
+  function stats() {
+    const code = String(((L.cfg || {}).business || {}).goatcounter || '').trim().replace(/[^a-z0-9-]/gi, '');
+    if (!code || window.__ycStats || /^(localhost|127\.)/.test(location.hostname) || /(manage|consult|ticket|pay)\.html$/.test(location.pathname)) return;
+    window.__ycStats = 1; const s = document.createElement('script'); s.async = true; s.src = 'https://gc.zgo.at/count.js'; s.dataset.goatcounter = `https://${code}.goatcounter.com/count`; document.head.appendChild(s);
   }
   // which session id a session name is (on the chosen day)
   const sesId = (k, name, d) => { const c = L.cfg; if (!c || !d) return null; const x = c.sessions.find(s => s.product === k && s.name === name && s.active !== false && (!s.days || s.days.includes(d.getDay()))); return x ? x.id : null; };

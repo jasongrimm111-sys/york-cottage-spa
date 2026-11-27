@@ -1,0 +1,11 @@
+# This copy of the site is on a test address (yorkcottages.grimmittgames.com), so search engines are kept out:
+# the real yorkcottagespa.com keeps its Google rankings until the move.
+# WHEN THE SITE MOVES TO www.yorkcottagespa.com, replace everything below with:
+#   User-agent: *
+#   Disallow: /manage.html
+#   Disallow: /consult.html
+#   Disallow: /ticket.html
+#   Disallow: /pay.html
+#   Sitemap: https://www.yorkcottagespa.com/sitemap.xml
+User-agent: *
+Disallow: /
