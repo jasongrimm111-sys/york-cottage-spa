@@ -1273,3 +1273,16 @@ body.book-page .hdr-book{display:none}
 .bk.page .pay-grid.pay-two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 .pay-two .pay-col{position:static}
 @media (max-width:900px){.bk.page .pay-grid.pay-two{grid-template-columns:1fr}}
+
+/* pay step v2: one full-width column - code bar, notice, then the payment box (2026-11-27) */
+.bk.page .pay-grid.pay-two{display:flex;flex-direction:column;gap:14px;max-width:none}
+.pay-two .pay-col{gap:12px}
+.pay-two .stripe{width:100%;box-sizing:border-box}
+.card-form input{width:100%;min-width:0;box-sizing:border-box}
+.card-form label:first-child input{padding-right:150px}
+.vbar{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:4px 14px;padding:12px 16px}
+.vbar label{font-weight:600;font-size:14px;white-space:nowrap}
+.vbar .vc-row{margin:0}
+.vbar .vc-row input{min-width:0}
+.vbar .cal-note{grid-column:1/-1;margin:2px 0 0}
+@media (max-width:640px){.vbar{grid-template-columns:1fr}.card-form label:first-child input{padding-right:14px}.brands{position:static;margin-top:4px}}
