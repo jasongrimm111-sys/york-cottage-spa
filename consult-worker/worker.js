@@ -86,6 +86,7 @@ function bookingView(cfg, b, today) {
   return {
     ref: b.ref, status: b.status, product: p.name || b.product, kind: p.kind, date: b.date, nights: b.nights || 0, end: b.nights ? E.addD(b.date, b.nights) : b.date,
     session: ses ? { name: ses.name, start: ses.start, end: ses.end, arrive: ses.arrive || ses.start } : null, stay: st, guests: b.guests,
+    arrive: E.arriveAt ? E.arriveAt(cfg, b) : '', arriveMins: E.arriveBefore ? E.arriveBefore(cfg) : 15,
     lead: (b.customer || {}).first || '',
     guestList: (b.guestList || []).map((g, i) => ({ name: (g.name || (i ? '' : `${(b.customer || {}).first || ''} ${(b.customer || {}).last || ''}`)).trim().split(' ')[0] || `Guest ${i + 1}`,
       food: g.food ? fn(g.food) : '', consult: g.consult === 'done',

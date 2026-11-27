@@ -89,7 +89,7 @@
   };
   const draw = () => {
     const when = B.session ? `${fd(B.date)} · ${esc(B.session.name)} ${B.session.start}–${B.session.end}` : B.nights ? `${fd(B.date)} → ${fd(B.end)} · ${B.nights} night${B.nights > 1 ? 's' : ''}` : fd(B.date);
-    const times = B.session ? `<p class="cal-note">Please arrive at ${B.session.arrive}.</p>` : B.stay ? `<p class="cal-note">Check-in from ${B.stay.checkIn} · check-out ${B.stay.checkOut}</p>` : '';
+    const times = B.session ? `<p class="cal-note">Please arrive at ${B.session.arrive}.</p>` : B.stay ? `<p class="cal-note">Check-in from ${B.stay.checkIn} · check-out ${B.stay.checkOut}</p>` : B.arrive ? `<p class="cal-note">Please arrive by <b>${B.arrive}</b>, ${B.arriveMins} minutes before your first treatment.</p>` : '';
     const guests = B.guestList.map(g => `<div class="mb-g"><b>${esc(g.name)}${g.food ? ` <span class="cal-note" style="font-weight:400">· ${esc(g.food)}</span>` : ''}</b>${g.items.length ? `<ul>${g.items.map(i => `<li><time>${B.nights ? fds(i.date) + ' ' : ''}${i.start}</time><span>${esc(i.name)}</span></li>`).join('')}</ul>` : '<p class="cal-note">No treatments booked</p>'}</div>`).join('');
     const consult = B.consult && live && !past ? `<div class="mb-sec"><h2>Consultation forms</h2><p class="cal-note">Each guest having a treatment fills in a short form before the visit.</p>
       <ul style="list-style:none;padding:0;margin:8px 0">${B.guestList.map(g => `<li style="padding:3px 0">${g.consult ? '<span class="mb-tick">✓</span>' : '○'} ${esc(g.name)}${g.consult ? ' · done' : ''}</li>`).join('')}</ul>
