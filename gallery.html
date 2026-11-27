@@ -81,8 +81,19 @@
 
 <a class="mbar" data-book="" href="#book"><span><b>Book your visit</b><small>Spa days, stays &amp; treatments</small></span><em>Book now <span class="arrow">&rarr;</span></em></a>
 <script src="site.js?v=171126e"></script>
+<script>
+// gallery photos come from the admin (Set-up → Gallery); the list above is the fallback (user 2026-11-27)
+(async () => {
+  try {
+    const c = await fetch('https://raw.githubusercontent.com/jasongrimm111-sys/york-cottage-spa-live/main/config.json?v=' + Math.floor(Date.now() / 60000), { cache: 'no-store' }).then(r => r.json());
+    if (!Array.isArray(c.gallery) || !c.gallery.some(p => p && p.src && !p.hidden)) return;
+    const el = document.querySelector('.gal'), esc = s => String(s || '').replace(/[&<>"]/g, x => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[x]));
+    el.innerHTML = c.gallery.filter(p => p && p.src && !p.hidden).map(p => `<a class="gal-i" href="${esc(p.full || p.src)}" data-lb><img loading="lazy" src="${esc(p.src)}" alt="${esc(p.alt || 'York Cottage Spa photo')}"></a>`).join('');
+  } catch (e) {}
+})();
+</script>
 <script src="support.js?v=171126f"></script>
-<script src="defaults.js?v=171128j"></script>
+<script src="defaults.js?v=171201p"></script>
 <script src="engine.js?v=171201d"></script>
 <script src="booking.js?v=171130k"></script>
 <script src="reviews.js?v=1126152417"></script>
