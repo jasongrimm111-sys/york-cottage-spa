@@ -1286,3 +1286,11 @@ body.book-page .hdr-book{display:none}
 .vbar .vc-row input{min-width:0}
 .vbar .cal-note{grid-column:1/-1;margin:2px 0 0}
 @media (max-width:640px){.vbar{grid-template-columns:1fr}.card-form label:first-child input{padding-right:14px}.brands{position:static;margin-top:4px}}
+
+/* offer bar on the booking page: first step only, and the page makes room for it (2026-11-27) */
+html.bk-on body.book-page .offer-bar{display:none}
+@media (max-width:900px){
+  html.has-offer:not(.bk-on) body.book-page .book-main{padding-top:calc(84px + var(--offer-h,40px))}
+  .offer-bar{flex-wrap:wrap;row-gap:4px}
+}
+@media (min-width:901px){html.has-offer:not(.bk-on) body.book-page .book-main{padding-top:calc(110px + var(--offer-h,40px))}}

@@ -153,6 +153,7 @@
     bar.innerHTML = `<span>${esc(o.banner.text)}</span><button type="button" data-book="${(o.products || [])[0] || ''}" data-promo="${esc(o.show || '')}">Book now</button>`;
     const hd = document.querySelector('header'); if (hd) hd.prepend(bar); else document.body.prepend(bar);
     document.documentElement.classList.add('has-offer');
+    const fit = () => document.documentElement.style.setProperty('--offer-h', bar.offsetHeight + 'px'); fit(); addEventListener('resize', fit);
   }
   // England & Wales bank holidays
   const BH = new Set(['2026-01-01','2026-04-03','2026-04-06','2026-05-04','2026-05-25','2026-08-31','2026-12-25','2026-12-28',
@@ -288,6 +289,8 @@
   // ---------- steps ----------
   let lastAt = '';
   function draw(){
+    // booking page: the offer bar shows on the first step only, so it never covers the summary (user 2026-11-27)
+    if (PAGE) document.documentElement.classList.toggle('bk-on', S.step > 0);
     const st = steps();
     const shown = i => i !== ROOMS || needRooms(), num = i => st.slice(0, i + 1).filter((_, k) => shown(k)).length;
     stepsEl.innerHTML = S.ref ? '' : st.map((t, i) => !shown(i) ? '' : `<li class="${i === S.step ? 'now' : i < S.step ? 'done' : ''}">${i < S.step ? `<button data-goto="${i}" title="Back to ${t}">` : '<span>'}<i>${i < S.step ? '✓' : num(i)}</i><b>${t}</b>${i < S.step ? '</button>' : '</span>'}</li>`).join('');
