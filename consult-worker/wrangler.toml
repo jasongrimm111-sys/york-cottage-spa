@@ -4,7 +4,7 @@ compatibility_date = "2026-11-01"
 
 [vars]
 # Web addresses allowed to send forms (comma separated)
-ALLOWED_ORIGINS = "https://jasongrimm111-sys.github.io,https://www.yorkcottagespa.com"
+ALLOWED_ORIGINS = "https://yorkcottages.grimmittgames.com,https://jasongrimm111-sys.github.io,https://www.yorkcottagespa.com"
 # Where forms are filed (the private data store)
 DATA_REPO = "jasongrimm111-sys/york-cottage-spa-data"
 # The GitHub key is a secret:  npx wrangler secret put GITHUB_TOKEN
