@@ -539,10 +539,11 @@
     const p = P[S.p], pr = price();
     if (p.kind === 'ask') return `<h2>Send your <em>request</em></h2><p class="bk-sub">Check the details, then send. We’ll reply with availability and a price. Nothing is charged now.</p>${reviewList()}
       <div class="notice">${POLICY.ask}</div>`;
-    return `<h2>Review &amp; <em>pay</em></h2><p class="bk-sub">Please check everything before paying.</p><div class="pay-grid">${reviewList()}
+    return `<h2>Review &amp; <em>pay</em></h2><p class="bk-sub">Please check your booking in the summary before paying.</p><div class="pay-grid pay-two">
       <div class="pay-col"><details class="vcode" ${S.voucher || S.promo || S.promoMsg ? 'open' : ''}><summary>Have a discount code or gift voucher?</summary><div class="vc-row"><input id="bkVoucher" placeholder="Code" value="${esc(S.promo ? S.promo.code : S.voucher || '')}" maxlength="40"><button class="pill" id="bkVApply">${S.promo ? 'Remove' : 'Apply'}</button></div><p class="cal-note">${S.promo ? `<b>${esc(S.promo.code)}</b> applied: ${S.promo.type === 'pct' ? S.promo.value + '% off' : gbp(S.promo.value) + ' off'}.` : S.promoMsg ? esc(S.promoMsg) : 'Gift vouchers are valid for 12 months. We’ll check a voucher code and adjust the balance before your visit.'}</p></details>
       ${pr.bal ? `<div class="notice"><b>Paying ${gbp(pr.now)} today</b> (50% deposit). The balance of ${gbp(pr.bal)} is due by ${nice(pr.balDue, { year:'numeric' })}. A £500 damage deposit will be pre-authorised before arrival.</div>`
         : S.p === 'house' ? `<div class="notice"><b>Paying in full today</b> because your stay is within 6 weeks. A £500 damage deposit will be pre-authorised before arrival.</div>` : ''}
+      </div>
       <div class="stripe">
         <div class="stripe-top"><span class="stripe-test">Test mode</span><span>Powered by <b>stripe</b></span></div>
         <!-- CONNECT: replace this mock with the real Stripe Payment Element (stripe.elements({ clientSecret }).create('payment')).
@@ -564,7 +565,7 @@
           <p class="k-small">Test mode: this uses Stripe’s test card, so you can’t enter a real card and nothing is charged.</p>
         </div>`}
         <div class="lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Payments are encrypted and processed securely by Stripe.</div>
-      </div></div></div>
+      </div></div>
 `;
   }
 

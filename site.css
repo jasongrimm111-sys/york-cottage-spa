@@ -1268,3 +1268,8 @@ body.book-page .hdr-book{display:none}
 /* date picker: the month name sits between the arrows, never under them (2026-11-27) */
 .cal .cal-t{padding:0 46px}
 .cal-ms{position:relative}
+
+/* pay step: discount/notices in column 1, payment in column 2 (2026-11-27) */
+.bk.page .pay-grid.pay-two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.pay-two .pay-col{position:static}
+@media (max-width:900px){.bk.page .pay-grid.pay-two{grid-template-columns:1fr}}
