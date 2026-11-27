@@ -140,9 +140,10 @@
   // discount codes: the public copy only has a fingerprint of each code
   const fp = async code => { const d = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('yc:' + code.trim().toUpperCase()))); let b = ''; d.forEach(x => b += String.fromCharCode(x)); return btoa(b).replace(/=+$/, ''); };
   async function findPromo(code) { if (!L.cfg || !code) return null; const h = await fp(code); return (L.cfg.promos || []).find(p => p.hash === h) || null; }
+  const codeWins = () => { const pr = S.promo && price(); return !!(pr && pr.promo); };
   function promoOff(pr) {
     if (!S.promo) return 0; const q = S.promo;
-    const basis = q.on === 'all' ? pr.base + pr.bf + pr.tc.sub - pr.tc.off : q.on === 'treat' ? pr.tc.sub - pr.tc.off : pr.base;
+    const basis = q.on === 'all' ? pr.base + pr.bf + pr.tc.sub : q.on === 'treat' ? pr.tc.sub : pr.base;
     return Math.max(0, Math.min(basis, q.type === 'pct' ? Math.round(basis * q.value) / 100 : q.value));
   }
   // offer bar on every page, between the dates set in the admin
@@ -236,11 +237,13 @@
     const nights = p.rule ? S.nights : 0, tc = treatCost();
     const base = S.p === 'house' ? p.night * nights : p.priceN ? p.priceN[nights] * S.guests : p.price * S.guests;
     const bf = S.bfast && p.bfast ? BFAST * S.guests * nights : 0;
-    const promo = promoOff({ base, bf, tc });
+    // only one discount per booking: the code or the head spa offer, whichever saves more (user 2026-11-27)
+    const code = promoOff({ base, bf, tc }), useCode = code > 0 && code > tc.off, promo = useCode ? code : 0, codeBeaten = !!S.promo && !useCode;
+    if (useCode) tc.off = 0;
     const total = base + bf + tc.sub - tc.off - promo;
     let now = total, bal = 0, balDue = null;
     if (S.p === 'house' && S.date && (S.date - today) / 864e5 > 42){ now = total / 2; bal = total - now; balDue = add(S.date, -42); }
-    return { base, bf, tc, total, now, bal, balDue, nights, promo };
+    return { base, bf, tc, total, now, bal, balDue, nights, promo, codeBeaten };
   }
 
   // ---------- shell ----------
@@ -465,7 +468,7 @@
         ext = { already, add, total: incN.min + add, price: add >= t.min ? t.price : YE.extendPrice(L.cfg) }; }
       else if (sameKind && on) { const c = chargeOf(g, t.id); if (c && c.extends) ext = { add: c.mins, total: Math.min(YE.combineMax(L.cfg), (siteNeeds().find(n => n.guest === g && n.included) || {}).min || 0), price: c.price }; }
       const blocked = ext && ext.already, price = ext && !blocked ? ext.price : t.price;
-      const pr = t.head && !p.only ? `<s>${gbp(price)}</s> ${gbp(price * (1 - HEAD_OFF))}` : (ext && !blocked && price !== t.price ? `<s>${gbp(t.price)}</s> ${gbp(price)}` : gbp(price));
+      const pr = t.head && !p.only && !codeWins() ? `<s>${gbp(price)}</s> ${gbp(price * (1 - HEAD_OFF))}` : (ext && !blocked && price !== t.price ? `<s>${gbp(t.price)}</s> ${gbp(price)}` : gbp(price));
       return `<button class="tr-opt ${on ? 'sel' : ''}" data-add="${t.id}" data-gi="${g}" ${full ? 'disabled' : ''}><span class="tr-tick">${on ? '✓' : '+'}</span><span class="tr-txt"><b>${t.name}</b><span>${t.desc}</span>${none ? '<em class="tr-note off">No available times</em>' : ext && ext.already ? '<em class="tr-note off">Your included treatment is already extended</em>' : ext ? `<em class="tr-note">Extends the included treatment to ${ext.total} min</em>` : ''}</span><span class="tr-pr"><b>${pr}</b><small>${ext && !ext.already ? `+${ext.add} min` : t.min + ' min'}</small></span></button>`;
     }).join('') + '</div>').join('');
     h += p.only
@@ -548,7 +551,7 @@
     if (p.kind === 'ask') return `<h2>Send your <em>request</em></h2><p class="bk-sub">Check the details, then send. We’ll reply with availability and a price. Nothing is charged now.</p>${reviewList()}
       <div class="notice">${POLICY.ask}</div>`;
     return `<h2>Review &amp; <em>pay</em></h2><p class="bk-sub">Please check your booking in the summary before paying.</p><div class="pay-grid pay-two">
-      <div class="pay-col"><div class="vcode vbar"><label for="bkVoucher">Discount code or gift voucher</label><div class="vc-row"><input id="bkVoucher" placeholder="Enter code" value="${esc(S.promo ? S.promo.code : S.voucher || '')}" maxlength="40"><button class="pill" id="bkVApply">${S.promo ? 'Remove' : 'Apply'}</button></div><p class="cal-note">${S.promo ? `<b>${esc(S.promo.code)}</b> applied: ${S.promo.type === 'pct' ? S.promo.value + '% off' : gbp(S.promo.value) + ' off'}.` : S.promoMsg ? esc(S.promoMsg) : 'Gift vouchers are valid for 12 months. We’ll check a voucher code and adjust the balance before your visit.'}</p></div>
+      <div class="pay-col">${codeBox(pr)}
       ${pr.bal ? `<div class="notice"><b>Paying ${gbp(pr.now)} today</b> (50% deposit). The balance of ${gbp(pr.bal)} is due by ${nice(pr.balDue, { year:'numeric' })}. A £500 damage deposit will be pre-authorised before arrival.</div>`
         : S.p === 'house' ? `<div class="notice"><b>Paying in full today</b> because your stay is within 6 weeks. A £500 damage deposit will be pre-authorised before arrival.</div>` : ''}
       </div>
@@ -578,6 +581,16 @@
   }
 
   // the last check before paying: everything chosen, guest by guest (user 2026-11-27)
+  // discount code + gift voucher: one discount code per booking; a gift voucher can go alongside it (user 2026-11-27)
+  function codeBox(pr){
+    const off = S.promo && !pr.codeBeaten, pct = Math.round(HEAD_OFF * 100);
+    const chips = [
+      S.promo && `<div class="vc-chip ${pr.codeBeaten ? 'muted' : ''}"><span><b>${esc(S.promo.code)}</b> ${pr.codeBeaten ? `isn’t used: only one discount per booking, and your head spa ${pct}% off saves you more` : `applied · ${S.promo.type === 'pct' ? S.promo.value + '% off' : gbp(S.promo.value) + ' off'}${pr.promo ? ` (−${gbp(pr.promo)})` : ''}`}</span><button type="button" class="vc-rm" data-vrm="promo">Remove</button></div>`,
+      S.voucher && `<div class="vc-chip"><span>Gift voucher <b>${esc(S.voucher)}</b> added · we’ll check it and take it off your balance before your visit</span><button type="button" class="vc-rm" data-vrm="voucher">Remove</button></div>`].filter(Boolean).join('');
+    const need = !S.promo && !S.voucher ? 'Discount code or gift voucher' : !S.voucher ? 'Gift voucher' : !S.promo ? 'Discount code' : '';
+    const note = S.promoMsg ? esc(S.promoMsg) : !S.promo && !S.voucher ? `One discount code per booking. Gift vouchers are valid for 12 months and can be used with a code.` : '';
+    return `<div class="vcode vbar${need ? '' : ' done'}">${need ? `<label for="bkVoucher">${need}</label><div class="vc-row"><input id="bkVoucher" placeholder="Enter code" maxlength="40" autocomplete="off"><button class="pill" id="bkVApply">Apply</button></div>` : ''}${chips ? `<div class="vc-chips">${chips}</div>` : ''}${note ? `<p class="cal-note">${note}</p>` : ''}</div>`;
+  }
   function reviewList(){
     const p = P[S.p], d = S.d, multi = S.guests > 1, pr = price();
     const when = p.rule ? `${nice(S.date)} – ${nice(endDate(), { year:'numeric' })} (${S.nights} night${S.nights > 1 ? 's' : ''})<br><small>${stayTimes(S.p, S.date, S.nights).map(([a, b]) => a + ' ' + b).join(' · ')}</small>` : `${nice(S.date, { year:'numeric' })} · ${sesLabel()}`;
@@ -671,7 +684,7 @@
         if (!inc && !food) return null;
         const tn = (YE && L.cfg && S.date) ? siteNeeds().find(x => x.guest === gi && x.included) : null, tt = tn && tn.start ? ` · ${p.rule && tn.date ? fdShort(tn.date) + ' ' : ''}${tn.start}` : '';
         return [`${inc ? esc(tn && (tn.with || []).length ? YE.itemName(L.cfg, tn) : blueName(inc)) : esc(food)}<small class="sum-who">${tt ? '<b class="sum-time">' + tt.slice(3) + '</b> · ' : ''}${S.guests > 1 ? esc(gName(gi)) + (inc && food ? ' · ' : '') : ''}${inc && food ? esc(food) : ''}</small>`, 'Included']; }) : []),
-      ...S.adds.flatMap((a, gi) => a.map(id => { const t = TRi[id]; if (!t) return null; const head = t.head && !P[S.p].only, c = chargeOf(gi, id), price = c ? c.price : t.price; const xn = (YE && L.cfg && S.date) ? siteNeeds().find(x => x.guest === gi && (x.tid === id || (x.with || []).includes(id))) : null, xt = xn && xn.start ? `<b class="sum-time">${p.rule && xn.date ? fdShort(xn.date) + ' ' : ''}${xn.start}</b>` : '';
+      ...S.adds.flatMap((a, gi) => a.map(id => { const t = TRi[id]; if (!t) return null; const head = t.head && !P[S.p].only && !codeWins(), c = chargeOf(gi, id), price = c ? c.price : t.price; const xn = (YE && L.cfg && S.date) ? siteNeeds().find(x => x.guest === gi && (x.tid === id || (x.with || []).includes(id))) : null, xt = xn && xn.start ? `<b class="sum-time">${p.rule && xn.date ? fdShort(xn.date) + ' ' : ''}${xn.start}</b>` : '';
         return [`${esc(t.name)}${c && c.extends && c.mins < t.min ? ` <small class="sum-who">${c.mins} min added to the included treatment</small>` : ''}${S.guests > 1 || xt ? `<small class="sum-who">${xt}${xt && S.guests > 1 ? ' · ' : ''}${S.guests > 1 ? esc(gName(gi)) : ''}</small>` : ''}`, head ? `<s>${gbp(price)}</s> ${gbp(price * (1 - HEAD_OFF))}` : gbp(price)]; })), pr && pr.promo && ['Code ' + esc(S.promo.code), '−' + gbp(pr.promo)]].filter(Boolean);
     const ready = pr && (S.p === 'house' ? S.nights >= 2 : g || p.only);
     const tot = p.kind === 'ask'
@@ -733,12 +746,17 @@
     const rs = $('.bk-reset', side); if (rs) rs.onclick = () => { if (!rs.dataset.sure) { rs.dataset.sure = '1'; rs.textContent = 'Sure? Clear it all'; rs.classList.add('sure'); setTimeout(() => { if (rs.isConnected) { delete rs.dataset.sure; rs.textContent = 'Start again'; rs.classList.remove('sure'); } }, 4000); return; }
       try { sessionStorage.removeItem(SKEY); } catch (e) {} if (S.hold && L.cfg && (L.cfg.consult || {}).endpoint) fetch(L.cfg.consult.endpoint.replace(/\/$/, '') + '/release', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hold: S.hold }) }).catch(() => {}); S.hold = null; reset(null); S.cat = null; S.promo = null; S.d = {}; S.names = []; S.roomOf = []; draw(); window.scrollTo({ top: 0 }); };
     const va = $('#bkVApply', body); if (va) va.onclick = async () => {
-      if (S.promo) { S.promo = null; S.promoMsg = ''; draw(); return; }
       const code = ($('#bkVoucher', body).value || '').trim(); if (!code) return;
       const pr = await findPromo(code);
-      if (pr) { const why = YE.promoCheck(L.cfg, { ...pr, code }, engineBooking()); if (why) { S.promoMsg = why; S.promo = null; } else { S.promo = { code: code.toUpperCase(), type: pr.type, value: pr.value, on: pr.on }; S.promoMsg = ''; S.voucher = ''; } }
-      else { S.voucher = code; S.promo = null; S.promoMsg = /^YCV-/i.test(code) ? '' : 'We don’t recognise that discount code, so we’ll treat it as a gift voucher and check it before your visit.'; }
+      if (pr && S.promo) { S.promoMsg = `Only one discount code can be used per booking. Remove ${S.promo.code} first to use ${code.toUpperCase()} instead.`; draw(); return; }
+      if (!pr && S.voucher) { S.promoMsg = 'One gift voucher can be added online. Tell us about any others in your booking notes and we’ll take them off your balance.'; draw(); return; }
+      if (pr) { const why = YE.promoCheck(L.cfg, { ...pr, code }, engineBooking()); if (why) { S.promoMsg = why; S.promo = null; } else { S.promo = { code: code.toUpperCase(), type: pr.type, value: pr.value, on: pr.on }; S.promoMsg = '';
+        const after = price(); if (after && after.codeBeaten) { S.promo = null; S.promoMsg = `Only one discount can be used per booking, and your head spa ${Math.round(HEAD_OFF * 100)}% off already saves you more, so we’ve kept that.`; }
+        else if (after && after.promo && treatCost().off) S.promoMsg = `Only one discount can be used per booking, so this code replaces the head spa ${Math.round(HEAD_OFF * 100)}% off.`; } }
+      else { S.voucher = code; S.promoMsg = /^YCV-/i.test(code) ? '' : 'We don’t recognise that discount code, so we’ll treat it as a gift voucher and check it before your visit.'; }
       draw(); };
+    const vin = $('#bkVoucher', body); if (vin) vin.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); va && va.click(); } };
+    body.querySelectorAll('[data-vrm]').forEach(b => b.onclick = () => { if (b.dataset.vrm === 'promo') S.promo = null; else S.voucher = ''; S.promoMsg = ''; draw(); });
     body.querySelectorAll('[data-alt]').forEach(b => b.onclick = () => { const k = b.dataset.alt; if (!P[k]) return; const pend = S.pending; reset(k); S.pending = pend; S.cat = P[k].group; syncAdds(); S.step = GUESTS; draw(); });
     body.querySelectorAll('[data-gq]').forEach(b => b.onclick = () => { S.guests = +b.dataset.gq; S.gOK = true; if (S.date && !dateOK(S.p, S.date)){ S.date = null; S.end = null; } draw(); });
   }

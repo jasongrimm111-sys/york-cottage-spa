@@ -1307,3 +1307,11 @@ html.bk-on body.book-page .offer-bar{display:none}
 .offer-bar{position:relative;padding-right:48px}
 .offer-bar .offer-x{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:28px;height:28px;padding:0;border-radius:50%;background:transparent;color:#fff;font-size:22px;line-height:1;font-weight:400;display:grid;place-items:center;opacity:.85}
 .offer-bar .offer-x:hover{background:rgba(255,255,255,.18);opacity:1}
+
+/* discount code + gift voucher chips (2026-11-27) */
+.vc-chips{grid-column:1/-1;display:grid;gap:8px}
+.vbar.done .vc-chips{margin:0}
+.vc-chip{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#eef5ee;border:1px solid #cfe3d0;border-radius:10px;padding:9px 12px;font-size:13.5px;color:#24452c}
+.vc-chip.muted{background:#f6f1e9;border-color:var(--line);color:var(--muted)}
+.vc-rm{background:none;border:0;padding:0;font:inherit;font-size:12.5px;font-weight:700;color:var(--clay);cursor:pointer;white-space:nowrap}
+.vc-rm:hover{text-decoration:underline}
