@@ -534,6 +534,8 @@
   }
 
   function detailView(){
+    // phone numbers: a dialling code, and the leading 0 handled (user 2026-11-27)
+    const DIAL = [['+44', '🇬🇧 +44'], ['+353', '🇮🇪 +353'], ['+33', '🇫🇷 +33'], ['+49', '🇩🇪 +49'], ['+34', '🇪🇸 +34'], ['+39', '🇮🇹 +39'], ['+31', '🇳🇱 +31'], ['+32', '🇧🇪 +32'], ['+351', '🇵🇹 +351'], ['+41', '🇨🇭 +41'], ['+48', '🇵🇱 +48'], ['+46', '🇸🇪 +46'], ['+47', '🇳🇴 +47'], ['+45', '🇩🇰 +45'], ['+30', '🇬🇷 +30'], ['+1', '🇺🇸 🇨🇦 +1'], ['+61', '🇦🇺 +61'], ['+64', '🇳🇿 +64'], ['+27', '🇿🇦 +27'], ['+971', '🇦🇪 +971'], ['+91', '🇮🇳 +91'], ['+86', '🇨🇳 +86'], ['+81', '🇯🇵 +81']];
     const f = (id, label, type = 'text', ac = '', err = 'Please fill this in', opt = false) => `<div class="bk-field" data-fd="${id}"><label for="bk_${id}">${label}${opt ? ' <span class="opt">optional</span>' : ''}</label><input id="bk_${id}" type="${type}" autocomplete="${ac}" value="${esc(S.d[id])}"><span class="err">${err}</span></div>`;
     const ageLine = (S.p === 'private' || S.p === 'house')
       ? 'I’m 18 or over. Under-16s only join on a Private Spa or whole-house booking, with an adult.'
@@ -544,7 +546,8 @@
       <div class="det-grid">
         <div class="det-card"><div class="bk-group" style="margin-top:0">Lead guest</div>
           <div class="bk-2">${f('first', 'First name', 'text', 'given-name')}${f('last', 'Last name', 'text', 'family-name')}</div>
-          <div class="bk-2">${f('email', 'Email', 'email', 'email', 'Please enter a valid email')}${f('phone', 'Mobile', 'tel', 'tel', 'Please enter a phone number')}</div>
+          ${f('email', 'Email', 'email', 'email', 'Please enter a valid email address, e.g. name@example.com')}
+          <div class="bk-field" data-fd="phone"><label for="bk_phone">Mobile</label><div class="bk-phone"><select id="bk_dial" aria-label="Dialling code">${DIAL.map(([c, l]) => `<option value="${c}" ${c === (S.d.dial || '+44') ? 'selected' : ''}>${l}</option>`).join('')}</select><input id="bk_phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="7700 900123" value="${esc(S.d.phoneNum != null ? S.d.phoneNum : S.d.phone || '')}"></div><span class="err">Please check your mobile number, e.g. 7700 900123</span></div>
           ${L.cfg && L.cfg.sms && L.cfg.sms.on ? `<div class="bk-field"><label>How should we keep you updated?</label><div class="seg-pick">${[['email', 'Email'], ['sms', 'Text message'], ['both', 'Both']].map(([k, t]) => `<button type="button" class="${(S.notify || 'email') === k ? 'on' : ''}" data-notify="${k}">${t}</button>`).join('')}</div><small class="cal-note">Booking confirmation, reminders and any changes. We’ll always email your receipt.</small></div>` : ''}
           <div class="bk-field"><label for="bk_notes">Dietary needs, celebrations or anything else <span class="opt">optional</span></label><textarea id="bk_notes" rows="2" placeholder="e.g. one vegan, a birthday">${esc(S.d.notes)}</textarea></div>
         </div>
@@ -664,7 +667,7 @@
       const d = S.d, bad = [];
       if (!(d.first || '').trim()) bad.push('first'); if (!(d.last || '').trim()) bad.push('last');
       if (!(window.YCValidEmail ? window.YCValidEmail(d.email) : /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email || ''))) bad.push('email');
-      if ((d.phone || '').replace(/\D/g, '').length < 10) bad.push('phone');
+      { const n = String(d.phoneNum != null ? d.phoneNum : d.phone || '').trim().replace(/^0+(?=\d)/, ''), dg = n.replace(/\D/g, ''); if (dg.length < 7 || dg.length > 12 || !/^[\d\s()-]+$/.test(n)) bad.push('phone'); }
 
       if (bad.length) return { bad };
       if (!S.adult) return { ck:'adult' }; if (!S.agree) return { ck:'agree' };
@@ -746,7 +749,11 @@
     body.querySelectorAll('[data-tpd]').forEach(b => b.onclick = () => { const [k, d] = b.dataset.tpd.split('|'); S.tpDate = S.tpDate || {}; S.tpDate[k] = d; draw(); });
     body.querySelectorAll('[data-gt]').forEach(b => b.onclick = () => { (S.seen = S.seen || {})[S.tg] = 1; S.tg = +b.dataset.gt; draw(); });
     body.querySelectorAll('[data-notify]').forEach(b => b.onclick = () => { S.notify = b.dataset.notify; body.querySelectorAll('[data-notify]').forEach(x => x.classList.toggle('on', x === b)); });
-    ['first','last','email','phone','notes'].forEach(k => { const el = $('#bk_' + k, body); if (el) el.oninput = () => { S.d[k] = el.value; el.closest('.bk-field').classList.remove('bad');
+    { const pi = $('#bk_phone', body), pd = $('#bk_dial', body);
+      const full = () => { const n = String(S.d.phoneNum || '').trim().replace(/^0+(?=\d)/, ''); S.d.phone = n ? `${S.d.dial || '+44'} ${n}` : ''; };
+      if (pi) { pi.oninput = () => { S.d.phoneNum = pi.value; full(); pi.closest('.bk-field').classList.remove('bad'); }; pi.onblur = () => { const n = pi.value.trim().replace(/^0+(?=\d)/, ''); if (n !== pi.value) { pi.value = n; S.d.phoneNum = n; full(); } }; }
+      if (pd) pd.onchange = () => { S.d.dial = pd.value; full(); }; }
+    ['first','last','email','notes'].forEach(k => { const el = $('#bk_' + k, body); if (el) el.oninput = () => { S.d[k] = el.value; el.closest('.bk-field').classList.remove('bad');
       if ((k === 'first' || k === 'last') && !S.g0Own) { S.names = S.names || []; S.names[0] = `${S.d.first || ''} ${S.d.last || ''}`.trim(); const g0 = $('#bk_g0', body); if (g0) g0.value = S.names[0]; } }; });
     body.querySelectorAll('[data-rg]').forEach(b => b.onclick = () => { const [r, i] = b.dataset.rg.split('|'); S.roomOf = S.roomOf || []; S.roomOf[+i] = S.roomOf[+i] === r ? '' : r; draw(); });
     body.querySelectorAll('[id^="bk_g"]').forEach(el => { if (!/^bk_g\d+$/.test(el.id)) return; el.oninput = () => { const i = +el.id.slice(4); S.names = S.names || []; S.names[i] = el.value; if (i === 0) S.g0Own = true; el.closest('.bk-field').classList.remove('bad'); }; });

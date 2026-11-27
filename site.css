@@ -1352,3 +1352,8 @@ input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,
 
 /* consultation form page: never wider than the phone */
 .pp,.pp-card{max-width:100%;box-sizing:border-box;overflow-x:clip}
+
+/* booking details: mobile with a dialling code (2026-11-27) */
+.bk-phone{display:grid;grid-template-columns:118px minmax(0,1fr);gap:8px}
+.bk-phone select{width:100%;min-width:0}
+.bk-phone input{min-width:0;width:100%}
