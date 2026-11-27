@@ -540,6 +540,9 @@
     if (p.kind === 'ask') return `<h2>Send your <em>request</em></h2><p class="bk-sub">Check the details, then send. We’ll reply with availability and a price. Nothing is charged now.</p>${reviewList()}
       <div class="notice">${POLICY.ask}</div>`;
     return `<h2>Review &amp; <em>pay</em></h2><p class="bk-sub">Please check everything before paying.</p><div class="pay-grid">${reviewList()}
+      <div class="pay-col"><details class="vcode" ${S.voucher || S.promo || S.promoMsg ? 'open' : ''}><summary>Have a discount code or gift voucher?</summary><div class="vc-row"><input id="bkVoucher" placeholder="Code" value="${esc(S.promo ? S.promo.code : S.voucher || '')}" maxlength="40"><button class="pill" id="bkVApply">${S.promo ? 'Remove' : 'Apply'}</button></div><p class="cal-note">${S.promo ? `<b>${esc(S.promo.code)}</b> applied: ${S.promo.type === 'pct' ? S.promo.value + '% off' : gbp(S.promo.value) + ' off'}.` : S.promoMsg ? esc(S.promoMsg) : 'Gift vouchers are valid for 12 months. We’ll check a voucher code and adjust the balance before your visit.'}</p></details>
+      ${pr.bal ? `<div class="notice"><b>Paying ${gbp(pr.now)} today</b> (50% deposit). The balance of ${gbp(pr.bal)} is due by ${nice(pr.balDue, { year:'numeric' })}. A £500 damage deposit will be pre-authorised before arrival.</div>`
+        : S.p === 'house' ? `<div class="notice"><b>Paying in full today</b> because your stay is within 6 weeks. A £500 damage deposit will be pre-authorised before arrival.</div>` : ''}
       <div class="stripe">
         <div class="stripe-top"><span class="stripe-test">Test mode</span><span>Powered by <b>stripe</b></span></div>
         <!-- CONNECT: replace this mock with the real Stripe Payment Element (stripe.elements({ clientSecret }).create('payment')).
@@ -561,10 +564,8 @@
           <p class="k-small">Test mode: this uses Stripe’s test card, so you can’t enter a real card and nothing is charged.</p>
         </div>`}
         <div class="lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Payments are encrypted and processed securely by Stripe.</div>
-      </div></div>
-      <details class="vcode" ${S.voucher || S.promo || S.promoMsg ? 'open' : ''}><summary>Have a discount code or gift voucher?</summary><div class="vc-row"><input id="bkVoucher" placeholder="Code" value="${esc(S.promo ? S.promo.code : S.voucher || '')}" maxlength="40"><button class="pill" id="bkVApply">${S.promo ? 'Remove' : 'Apply'}</button></div><p class="cal-note">${S.promo ? `<b>${esc(S.promo.code)}</b> applied: ${S.promo.type === 'pct' ? S.promo.value + '% off' : gbp(S.promo.value) + ' off'}.` : S.promoMsg ? esc(S.promoMsg) : 'Gift vouchers are valid for 12 months. We’ll check a voucher code and adjust the balance before your visit.'}</p></details>
-      ${pr.bal ? `<div class="notice"><b>Paying ${gbp(pr.now)} today</b> (50% deposit). The balance of ${gbp(pr.bal)} is due by ${nice(pr.balDue, { year:'numeric' })}. A £500 damage deposit will be pre-authorised before arrival.</div>`
-        : S.p === 'house' ? `<div class="notice"><b>Paying in full today</b> because your stay is within 6 weeks. A £500 damage deposit will be pre-authorised before arrival.</div>` : ''}`;
+      </div></div></div>
+`;
   }
 
   // the last check before paying: everything chosen, guest by guest (user 2026-11-27)
@@ -589,7 +590,7 @@
         ${facts.length ? `<dl class="rv-facts">${facts.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>` : ''}</div>`; };
     const plines = pr ? [[S.p === 'house' ? `Whole house · ${S.nights} night${S.nights > 1 ? 's' : ''}` : `${p.name} · ${S.guests} × ${gbp(pr.base / S.guests)}`, pr.base], pr.bf && ['Breakfast', pr.bf], pr.tc.sub && ['Extra treatments', pr.tc.sub], pr.tc.off && ['Head spa discount', -pr.tc.off], pr.promo && ['Discount code', -pr.promo]].filter(x => x && x[1]) : [];
     const money = pr ? `<ul class="sum rv-money">${plines.map(([l, v]) => `<li><span>${l}</span><b>${v < 0 ? '−' : ''}${gbp(Math.abs(v))}</b></li>`).join('')}<li class="rv-total"><span>Total</span><b>${gbp(pr.total)}</b></li>${pr.now !== pr.total ? `<li><span>Paying today</span><b>${gbp(pr.now)}</b></li>` : ''}</ul>` : '';
-    return `<div class="pay rv" style="margin-bottom:18px">
+    return `<div class="pay review">
       <ul class="sum" style="color:var(--ink)">${top.map(([a, b]) => `<li><span style="color:var(--muted)">${a}</span><b>${b}</b></li>`).join('')}</ul>
       <div class="bk-group">${multi ? 'Each guest' : 'Your treatments'}</div><div class="rv-guests">${Array.from({ length: S.guests }, (_, i) => guestBox(i)).join('')}</div>
       ${money ? `<div class="bk-group">Price</div>${money}` : ''}
@@ -618,8 +619,8 @@
     if (S.step === GUESTS) { S.gOK = true; const bad = []; for (let i = 0; i < S.guests; i++) if (((S.names || [])[i] || '').trim().length < 2) bad.push('g' + i); if (bad.length) return { bad }; }
     if (S.step === ROOMS && needRooms()) { const miss = Array.from({ length: S.guests }, (_, i) => i).filter(i => !(S.roomOf || [])[i]); if (miss.length) return `Choose a room for ${gName(miss[0])}`; }
     if (S.step === CHOICES && P[S.p].only && !S.adds[S.tg].length) return 'Choose at least one treatment for this guest';
-    if (S.step === CHOICES && YE && L.cfg) { const miss = siteNeeds().filter(x => x.guest === S.tg && !x.start); if (miss.length) return 'Choose a time for ' + (YE.tr(L.cfg, miss[0].tid) || {}).name; }
-    if (S.step === CHOICES && S.tg >= S.guests - 1 && YE && L.cfg) { const miss = siteNeeds().find(x => !x.start); if (miss) { return `Choose a time for ${gName(miss.guest)}’s ${(YE.tr(L.cfg, miss.tid) || {}).name}`; } }
+    if (S.step === CHOICES && YE && L.cfg) { const miss = siteNeeds().filter(x => x.guest === S.tg && !x.start); if (miss.length) return 'Choose a time for ' + YE.itemName(L.cfg, miss[0]); }
+    if (S.step === CHOICES && S.tg >= S.guests - 1 && YE && L.cfg) { const miss = siteNeeds().find(x => !x.start); if (miss) { return `Choose a time for ${gName(miss.guest)}’s ${YE.itemName(L.cfg, miss)}`; } }
     if (S.step === CHOICES && S.tg >= S.guests - 1 && YE && L.cfg) {
       const r = planNow(); if (r && !r.ok) return `Sorry, we can’t fit ${r.fail && r.fail.name ? r.fail.name : 'all the treatments'} in on this ${P[S.p].rule ? 'stay' : 'day'}. Try fewer treatments or another ${P[S.p].rule ? 'date' : 'session'}.`;
     }
@@ -639,7 +640,7 @@
   function navView(){
     if (S.ref){ nav.innerHTML = '<span></span><button class="bk-close">Close</button>'; $('.bk-close', nav).onclick = close; return; }
     const last = S.step === LAST, ask = S.p && P[S.p].kind === 'ask', pr = price();
-    const label = last ? (ask ? 'Send request' : S.pm === 'klarna' ? 'Continue with Klarna' : `Pay ${gbp(pr.now)}`) : S.step === CHOICES && S.tg < S.guests - 1 ? `Next: Guest ${S.tg + 2}` : 'Continue';
+    const label = last ? (ask ? 'Send request' : S.pm === 'klarna' ? 'Continue with Klarna' : `Pay ${gbp(pr.now)}`) : S.step === CHOICES && S.tg < S.guests - 1 ? `Next: ${esc(gName(S.tg + 1).split(' ')[0])}` : 'Continue';
     nav.innerHTML = `<span class="bk-msg"></span>${PAGE ? '' : '<button class="bk-close" title="Your choices are saved">Close</button>'}${S.step ? '<button class="back">← Back</button>' : ''}<button class="btn btn-solid go">${S.paying ? '<span class="spin"></span> ' + (S.pm === 'klarna' && !ask ? 'Opening Klarna…' : 'Processing…') : label + ' <span class="arrow">→</span>'}</button>`;
   }
 
@@ -653,13 +654,16 @@
       S.date && ['Date', p.rule ? `${nice(S.date)}${endDate() ? ' → ' + nice(endDate()) : ''}` : nice(S.date)],
       S.session && ['Session', sesLabel()],
       g && ['Guests', S.guests],
+      ...(S.date && p.rule && S.p !== 'house' || (S.p === 'house' && S.end) ? stayTimes(S.p, S.date, S.nights).filter(Boolean).map(([a, b]) => [`<span class="sum-sub">${a}</span>`, `<span class="sum-sub">${b}</span>`]) : []),
       pr && !p.only && (S.p === 'house' ? S.nights : g) && ['Price', unit],
       pr && pr.bf && ['Breakfast', gbp(pr.bf)],
       ...(S.step >= CHOICES ? Array.from({ length: S.guests }, (_, gi) => { const pk = S.picks[gi] || {}, il = incList(S.p) || [];
         const inc = incMode(S.p) === 'treat' ? (pk.treat || (il[0] || {}).name) : incMode(S.p) ? (il[0] || {}).name : null, food = p.food ? pk.food : null;
         if (!inc && !food) return null;
-        return [`${inc ? esc(blueName(inc)) : esc(food)}<small class="sum-who">${S.guests > 1 ? esc(gName(gi)) + (inc && food ? ' · ' : '') : ''}${inc && food ? esc(food) : ''}</small>`, 'Included']; }) : []),
-      ...S.adds.flatMap((a, gi) => a.map(id => { const t = TRi[id]; if (!t) return null; const head = t.head && !P[S.p].only, c = chargeOf(gi, id), price = c ? c.price : t.price; return [`${esc(t.name)}${c && c.extends && c.mins < t.min ? ` <small class="sum-who">${c.mins} min added to the included treatment</small>` : ''}${S.guests > 1 ? `<small class="sum-who">${esc(gName(gi))}</small>` : ''}`, head ? `<s>${gbp(price)}</s> ${gbp(price * (1 - HEAD_OFF))}` : gbp(price)]; })), pr && pr.promo && ['Code ' + esc(S.promo.code), '−' + gbp(pr.promo)]].filter(Boolean);
+        const tn = (YE && L.cfg && S.date) ? siteNeeds().find(x => x.guest === gi && x.included) : null, tt = tn && tn.start ? ` · ${p.rule && tn.date ? fdShort(tn.date) + ' ' : ''}${tn.start}` : '';
+        return [`${inc ? esc(tn && (tn.with || []).length ? YE.itemName(L.cfg, tn) : blueName(inc)) : esc(food)}<small class="sum-who">${tt ? '<b class="sum-time">' + tt.slice(3) + '</b> · ' : ''}${S.guests > 1 ? esc(gName(gi)) + (inc && food ? ' · ' : '') : ''}${inc && food ? esc(food) : ''}</small>`, 'Included']; }) : []),
+      ...S.adds.flatMap((a, gi) => a.map(id => { const t = TRi[id]; if (!t) return null; const head = t.head && !P[S.p].only, c = chargeOf(gi, id), price = c ? c.price : t.price; const xn = (YE && L.cfg && S.date) ? siteNeeds().find(x => x.guest === gi && (x.tid === id || (x.with || []).includes(id))) : null, xt = xn && xn.start ? `<b class="sum-time">${p.rule && xn.date ? fdShort(xn.date) + ' ' : ''}${xn.start}</b>` : '';
+        return [`${esc(t.name)}${c && c.extends && c.mins < t.min ? ` <small class="sum-who">${c.mins} min added to the included treatment</small>` : ''}${S.guests > 1 || xt ? `<small class="sum-who">${xt}${xt && S.guests > 1 ? ' · ' : ''}${S.guests > 1 ? esc(gName(gi)) : ''}</small>` : ''}`, head ? `<s>${gbp(price)}</s> ${gbp(price * (1 - HEAD_OFF))}` : gbp(price)]; })), pr && pr.promo && ['Code ' + esc(S.promo.code), '−' + gbp(pr.promo)]].filter(Boolean);
     const ready = pr && (S.p === 'house' ? S.nights >= 2 : g || p.only);
     const tot = p.kind === 'ask'
       ? `<div class="big"><span>${g ? 'Estimate' : 'From'}</span><b>${g ? gbp(est) : gbp(p.est)}</b></div><p>${g ? 'We’ll confirm the exact price.' : 'per person'} Nothing to pay now.</p>`
@@ -678,7 +682,7 @@
       const g = b.dataset.cat || null, opts = Object.keys(P).filter(k => P[k].group === g);
       if (g && opts.length === 1 && opts[0] !== S.p){ const pend = S.pending; reset(opts[0]); S.pending = pend; syncAdds(); }
       S.cat = g; S.step = 0; draw(); const o = $('#bkOpts', body); if (o) setTimeout(() => o.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); });
-    body.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { const k = b.dataset.p; if (k !== S.p){ const pend = S.pending, cat = S.cat; reset(k); S.pending = pend; S.cat = cat; syncAdds(); } S.cat = P[k].group; S.step = 0; draw(); });
+    body.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { const k = b.dataset.p; if (k !== S.p){ const pend = S.pending, cat = S.cat; reset(k); S.pending = pend; S.cat = cat; syncAdds(); } S.cat = P[k].group; S.step = 0; const y = scrollY, bt = body.scrollTop; draw(); body.scrollTop = bt; scrollTo({ top: y }); requestAnimationFrame(() => scrollTo({ top: y })); });
     body.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + +b.dataset.m, 1); draw(); });
     body.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.d.split('-').map(Number); const D = new Date(y, m - 1, d);
       if (S.p === 'house'){
