@@ -155,7 +155,7 @@
     // text messages (user 2026-11-27): switched on here for the whole platform; each booking says email, text or both.
     // Sent by the data job through Twilio (secrets TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, optional SMS_FROM).
     // Grimmitt Games licence fee (2026-11-28): a share of booking money taken. Locked in the admin: only Grimmitt Games changes it.
-    platform: {name: 'Grimmitt Games', rates: [{ from: '2026-01-01', to: '2026-11-27', pct: 1 }, { from: '2026-11-28', to: null, pct: 1.5 }], supportHours: 10, website: 'https://www.grimmittgames.com'},
+    platform: {name: 'Grimmitt Games', rates: [{ from: '2026-01-01', to: null, pct: 1.5 }], supportHours: 10, website: 'https://www.grimmittgames.com'},
     sms: { on: false, sender: 'YorkCottage', off: {}, templates: {
       confirm: 'York Cottage: you’re booked for {product} on {when} (ref {ref}). Manage it: {manageLink}',
       preArrival: 'York Cottage: see you on {when}. {consultLine}Manage your booking: {manageLink}',
