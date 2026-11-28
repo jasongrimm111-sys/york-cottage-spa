@@ -67,7 +67,10 @@
   }
   const sesTime = (p, name) => { const x = (p.sessions || []).find(z => z[0] === name); return x ? x[1] : ''; };
   const sesLabel = () => { const p = P[S.p]; if (p.only) { const ts = Object.values(S.times || {}).map(x => x.start).sort(); return ts.length ? 'from ' + ts[0] : 'times to choose'; } const t = sesTime(p, S.session); return S.session + (t && /\d/.test(t) ? ' · ' + t : ''); };
-  const endDate = () => S.p === 'house' ? S.end : (S.date && P[S.p] && P[S.p].rule ? add(S.date, S.nights) : null);  // one-day visits have no end day
+  // stays are picked like a hotel: tap arrival, then departure (user 2026-11-28)
+  const isRange = k => k === 'house' || k === 'break';
+  const maxN = k => k === 'house' ? ((L.cfg && L.cfg.products.house.maxN) || 30) : Math.max(...((P[k] || {}).nights || [1]));
+  const endDate = () => isRange(S.p) ? S.end : (S.date && P[S.p] && P[S.p].rule ? add(S.date, S.nights) : null);  // one-day visits have no end day
 
   // Treatment menu (from the York Cottage treatment menu)
   const TR = window.YC_TREATMENTS = [
@@ -210,14 +213,22 @@
     return w === 5 || w === 6 || BH.has(iso(add(d, 1))) || BH.has(iso(d)); // Fri/Sat nights, plus nights next to a bank holiday
   };
   const runFrom = d => { let n = 0; while (nightOK('wkd', add(d, n)) && n < 5) n++; return n; };
+  const sesMemo = new Map(); let sesMemoIx = null;
+  const sesOn = d => { if (!YE || !L.cfg) return null; if (sesMemoIx !== L.ix) { sesMemo.clear(); sesMemoIx = L.ix; }
+    const key = [S.p, iso(d), S.guests, exclOn()].join('|');
+    if (!sesMemo.has(key)) sesMemo.set(key, YE.sessions(L.cfg, L.ix, S.p, iso(d), S.guests, { exclusive: exclOn() }));
+    return sesMemo.get(key); };
+  // which lengths are free on a day: { half, full }
+  const lensOn = d => { const l = sesOn(d) || []; return { half: l.some(x => x.length !== 'full' && x.ok), full: l.some(x => x.length === 'full' && x.ok) }; };
   function dateOK(k, d){
     if (d < first || d > last) return false;
     if (YE && L.cfg) {
-      const n = P[k].rule === 'range' ? (L.cfg.products.house || {}).minN || 2 : P[k].rule ? S.nights : 0;
+      const n = P[k].rule === 'range' ? (L.cfg.products.house || {}).minN || 2 : isRange(k) ? 1 : P[k].rule ? S.nights : 0;   // a break can start here if one night can
       if (P[k].rule === 'range' && YE.houseMinNights && !YE.houseStartOK(L.cfg, L.ix, iso(d), { guests: S.guests })) return false;
       const q = { product: k, date: iso(d), nights: n, guests: S.gOK ? S.guests : (P[k].min || 1) };
       const c = P[k].rule === 'range' ? { ok: true } : YE.dateCheck(L.cfg, L.ix, { ...q, exclusive: exclOn() });
       if (!c.ok && !(exclOn() && YE.dateCheck(L.cfg, L.ix, q).ok)) return false;
+      if (k === S.p && S.len && lens().length > 1 && !lensOn(d)[S.len]) return false;   // only days with the chosen length free
       return true;   // the admin's rules (arrival days, nights, minimum guests) have decided
     }
     const p = P[k];
@@ -228,7 +239,7 @@
   }
 
   const S = { step:0 };
-  const reset = k => Object.assign(S, { p:k || null, step:0, date:null, nights:k && P[k].nights ? P[k].nights[0] : 1, session:null,
+  const reset = k => Object.assign(S, { p:k || null, step:0, date:null, nights:k && isRange(k) ? 0 : k && P[k].nights ? P[k].nights[0] : 1, session:null,
     guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, gOK:false, excl:false, len:null, treatStart:null, plan:null, times:{}, tpDate:{}, names:[], g0Own:false, roomOf:[], promo:S.promo || null, promoMsg:'', end:null, bfast:false, picks:[], adds:[], pending:null, tg:0, cat:undefined, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
 
   const steps = () => ['Booking', 'Guests', 'Date', 'Rooms', 'Guest choices', 'Details', S.p && P[S.p].kind === 'ask' ? 'Send' : 'Pay'];
@@ -352,7 +363,7 @@
   function selBar(){
     if (!S.cat) return '';
     const p = S.p && P[S.p] && P[S.p].group === S.cat ? P[S.p] : null;
-    return p ? `<div class="sel-bar"><span>You’re booking</span><button data-goto="0" title="Change what you’re booking">${p.name} <i>✎</i></button></div>` : '';
+    return p ? `<div class="sel-bar"><span>You’re booking</span><button data-goto="0" title="Change what you’re booking">${p.name}${S.len && lens().length > 1 ? ' · ' + (S.len === 'full' ? 'Full day' : 'Half day') : ''} <i>✎</i></button></div>` : '';
   }
   const typeView = () => chooseView(), optionView = () => chooseView();
   // half day and full day, each with its length and price per person (step 1 cards)
@@ -362,21 +373,34 @@
     const row = (len, label) => { const x = one(len); return `<span class="len-row"><span>${label}<small>${hrs(x[1])}</small></span><b>${gbp(x[4] != null ? x[4] : p.price)}</b></span>`; };
     return `<span class="len-line">${row('half', 'Half day')}${row('full', 'Full day')}<small class="len-pp">per person</small></span>`;
   }
+  // the spa day choice in one grid: what's included (rows) × how long (columns), each cell its price per person
+  function spaGrid(){
+    const rows = ['access', 'day'].filter(k => P[k] && !P[k].off);
+    const cell = (k, len) => { const x = (P[k].sessions || []).find(z => (z[3] || 'half') === len); if (!x) return '<span></span>';
+      const on = S.p === k && S.len === len;
+      return `<button class="sg-cell ${on ? 'sel' : ''}" data-pick="${k}|${len}" aria-pressed="${on}"><b>${gbp(x[4] != null ? x[4] : P[k].price)}</b><small>per person</small></button>`; };
+    const what = { access: 'The spa pool, sauna and lounge, drinks, towel and robe.', day: 'Everything in the spa, plus lunch and a 20-minute massage or facial each.' };
+    return `<div class="bk-group bk-opts-h" id="bkOpts">Choose your spa day</div>
+      <div class="spa-grid" role="group" aria-label="Choose your spa day">
+        <span class="sg-h"></span><span class="sg-h">Half day<small>4 hours</small></span><span class="sg-h">Full day<small>7½ hours</small></span>
+        ${rows.map(k => `<div class="sg-name"><b>${esc(P[k].name)}</b><small>${what[k] || esc(P[k].blurb || '')}</small></div>${cell(k, 'half')}${cell(k, 'full')}`).join('')}
+      </div>`;
+  }
   function chooseView(){
     const cost = p => p.price || (p.priceN && (p.priceN[1] ?? Object.values(p.priceN)[0])) || p.night || 0;
     const RANK = { access: 1, day: 2, break: 1, break2: 2, group: 3 };   // Spa Access Only, then with lunch & treatment (user 2026-11-28)
     const grp = g => Object.entries(P).filter(([, p]) => p.group === g && !p.off).sort((a, b) => (RANK[a[0]] ?? 50) - (RANK[b[0]] ?? 50) || cost(a[1]) - cost(b[1])).map(([k, p]) => `<button class="bk-opt ${S.p === k ? 'sel' : ''}" data-p="${k}"><small>${k === 'break' ? '1 – 5 nights · Sunday to Thursday' : k === 'break2' ? '2 nights · arrive Sunday to Wednesday' : k === 'group' ? 'Sun – Thu · 7+ guests' : k === 'house' ? 'Friday & Saturday nights' : p.only ? 'No spa session' : k === 'private' ? '4+ guests (6+ on Sundays)' : k === 'access' ? 'Spa only' : k === 'day' ? 'Lunch & a treatment included' : 'Half or full day'}</small><b>${p.name}</b><span>${p.blurb}</span>${lenLine(p) || `<em>${p.from[0] === 'f' ? 'F' + p.from.slice(1) : p.from}</em>`}<span class="opt-cta">${S.p === k ? 'Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('');
     const pend = S.pending ? `<div class="notice"><b>${TRi[S.pending].name}</b> is ready to add. Book it on its own, or add it to a spa day or a stay (Japanese head spa is 10% off with a spa session or stay).</div>` : '';
     const TYPES = [
-      ['Spa', 'Spa day', 'Spa Access Only, or Spa, Lunch & Treatment · half or full day', 'From £50 pp', 'https://static.wixstatic.com/media/7a9273_c527bfae78d645c096615f66806d3b0f~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_c527bfae78d645c096615f66806d3b0f~mv2.jpg'],
-      ['Treat', 'Treatments only', 'Massage, facials & Japanese head spa', 'From £50', 'https://static.wixstatic.com/media/7a9273_0fed7351ea044db299d21524d0244378~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_0fed7351ea044db299d21524d0244378~mv2.jpg'],
-      ['Stay', 'Spa break', 'Sunday to Thursday nights, 1 to 16 guests', 'From £150 pp', 'https://static.wixstatic.com/media/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg'],
-      ['House', 'Whole house', 'Friday & Saturday nights, the house & spa for up to 16', 'From £1,840 / night', 'https://static.wixstatic.com/media/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg']];
+      ['Spa', 'Spa day', 'Just the spa, or with lunch & a treatment', 'From £50 pp', 'https://static.wixstatic.com/media/7a9273_c527bfae78d645c096615f66806d3b0f~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_c527bfae78d645c096615f66806d3b0f~mv2.jpg'],
+      ['Stay', 'Spa break', 'Spa, daily lunch & a 20-minute treatment · Sun – Thu nights', 'From £150 pp', 'https://static.wixstatic.com/media/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg'],
+      ['Treat', 'Treatments only', 'Massage, facials & head spa', 'From £50', 'https://static.wixstatic.com/media/7a9273_0fed7351ea044db299d21524d0244378~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_0fed7351ea044db299d21524d0244378~mv2.jpg'],
+      ['House', 'Whole house', 'Fri & Sat nights, up to 16 guests', 'From £1,840 / night', 'https://static.wixstatic.com/media/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg']];
     if (S.cat === undefined) S.cat = S.p ? P[S.p].group : null;
     const T = TYPES.find(t => t[0] === S.cat), many = S.cat && Object.values(P).filter(x => x.group === S.cat && !x.off).length > 1;
     const G0 = YE && L.cfg && YE.groupRates ? YE.groupRates(L.cfg) : { on: true, from: 6, pct: 10 };
-    const gNote = G0.on && (S.cat === 'Spa' || S.cat === 'Stay') ? `<p class="group-nudge"><b>Coming as a group?</b> ${G0.from} or more guests get ${G0.pct}% off and the spa to themselves.</p>` : '';
-    return `<h2>What would you like to <em>book</em>?</h2>${pend}<div class="bk-types">${TYPES.map(([g, t, d, f, img]) => `<button class="bk-type ${S.cat === g ? 'sel' : ''}" data-cat="${g}"><span class="bt-img" style="background-image:url('${img}')"></span><b>${t}</b><span>${d}</span><em>${f}</em><span class="opt-cta">${S.cat === g ? 'Selected' : 'Choose'} <span class="arrow">→</span></span></button>`).join('')}</div>${T && many ? `<div class="bk-group bk-opts-h" id="bkOpts">${T[1]}: choose one</div><div class="bk-opts">${grp(S.cat)}</div>` : ''}${gNote}`;
+    const gNote = !G0.on ? '' : S.cat === 'Spa' ? `<p class="group-nudge"><b>Booking for ${G0.from}?</b> You get ${G0.pct}% off, and the spa to yourselves on days it’s free.</p>` : S.cat === 'Stay' ? `<p class="group-nudge"><b>Coming as a group?</b> ${G0.from} or more guests get ${G0.pct}% off, and the spa to themselves on days it’s free.</p>` : '';
+    return `<h2>What would you like to <em>book</em>?</h2>${pend}<div class="bk-types">${TYPES.map(([g, t, d, f, img]) => `<button class="bk-type ${S.cat === g ? 'sel' : ''}" data-cat="${g}"><span class="bt-img" style="background-image:url('${img}')"></span><b>${t}</b><span>${d}</span><em>${f}</em><span class="opt-cta">${S.cat === g ? 'Selected' : 'Choose'} <span class="arrow">→</span></span></button>`).join('')}</div>${S.cat === 'Spa' ? spaGrid() : T && many ? `<div class="bk-group bk-opts-h" id="bkOpts">${T[1]}: choose one</div><div class="bk-opts">${grp(S.cat)}</div>` : ''}${gNote}`;
   }
 
   // the first day that can be booked (with a session free, for session bookings), chosen for the guest (user, 2026-11-26)
@@ -398,9 +422,9 @@
   const roomMemo = new Map(); let roomIx = null;
   const roomShow = () => YE && L.cfg && YE.treatRoom && S.p && !P[S.p].only && P[S.p].rule !== 'range' && P[S.p].kind !== 'ask';
   const roomAt = (d, ses) => { if (roomIx !== L.ix) { roomMemo.clear(); roomIx = L.ix; }
-    const sid = ses ? sesId(S.p, ses, d) : null; if (ses && !sid) return -1;
-    const k = [S.p, iso(d), sid, S.guests, S.nights].join('|');
-    if (!roomMemo.has(k)) roomMemo.set(k, YE.treatRoom(L.cfg, L.ix, { product: S.p, date: iso(d), sessionId: sid, nights: P[S.p].rule ? S.nights : 0, guests: S.guests }));
+    const sid = ses ? sesId(S.p, ses, d) : null; if (ses && !sid) return -1; const nn = P[S.p].rule ? (S.nights || 1) : 0;
+    const k = [S.p, iso(d), sid, S.guests, nn].join('|');
+    if (!roomMemo.has(k)) roomMemo.set(k, YE.treatRoom(L.cfg, L.ix, { product: S.p, date: iso(d), sessionId: sid, nights: nn, guests: S.guests }));
     return roomMemo.get(k); };
   // the best a day offers: its roomiest session, or the stay starting that day
   const dayRoom = d => !roomShow() ? null : P[S.p].sessions ? Math.max(-1, ...P[S.p].sessions.map(([n]) => roomAt(d, n))) : roomAt(d, null);
@@ -412,18 +436,19 @@
     if (!S.date) { const d = firstFree(); if (d) { S.date = d; S.end = null; S.month = new Date(d.getFullYear(), d.getMonth(), 1); S.times = {}; } }
     const m = S.month || (S.date ? new Date(S.date.getFullYear(), S.date.getMonth(), 1) : new Date(first.getFullYear(), first.getMonth(), 1));
     S.month = m;
-    const endSel = endDate(), two = !!p.rule && innerWidth > 900;
+    const endSel = endDate(), two = !!p.rule && innerWidth > 900, lenCal = !p.only && lens().length > 1 && YE && L.cfg;
     const grid = mm => {
       const startW = (mm.getDay() + 6) % 7, dim = new Date(mm.getFullYear(), mm.getMonth() + 1, 0).getDate();
       let cells = ['Mo','Tu','We','Th','Fr','Sa','Su'].map(d => `<span class="dw">${d}</span>`).join('') + '<span></span>'.repeat(startW);
       for (let i = 1; i <= dim; i++){
-        const d = new Date(mm.getFullYear(), mm.getMonth(), i), ok = range && S.date && !S.end && d > S.date ? houseEnd(d) : dateOK(S.p, d);
-        let c = BH.has(iso(d)) ? 'bh' : '';
+        const d = new Date(mm.getFullYear(), mm.getMonth(), i), picking = isRange(S.p) && S.date && !S.end, canEnd = picking && d > S.date && houseEnd(d), ok = canEnd || dateOK(S.p, d);
+        let c = BH.has(iso(d)) ? 'bh' : ''; if (canEnd) c += ' can-end';
         if (S.date && +d === +S.date) c += ' sel';
         else if (endSel && d > S.date && d < endSel) c += ' in';
         else if (endSel && +d === +endSel) c += ' end';
         const rm = ok ? dayRoom(d) : null; if (rm === 0) c += ' r-none'; else if (rm > 0 && rm < 60) c += ' r-some';
         if (ok && exclOn() && !exOK(d)) c += ' no-ex';
+        if (ok && lenCal && !S.len) { const lo = lensOn(d); if (lo.half && !lo.full) c += ' half-only'; }
         cells += `<button data-d="${iso(d)}" class="${c}" ${ok ? '' : 'disabled'} aria-label="${nice(d, { year:'numeric' })}${rm != null && roomText(rm) ? ' · ' + roomText(rm) : ''}">${i}</button>`;
       }
       return `<div class="cal-m"><b class="cal-t">${mm.toLocaleDateString('en-GB', { month:'long', year:'numeric' })}</b><div class="cal-g">${cells}</div></div>`;
@@ -437,15 +462,23 @@
     const LN = lens(), twoLen = LN.length > 1;
     if (twoLen && S.session && !S.len) { const x = p.sessions.find(z => z[0] === S.session); if (x) S.len = x[3] || 'half'; }
     const sesList = p.only ? [] : (p.sessions || []).filter(x => (!S.date || !live || live.some(l => l.name === x[0])) && (!twoLen || (x[3] || 'half') === S.len));
-    const lenPick = !twoLen ? '' : `<div class="bk-group" style="margin-top:0">Half day or full day?</div><div class="pills len-pills">${['half', 'full'].filter(l => LN.includes(l)).map(l => { const x = p.sessions.find(z => (z[3] || 'half') === l), any = !live || live.some(v => v.length === l && v.ok);
-      return `<button class="pill ${S.len === l ? 'sel' : ''}" data-len="${l}" ${any ? '' : 'disabled'}>${l === 'full' ? 'Full day' : 'Half day'} · ${hrs(x[1])} · ${gbp(x[4] != null ? x[4] : p.price)} pp${any ? '' : ' · full'}</button>`; }).join('')}</div>${S.len === 'full' ? '' : S.len ? '<div class="bk-group">Morning or afternoon?</div>' : ''}`;
+    const lenPick = !twoLen ? '' : `<div class="len-first"><div class="bk-group" style="margin-top:0">1 · Half day or full day?</div><div class="pills len-pills">${['half', 'full'].filter(l => LN.includes(l)).map(l => { const x = p.sessions.find(z => (z[3] || 'half') === l);
+      return `<button class="pill ${S.len === l ? 'sel' : ''}" data-len="${l}">${l === 'full' ? 'Full day' : 'Half day'} · ${hrs(x[1])} · ${gbp(x[4] != null ? x[4] : p.price)} pp</button>`; }).join('')}</div></div>`;
+    const lenNote = twoLen && !S.len ? '<p class="cal-note">Choose half day or full day first, and the calendar shows the days it’s free.</p>' : '';
     if (p.only) right = `<div class="bk-group" style="margin-top:0">Your time</div><p class="cal-note">Choose your treatments next, then pick from the start times that are free on this day.</p>`;
-    else if (p.sessions) right = (twoLen ? lenPick : `<div class="bk-group" style="margin-top:0">Session</div>`) + (twoLen && !S.len ? '' : `<div class="ses">${sesList.map(([n, t]) => { const l = live && live.find(x => x.name === n); const off = l && !l.ok; return `<button class="ses-opt ${S.session === n ? 'sel' : ''}" data-s="${n}" ${off ? 'disabled' : ''}><b>${n}</b><span>${t}</span>${l ? `<small class="${off ? 'full' : ''}">${off ? esc(l.why) : l.left <= 3 ? `Only ${l.left} place${l.left === 1 ? '' : 's'} left` : 'Available'}</small>` : ''}${!off && S.date && roomShow() && roomText(roomAt(S.date, n)) ? `<em class="ses-room">${roomText(roomAt(S.date, n))}</em>` : ''}</button>`; }).join('') || '<p class="cal-note">No sessions on this day.</p>'}</div>`) + `
+    else if (p.sessions) right = (twoLen ? (S.len === 'half' ? '<div class="bk-group" style="margin-top:0">Morning or afternoon?</div>' : S.len ? '<div class="bk-group" style="margin-top:0">Your session</div>' : lenNote) : `<div class="bk-group" style="margin-top:0">Session</div>`) + (twoLen && !S.len ? '' : `<div class="ses">${sesList.map(([n, t]) => { const l = live && live.find(x => x.name === n); const off = l && !l.ok; return `<button class="ses-opt ${S.session === n ? 'sel' : ''}" data-s="${n}" ${off ? 'disabled' : ''}><b>${n}</b><span>${t}</span>${l ? `<small class="${off ? 'full' : ''}">${off ? esc(l.why) : l.left <= 3 ? `Only ${l.left} place${l.left === 1 ? '' : 's'} left` : 'Available'}</small>` : ''}${!off && S.date && roomShow() && roomText(roomAt(S.date, n)) ? `<em class="ses-room">${roomText(roomAt(S.date, n))}</em>` : ''}</button>`; }).join('') || '<p class="cal-note">No sessions on this day.</p>'}</div>`) + `
       ${S.p === 'private' ? `<p class="cal-note">Minimum 4 guests, or 6 on Sundays (from 11:30).${S.guests < 6 ? ' Sundays open up for groups of 6 or more.' : ''}</p>` : ''}`;
-    else if (p.nights && p.nights.length > 1) { const q = L.cfg && L.cfg.products[S.p], fits = n => !S.date || !q || !q.arriveDays || !q.arriveDays[n] || q.arriveDays[n].includes(S.date.getDay());
+    else if (p.nights && p.nights.length > 1 && !isRange(S.p)) { const q = L.cfg && L.cfg.products[S.p], fits = n => !S.date || !q || !q.arriveDays || !q.arriveDays[n] || q.arriveDays[n].includes(S.date.getDay());
       right = `<div class="bk-group" style="margin-top:0">How many nights?</div><div class="pills nights-pills">${p.nights.map(n => `<button class="pill ${S.nights === n ? 'sel' : ''}" data-n="${n}" ${fits(n) ? '' : 'disabled title="Breaks end by Friday morning"'}>${n} night${n > 1 ? 's' : ''} · ${gbp(p.priceN[n])} pp</button>`).join('')}</div>${p.single ? `<p class="cal-note">Prices are per person, based on 2 sharing a room. Breaks end by Friday morning.</p>` : ''}`; }
     const stayRoom = S.date && !p.sessions && roomShow() ? roomText(roomAt(S.date, null)) : '';
-    if (p.rule === 'mid' || p.rule === 'stay'){
+    if (S.p === 'break'){
+      const pp = n => gbp((p.priceN || {})[n] || 0);
+      right = `<div class="bk-group" style="margin-top:0">Your stay</div>` + (!S.date
+        ? `<p class="cal-note">Tap your arrival day, then your departure day. Breaks are Sunday to Thursday nights, 1 to ${maxN('break')} nights, leaving by Friday morning.</p>`
+        : !S.end ? `<p class="stay-when">Arriving <b>${nice(S.date)}</b></p><p class="cal-note">Now tap your departure day.</p><ul class="times nights-list">${(p.nights || []).filter(n => houseEnd(add(S.date, n))).map(n => `<li><span>${n} night${n > 1 ? 's' : ''} · leave ${nice(add(S.date, n))}</span><b>${pp(n)} pp</b></li>`).join('')}</ul>`
+        : `<p class="stay-when"><b>${nice(S.date)}</b> → <b>${nice(S.end)}</b> · ${S.nights} night${S.nights > 1 ? 's' : ''} · <b>${pp(S.nights)} pp</b></p>${roomShow() && roomText(roomAt(S.date, null)) ? `<p class="room-note">${roomText(roomAt(S.date, null))} on these dates. Other dates have more treatment time.</p>` : ''}${times(stayTimes(S.p, S.date, S.nights))}<p class="cal-note">Tap another day to start again.</p>`);
+    }
+    else if (p.rule === 'mid' || p.rule === 'stay'){
       right += `<div class="bk-group">Your stay</div>` + (S.date
         ? `<p class="stay-when"><b>${nice(S.date)}</b> → <b>${nice(add(S.date, S.nights))}</b> · ${S.nights} night${S.nights > 1 ? 's' : ''}</p>${stayRoom ? `<p class="room-note">${stayRoom} on these dates. Other dates have more treatment time.</p>` : ''}${times(stayTimes(S.p, S.date, S.nights))}`
         : `<p class="cal-note">${(() => { const q = L.cfg && L.cfg.products[S.p], days = q && q.arriveDays && q.arriveDays[S.nights]; if (!days) return S.nights > 1 ? '2-night breaks arrive Sunday to Wednesday.' : 'Breaks run Sunday to Thursday nights.'; const N = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']; return days.length === 7 ? 'Arrive any day.' : `${S.nights}-night stays arrive on ${[1, 2, 3, 4, 5, 6, 0].filter(d => days.includes(d)).map(d => N[d]).join(', ')}.`; })()} Pick your arrival day.</p>`);
@@ -456,14 +489,14 @@
         : !S.end ? `<p class="stay-when">Check-in <b>${nice(S.date)}</b></p><p class="cal-note">Now pick your check-out day (your stay must include Friday and Saturday night).</p>`
         : `<p class="stay-when"><b>${nice(S.date)}</b> → <b>${nice(S.end)}</b> · ${S.nights} nights</p>${times(stayTimes('house', S.date, S.nights))}<p class="cal-note">From £1,840 per night for the whole house. Rates can vary by date.</p>`);
     }
-    return `<h2>Choose your <em>${p.rule ? 'dates' : 'day'}</em></h2><p class="bk-sub">${p.name}${p.rule === 'mid' ? ' · Sunday to Thursday nights' : range ? ' · Friday & Saturday nights, plus any nights either side' : p.only ? ' · you’ll pick a start time after choosing treatments' : twoLen ? ' · half day (4 hours) or full day (7½ hours)' : ' · 4-hour sessions'}</p>
-      <div class="bk-row ${two ? 'wide' : ''}"><div class="cal"><div class="cal-nav"><button data-m="-1" ${prevOK ? '' : 'disabled'} aria-label="Previous month">‹</button><button data-m="1" ${nextOK ? '' : 'disabled'} aria-label="Next month">›</button></div>
-      <div class="cal-ms">${grid(m)}${two ? grid(m2) : ''}</div><div class="cal-note"><span><i></i>Bank holiday</span>${exclOn() ? '<span><i class="k-noex"></i>Not available just for you</span>' : ''}${roomShow() ? '<span><i class="k-some"></i>Shorter extra treatments</span><span><i class="k-none"></i>Included treatments only</span>' : ''}${p.rule ? '<span>Tap your arrival day' + (p.rule === 'range' ? ', then your departure day' : '') + '</span>' : ''}</div></div><div class="bk-right">${right}${exclPick()}</div></div>`;
+    return `<h2>Choose your <em>${p.rule ? 'dates' : 'day'}</em></h2><p class="bk-sub">${p.name}${p.rule === 'mid' ? ' · Sunday to Thursday nights, 1 to 5 nights' : range ? ' · Friday & Saturday nights, plus any nights either side' : p.only ? ' · you’ll pick a start time after choosing treatments' : twoLen ? (S.len === 'full' ? ' · full day, 09:30–17:00' : S.len === 'half' ? ' · half day, morning or afternoon' : ' · half day (4 hours) or full day (7½ hours)') : ' · 4-hour sessions'}</p>
+      ${twoLen && !S.len ? lenPick + '<div class="bk-group">2 · Choose your day</div>' : ''}<div class="bk-row ${two ? 'wide' : ''}"><div class="cal"><div class="cal-nav"><button data-m="-1" ${prevOK ? '' : 'disabled'} aria-label="Previous month">‹</button><button data-m="1" ${nextOK ? '' : 'disabled'} aria-label="Next month">›</button></div>
+      <div class="cal-ms">${grid(m)}${two ? grid(m2) : ''}</div><div class="cal-note"><span><i></i>Bank holiday</span>${lenCal && !S.len ? '<span><i class="k-half"></i>Half day only</span>' : ''}${exclOn() ? '<span><i class="k-noex"></i>Not available just for you</span>' : ''}${roomShow() ? '<span><i class="k-some"></i>Shorter extra treatments</span><span><i class="k-none"></i>Included treatments only</span>' : ''}${p.rule ? '<span>' + (isRange(S.p) && S.date && !S.end ? 'Tap your departure day (outlined), or another arrival day' : 'Tap your arrival day' + (isRange(S.p) ? ', then your departure day' : '')) + '</span>' : ''}</div></div><div class="bk-right">${right}${exclPick()}</div></div>`;
   }
 
   // whole house: can the stay end on this day? (must include the set nights, and all of it free)
-  function houseEnd(d){ const n = Math.round((d - S.date) / 864e5); if (n < 1 || n > ((L.cfg && L.cfg.products.house.maxN) || 30)) return false;
-    if (!(YE && L.cfg)) return n >= 2; return YE.dateCheck(L.cfg, L.ix, { product: 'house', date: iso(S.date), nights: n, guests: S.guests }).ok; }
+  function houseEnd(d){ const n = Math.round((d - S.date) / 864e5); if (n < 1 || n > maxN(S.p)) return false;
+    if (!(YE && L.cfg)) return S.p === 'house' ? n >= 2 : true; return YE.dateCheck(L.cfg, L.ix, { product: S.p, date: iso(S.date), nights: n, guests: S.guests, exclusive: exclOn() }).ok; }
   const gMin = () => P[S.p].min;
   function guestView(){
     const p = P[S.p], minG = gMin();
@@ -497,8 +530,9 @@
   function exclBox(){
     const p = P[S.p]; if (!p.exFrom) return '';
     const G = YE && L.cfg && YE.groupRates ? YE.groupRates(L.cfg) : { on: true, from: 6, pct: 10 }, gOn = G.on && (!L.cfg || (L.cfg.products[S.p] || {}).groupDiscount);
-    if (exclAuto()) return `<p class="group-nudge group-yes"><b>${p.exFrom} or more guests:</b> ${gOn ? `${G.pct}% off, and ` : ''}the spa is just for you.</p>`;
-    return gOn && S.guests < G.from ? `<p class="group-nudge">Bring ${G.from - S.guests} more for <b>${G.pct}% off</b> and the spa to yourselves.</p>` : '';
+    const who = p.max <= p.exFrom ? `${p.exFrom} guests` : `${p.exFrom} or more guests`;
+    if (exclAuto()) return `<p class="group-nudge group-yes"><b>${who}:</b> ${gOn ? `${G.pct}% off, and ` : ''}the spa to yourselves. Only days when the spa is free are shown next.</p>`;
+    return gOn && S.guests < G.from ? `<p class="group-nudge">Bring ${G.from - S.guests} more for <b>${G.pct}% off</b>, and the spa to yourselves on days it’s free.</p>` : '';
   }
   // date step, once the session or stay is chosen: the exact price of having the spa to themselves
   function exclPick(){
@@ -717,8 +751,8 @@
   // ---------- validation ----------
   function problem(){
     const p = P[S.p];
-    if (S.step === 0) return !S.cat ? 'Choose what you’d like to book' : S.p && P[S.p].group === S.cat ? '' : 'Choose an option';
-    if (S.step === DATE){ if (!S.date) return p.rule ? 'Choose your arrival day' : 'Choose a day'; if (exclOn() && !exOK(S.date)) return 'Exclusive use isn’t available on this day: choose another day, or carry on without it'; if (p.rule === 'range' && !S.end) return 'Choose your check-out day'; if (p.sessions && !p.only && lens().length > 1 && !S.len) return 'Choose half day or full day'; if (p.sessions && !p.only && !S.session) return S.len === 'half' ? 'Choose morning or afternoon' : 'Choose a session'; }
+    if (S.step === 0) return !S.cat ? 'Choose what you’d like to book' : !(S.p && P[S.p].group === S.cat) ? (S.cat === 'Spa' ? 'Choose your spa day' : 'Choose an option') : S.cat === 'Spa' && lens().length > 1 && !S.len ? 'Choose half day or full day' : '';
+    if (S.step === DATE){ if (!S.date) return p.rule ? 'Choose your arrival day' : 'Choose a day'; if (exclOn() && !exOK(S.date)) return 'Exclusive use isn’t available on this day: choose another day, or carry on without it'; if (isRange(S.p) && !S.end) return 'Choose your departure day'; if (p.sessions && !p.only && lens().length > 1 && !S.len) return 'Choose half day or full day'; if (p.sessions && !p.only && !S.session) return S.len === 'half' ? 'Choose morning or afternoon' : 'Choose a session'; }
     if (S.step === GUESTS) { S.gOK = true; const bad = []; for (let i = 0; i < S.guests; i++) if (((S.names || [])[i] || '').trim().length < 2) bad.push('g' + i); if (bad.length) return { bad }; }
     if (S.step === ROOMS && needRooms()) { const miss = Array.from({ length: S.guests }, (_, i) => i).filter(i => !(S.roomOf || [])[i]); if (miss.length) return `Choose a room for ${gName(miss[0])}`; }
     if (S.step === CHOICES && P[S.p].only && !S.adds[S.tg].length) return 'Choose at least one treatment for this guest';
@@ -758,8 +792,8 @@
       S.date && ['Date', p.rule ? `${nice(S.date)}${endDate() ? ' → ' + nice(endDate()) : ''}` : nice(S.date)],
       S.session && ['Session', sesLabel()],
       g && ['Guests', S.guests],
-      ...(S.date && p.rule && S.p !== 'house' || (S.p === 'house' && S.end) ? stayTimes(S.p, S.date, S.nights).filter(Boolean).map(([a, b]) => [`<span class="sum-sub">${a}</span>`, `<span class="sum-sub">${b}</span>`]) : []),
-      pr && !p.only && (S.p === 'house' ? S.end && S.nights : g) && ['Price', unit],
+      ...(S.date && p.rule && !isRange(S.p) || (isRange(S.p) && S.end) ? stayTimes(S.p, S.date, S.nights).filter(Boolean).map(([a, b]) => [`<span class="sum-sub">${a}</span>`, `<span class="sum-sub">${b}</span>`]) : []),
+      pr && !p.only && (isRange(S.p) ? S.end && S.nights : g) && ['Price', unit],
       ln('excl') && ['Just for you', '+' + gbp(ln('excl').amount)],
       pr && pr.group && [`Group discount`, `−${gbp(pr.group)} (${pr.groupPct}% off)`],
       ln('single') && ['Room to themselves', gbp(ln('single').amount)],
@@ -771,7 +805,7 @@
         return [`${inc ? esc(tn && (tn.with || []).length ? YE.itemName(L.cfg, tn) : blueName(inc)) : esc(food)}<small class="sum-who">${tt ? '<b class="sum-time">' + tt.slice(3) + '</b> · ' : ''}${S.guests > 1 ? esc(gName(gi)) + (inc && food ? ' · ' : '') : ''}${inc && food ? esc(food) : ''}</small>`, 'Included']; }) : []),
       ...S.adds.flatMap((a, gi) => a.map(id => { const t = TRi[id]; if (!t) return null; const head = t.head && !P[S.p].only && !codeWins(), c = chargeOf(gi, id), price = c ? c.price : t.price; const xn = (YE && L.cfg && S.date) ? siteNeeds().find(x => x.guest === gi && (x.tid === id || (x.with || []).includes(id))) : null, xt = xn && xn.start ? `<b class="sum-time">${p.rule && xn.date ? fdShort(xn.date) + ' ' : ''}${xn.start}</b>` : '';
         return [`${esc(t.name)}${c && c.extends && c.mins < t.min ? ` <small class="sum-who">${c.mins} min added to the included treatment</small>` : ''}${S.guests > 1 || xt ? `<small class="sum-who">${xt}${xt && S.guests > 1 ? ' · ' : ''}${S.guests > 1 ? esc(gName(gi)) : ''}</small>` : ''}`, head ? `<s>${gbp(price)}</s> ${gbp(price * (1 - HEAD_OFF))}` : gbp(price)]; })), pr && pr.promo && ['Code ' + esc(S.promo.code), '−' + gbp(pr.promo)]].filter(Boolean);
-    const ready = pr && (S.p === 'house' ? S.nights >= 2 : g || p.only);
+    const ready = pr && (isRange(S.p) ? !!S.end && S.nights >= 1 : g || p.only);
     const tot = p.kind === 'ask'
       ? `<div class="big"><span>${g ? 'Estimate' : 'From'}</span><b>${g ? gbp(est) : gbp(p.est)}</b></div><p>${g ? 'We’ll confirm the exact price.' : 'per person'} Nothing to pay now.</p>`
       : ready ? `<div class="big"><span>Total</span><b>${gbp(pr.total)}</b></div>${pr.voucher ? `<p>Gift voucher −${gbp(pr.voucher)}${pr.voucherLeft > 0 ? ` (${gbp(pr.voucherLeft)} left on it)` : ''}. ${pr.now ? `${gbp(pr.now)} to pay today` : 'Nothing to pay today'}${pr.bal ? `, ${gbp(pr.bal)} by ${nice(pr.balDue)}` : ''}.</p>` : pr.bal ? `<p>${gbp(pr.now)} deposit today, ${gbp(pr.bal)} by ${nice(pr.balDue)}.</p>` : '<p>Paid in full today. VAT included.</p>'}`
@@ -786,14 +820,21 @@
   // ---------- events ----------
   function wire(){
     body.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => {
-      const g = b.dataset.cat || null, opts = Object.keys(P).filter(k => P[k].group === g);
+      const g = b.dataset.cat || null, opts = Object.keys(P).filter(k => P[k].group === g && !P[k].off);   // retired types never count (user 2026-11-28)
       if (g && opts.length === 1 && opts[0] !== S.p){ const pend = S.pending; reset(opts[0]); S.pending = pend; syncAdds(); }
       S.cat = g; S.step = 0; draw(); const o = $('#bkOpts', body); if (o) setTimeout(() => o.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); });
     body.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { const k = b.dataset.p; if (k !== S.p){ const pend = S.pending, cat = S.cat; reset(k); S.pending = pend; S.cat = cat; syncAdds(); } S.cat = P[k].group; S.step = 0; const y = scrollY, bt = body.scrollTop; draw(); body.scrollTop = bt; scrollTo({ top: y }); requestAnimationFrame(() => scrollTo({ top: y })); });
+    body.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { const [k, len] = b.dataset.pick.split('|');
+      if (k !== S.p) { const pend = S.pending, cat = S.cat; reset(k); S.pending = pend; S.cat = cat; syncAdds(); }
+      if (S.len !== len) { S.session = null; resetAfter(); if (S.date && !dateOK(S.p, S.date)) { S.date = null; S.month = null; } }
+      S.len = len; const one = (P[k].sessions || []).filter(x => (x[3] || 'half') === len); if (one.length === 1) S.session = one[0][0]; draw(); });
     body.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + +b.dataset.m, 1); draw(); });
     body.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.d.split('-').map(Number); const D = new Date(y, m - 1, d);
-      if (S.p === 'house'){
-        if (!S.date || S.end || D <= S.date){ S.date = D; S.end = null; S.nights = 0; resetAfter(); }
+      if (S.p === 'break'){
+        if (!S.date || S.end || D <= S.date || !houseEnd(D)){ if (!dateOK(S.p, D)) return; S.date = D; S.end = null; S.nights = 0; resetAfter(); }
+        else { S.end = D; S.nights = Math.round((D - S.date) / 864e5); }
+      } else if (S.p === 'house'){
+        if (!S.date || S.end || D <= S.date || !houseEnd(D)){ if (!dateOK(S.p, D)) return; S.date = D; S.end = null; S.nights = 0; resetAfter(); }
         else { const n = Math.round((D - S.date) / 864e5); if (n < 2 || (YE && L.cfg && YE.houseNightsOK && !YE.houseNightsOK(L.cfg, iso(S.date), n))){ $('.bk-msg', nav).textContent = YE && L.cfg && YE.houseRule ? YE.houseRule(L.cfg) : 'The whole house has a 2-night minimum'; return; } if (n > 30){ $('.bk-msg', nav).textContent = 'Stays are up to 30 nights'; return; }
           if (YE && L.cfg){ const c = YE.dateCheck(L.cfg, L.ix, { product: 'house', date: iso(S.date), nights: n, guests: S.guests }); if (!c.ok){ $('.bk-msg', nav).textContent = 'Those dates aren’t all free: ' + c.why; return; } }
           S.end = D; S.nights = n; }
@@ -806,6 +847,7 @@
     const nx = $('[data-noexcl]', body); if (nx) nx.onclick = () => { S.excl = false; S.session = null; resetAfter(); draw(); };
     const ex = $('#bkExcl', body); if (ex) ex.onchange = () => { S.excl = ex.checked; draw(); };
     body.querySelectorAll('[data-len]').forEach(b => b.onclick = () => { if (S.len !== b.dataset.len) { resetAfter(); S.session = null; } S.len = b.dataset.len;
+      if (S.date && !dateOK(S.p, S.date)) { S.date = null; S.month = null; }
       const one = (P[S.p].sessions || []).filter(x => (x[3] || 'half') === S.len); if (one.length === 1) S.session = one[0][0]; draw(); });
     body.querySelectorAll('[data-pk]').forEach(b => b.onclick = () => { S.picks[+b.dataset.pk][b.dataset.f] = b.dataset.v; if (b.dataset.f === 'treat' && S.times) Object.keys(S.times).filter(k => k.startsWith(`g${b.dataset.pk}-inc`)).forEach(k => delete S.times[k]); draw(); });
     body.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const gi = +b.dataset.gi, g = S.adds[gi], id = b.dataset.add, i = g.indexOf(id);

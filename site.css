@@ -1400,3 +1400,34 @@ input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,
 .bk-right .excl-q{margin-top:16px}
 .excl-q > span > b em{font-style:normal;color:var(--forest);margin-left:6px}
 .excl-none{margin:16px 0 0;font-size:13.5px;color:var(--muted)}
+/* month arrows above the month name; half day / full day first (2026-11-28) */
+.cal-nav{z-index:3}
+.cal-t{position:relative;z-index:1;pointer-events:none}
+.len-first{margin:6px 0 18px}
+.len-first .len-pills{display:flex;flex-wrap:wrap;gap:10px}
+.cal-note i.k-half{display:inline-block;width:14px;height:2px;background:#5f7d64;border-radius:2px;vertical-align:middle;margin-right:6px}
+.cal-g button.half-only{background-image:linear-gradient(#5f7d64,#5f7d64);background-size:14px 2px;background-position:50% calc(100% - 3px);background-repeat:no-repeat}
+.cal-g button.sel.half-only{background-image:linear-gradient(#fff,#fff)}
+/* step 1: spa day grid, what's included × how long (2026-11-28) */
+.spa-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:stretch}
+.sg-h{font-size:13px;font-weight:600;color:var(--ink);text-align:center;align-self:end;padding-bottom:2px}
+.sg-h small{display:block;font-weight:400;color:var(--muted);font-size:11.5px;margin-top:2px}
+.sg-name{display:flex;flex-direction:column;justify-content:center;padding:12px 4px 12px 0}
+.sg-name b{font-family:var(--serif);font-size:19px;font-weight:500;color:var(--ink)}
+.sg-name small{font-size:12.5px;color:var(--muted);line-height:1.45;margin-top:3px}
+.sg-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:1px solid var(--line);background:#fff;border-radius:14px;padding:14px 8px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.sg-cell b{font-size:22px;color:var(--forest);font-weight:700}
+.sg-cell small{font-size:11.5px;color:var(--muted)}
+.sg-cell:hover{border-color:var(--forest)}
+.sg-cell.sel{border-color:var(--forest);box-shadow:0 0 0 2px var(--forest) inset;background:#f3f6f1}
+.nights-list li span{font-size:13.5px}
+@media (max-width:600px){.spa-grid{grid-template-columns:1fr 1fr;gap:8px}.spa-grid .sg-h:first-child{display:none}.sg-h{grid-row:auto}.sg-name{grid-column:1 / -1;padding:10px 0 0}.spa-grid > .sg-h:nth-child(2),.spa-grid > .sg-h:nth-child(3){order:0}}
+.cal-g button.can-end:not(.sel):not(.end){box-shadow:inset 0 0 0 1.5px var(--forest);font-weight:600}
+
+/* step 1: prices and buttons line up whatever the description length (2026-11-28) */
+.bk-type em{margin-top:auto!important}
+.bk-type .opt-cta{margin-top:0}
+.bk-type b{min-height:2.2em;display:flex;align-items:flex-end}
+@media (max-width:900px){.bk-type b{min-height:0}}
+/* step 1 on phones: keep the short description, so a Spa Break says what's included (2026-11-28) */
+@media (max-width:900px){.bk-type > span:not(.bt-ico):not(.opt-cta):not(.bt-img){display:block!important;font-size:12px;line-height:1.4;margin-left:14px!important;margin-right:14px!important}}
