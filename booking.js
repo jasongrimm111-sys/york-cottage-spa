@@ -414,29 +414,32 @@
       if (p.rule === 'range' && d.getDay() !== 5) continue;   // whole house: Friday check-in first (user 2026-11-28)
       if (!exOK(d)) continue;
       if (!dateOK(S.p, d)) continue;
+      if (p.only && roomShow() && roomAt(d, null) <= 0) continue;   // treatments only: skip days with no time left
       if (p.sessions && !p.only && YE && L.cfg) { const l = YE.sessions(L.cfg, L.ix, S.p, iso(d), S.guests, { exclusive: exclOn() }); if (l && l.length && !l.some(x => x.ok)) continue; }
       return d;
     }
     return null;
   }
   const roomMemo = new Map(); let roomIx = null;
-  const roomShow = () => YE && L.cfg && YE.treatRoom && S.p && !P[S.p].only && P[S.p].rule !== 'range' && P[S.p].kind !== 'ask';
+  const roomShow = () => YE && L.cfg && YE.treatRoom && S.p && P[S.p].rule !== 'range' && P[S.p].kind !== 'ask';
   const roomAt = (d, ses) => { if (roomIx !== L.ix) { roomMemo.clear(); roomIx = L.ix; }
     const sid = ses ? sesId(S.p, ses, d) : null; if (ses && !sid) return -1; const nn = P[S.p].rule ? (S.nights || 1) : 0;
     const k = [S.p, iso(d), sid, S.guests, nn].join('|');
     if (!roomMemo.has(k)) roomMemo.set(k, YE.treatRoom(L.cfg, L.ix, { product: S.p, date: iso(d), sessionId: sid, nights: nn, guests: S.guests }));
     return roomMemo.get(k); };
   // the best a day offers: its roomiest session, or the stay starting that day
-  const dayRoom = d => !roomShow() ? null : P[S.p].sessions ? Math.max(-1, ...P[S.p].sessions.map(([n]) => roomAt(d, n))) : roomAt(d, null);
-  const roomText = m => m === 0 ? 'Included treatments only' : m > 0 && m < 60 ? `Extras up to ${m} min` : '';
+  const dayRoom = d => !roomShow() ? null : P[S.p].only ? roomAt(d, null) : P[S.p].sessions ? Math.max(-1, ...P[S.p].sessions.map(([n]) => roomAt(d, n))) : roomAt(d, null);
+  const roomText = m => S.p && P[S.p] && P[S.p].only ? (m > 0 && m < 60 ? `Treatments up to ${m} min` : '') : m === 0 ? 'Included treatments only' : m > 0 && m < 60 ? `Extras up to ${m} min` : '';
 
   function dateView(){
     if (S.goneMsg) { const m = S.goneMsg; S.goneMsg = ''; return `<div class="notice bad">${esc(m)}</div>` + dateView(); }
     const p = P[S.p], range = p.rule === 'range';
-    if (!S.date) { const d = firstFree(); if (d) { S.date = d; S.end = null; S.month = new Date(d.getFullYear(), d.getMonth(), 1); S.times = {}; } }
+    // stays: never pick dates for the guest; open on this month and next (user 2026-11-28)
+    if (!S.date && isRange(S.p) && !S.month) S.month = new Date(first.getFullYear(), first.getMonth(), 1);
+    if (!S.date && !isRange(S.p)) { const d = firstFree(); if (d) { S.date = d; S.end = null; S.month = new Date(d.getFullYear(), d.getMonth(), 1); S.times = {}; } }
     const m = S.month || (S.date ? new Date(S.date.getFullYear(), S.date.getMonth(), 1) : new Date(first.getFullYear(), first.getMonth(), 1));
     S.month = m;
-    const endSel = endDate(), two = !!p.rule && innerWidth > 900, lenCal = !p.only && lens().length > 1 && YE && L.cfg;
+    const endSel = endDate(), two = !!p.rule, lenCal = !p.only && lens().length > 1 && YE && L.cfg;
     const grid = mm => {
       const startW = (mm.getDay() + 6) % 7, dim = new Date(mm.getFullYear(), mm.getMonth() + 1, 0).getDate();
       let cells = ['Mo','Tu','We','Th','Fr','Sa','Su'].map(d => `<span class="dw">${d}</span>`).join('') + '<span></span>'.repeat(startW);
@@ -446,10 +449,12 @@
         if (S.date && +d === +S.date) c += ' sel';
         else if (endSel && d > S.date && d < endSel) c += ' in';
         else if (endSel && +d === +endSel) c += ' end';
-        const rm = ok ? dayRoom(d) : null; if (rm === 0) c += ' r-none'; else if (rm > 0 && rm < 60) c += ' r-some';
+        let rm = ok ? dayRoom(d) : null; const full = ok && p.only && rm != null && rm <= 0;   // treatments only: no time left that day
+        if (full) { c += ' t-full'; rm = null; }
+        if (rm === 0) c += ' r-none'; else if (rm > 0 && rm < 60) c += ' r-some';
         if (ok && exclOn() && !exOK(d)) c += ' no-ex';
         if (ok && lenCal && !S.len) { const lo = lensOn(d); if (lo.half && !lo.full) c += ' half-only'; }
-        cells += `<button data-d="${iso(d)}" class="${c}" ${ok ? '' : 'disabled title="Can’t be booked on this day"'} aria-label="${nice(d, { year:'numeric' })}${ok ? '' : ', can’t be booked'}${rm != null && roomText(rm) ? ' · ' + roomText(rm) : ''}">${i}</button>`;
+        cells += `<button data-d="${iso(d)}" class="${c}" ${ok && !full ? '' : `disabled title="${full ? 'No treatment times left on this day' : 'Can’t be booked on this day'}"`} aria-label="${nice(d, { year:'numeric' })}${ok && !full ? '' : full ? ', no treatment times left' : ', can’t be booked'}${rm != null && roomText(rm) ? ' · ' + roomText(rm) : ''}">${i}</button>`;
       }
       return `<div class="cal-m"><b class="cal-t">${mm.toLocaleDateString('en-GB', { month:'long', year:'numeric' })}</b><div class="cal-g">${cells}</div></div>`;
     };
@@ -465,7 +470,8 @@
     const lenPick = !twoLen ? '' : `<div class="len-first"><div class="bk-group" style="margin-top:0">1 · Half day or full day?</div><div class="pills len-pills">${['half', 'full'].filter(l => LN.includes(l)).map(l => { const x = p.sessions.find(z => (z[3] || 'half') === l);
       return `<button class="pill ${S.len === l ? 'sel' : ''}" data-len="${l}">${l === 'full' ? 'Full day' : 'Half day'} · ${hrs(x[1])} · ${gbp(x[4] != null ? x[4] : p.price)} pp</button>`; }).join('')}</div></div>`;
     const lenNote = twoLen && !S.len ? '<p class="cal-note">Choose half day or full day first, and the calendar shows the days it’s free.</p>' : '';
-    if (p.only) right = `<div class="bk-group" style="margin-top:0">Your time</div><p class="cal-note">Choose your treatments next, then pick from the start times that are free on this day.</p>`;
+    if (p.only) { const rm = S.date && roomShow() ? roomAt(S.date, null) : null;
+      right = `<div class="bk-group" style="margin-top:0">Your time</div>${rm > 0 && rm < 60 ? `<p class="room-note">On this day there’s time for treatments up to <b>${rm} minutes</b>. Other days have longer ones.</p>` : rm >= 60 ? '<p class="room-note ok">Plenty of treatment time on this day.</p>' : ''}<p class="cal-note">Choose your treatments next, then pick from the start times that are free.</p>`; }
     else if (p.sessions) right = (twoLen ? (S.len === 'half' ? '<div class="bk-group" style="margin-top:0">Morning or afternoon?</div>' : S.len ? '<div class="bk-group" style="margin-top:0">Your session</div>' : lenNote) : `<div class="bk-group" style="margin-top:0">Session</div>`) + (twoLen && !S.len ? '' : `<div class="ses">${sesList.map(([n, t]) => { const l = live && live.find(x => x.name === n); const off = l && !l.ok; return `<button class="ses-opt ${S.session === n ? 'sel' : ''}" data-s="${n}" ${off ? 'disabled' : ''}><b>${n}</b><span>${t}</span>${l ? `<small class="${off ? 'full' : ''}">${off ? esc(l.why) : l.left <= 3 ? `Only ${l.left} place${l.left === 1 ? '' : 's'} left` : 'Available'}</small>` : ''}${!off && S.date && roomShow() && roomText(roomAt(S.date, n)) ? `<em class="ses-room">${roomText(roomAt(S.date, n))}</em>` : ''}</button>`; }).join('') || '<p class="cal-note">No sessions on this day.</p>'}</div>`) + `
       ${S.p === 'private' ? `<p class="cal-note">Minimum 4 guests, or 6 on Sundays (from 11:30).${S.guests < 6 ? ' Sundays open up for groups of 6 or more.' : ''}</p>` : ''}`;
     else if (p.nights && p.nights.length > 1 && !isRange(S.p)) { const q = L.cfg && L.cfg.products[S.p], fits = n => !S.date || !q || !q.arriveDays || !q.arriveDays[n] || q.arriveDays[n].includes(S.date.getDay());
@@ -476,7 +482,7 @@
       right = `<div class="bk-group" style="margin-top:0">Your stay</div>` + (!S.date
         ? `<p class="cal-note">Tap your arrival day, then your departure day. Breaks are Sunday to Thursday nights, 1 to ${maxN('break')} nights, leaving by Friday morning.</p>`
         : !S.end ? `<p class="stay-when">Arriving <b>${nice(S.date)}</b></p><ul class="times nights-list">${(p.nights || []).filter(n => houseEnd(add(S.date, n))).map(n => `<li><span>${n} night${n > 1 ? 's' : ''} · leave ${nice(add(S.date, n))}</span><b>${pp(n)} pp</b></li>`).join('')}</ul>`
-        : `<p class="stay-when"><b>${nice(S.date)}</b> → <b>${nice(S.end)}</b> · ${S.nights} night${S.nights > 1 ? 's' : ''} · <b>${pp(S.nights)} pp</b></p>${roomShow() && roomText(roomAt(S.date, null)) ? `<p class="room-note">${roomText(roomAt(S.date, null))} on these dates. Other dates have more treatment time.</p>` : ''}${times(stayTimes(S.p, S.date, S.nights))}<p class="cal-note">Tap another day to start again.</p>`);
+        : `<p class="stay-when"><b>${nice(S.date)}</b> → <b>${nice(S.end)}</b> · ${S.nights} night${S.nights > 1 ? 's' : ''} · <b>${pp(S.nights)} pp</b></p>${roomShow() && roomText(roomAt(S.date, null)) ? `<p class="room-note">${roomText(roomAt(S.date, null))} on these dates. Other dates have more treatment time.</p>` : ''}${times(stayTimes(S.p, S.date, S.nights))}`);
     }
     else if (p.rule === 'mid' || p.rule === 'stay'){
       right += `<div class="bk-group">Your stay</div>` + (S.date
@@ -491,15 +497,15 @@
     }
     return `<h2>Choose your <em>${p.rule ? 'dates' : 'day'}</em></h2><p class="bk-sub">${p.name}${p.rule === 'mid' ? ' · Sunday to Thursday nights, 1 to 5 nights' : range ? ' · Friday & Saturday nights, plus any nights either side' : p.only ? ' · you’ll pick a start time after choosing treatments' : twoLen ? (S.len === 'full' ? ' · full day, 09:30–17:00' : S.len === 'half' ? ' · half day, morning or afternoon' : ' · half day (4 hours) or full day (7½ hours)') : ' · 4-hour sessions'}</p>
       ${twoLen && !S.len ? lenPick + '<div class="bk-group">2 · Choose your day</div>' : ''}<div class="bk-row ${two ? 'wide' : ''}"><div class="cal"><div class="cal-nav"><button data-m="-1" ${prevOK ? '' : 'disabled'} aria-label="Previous month">‹</button><button data-m="1" ${nextOK ? '' : 'disabled'} aria-label="Next month">›</button></div>
-      <div class="cal-ms">${grid(m)}${two ? grid(m2) : ''}</div>${p.rule ? '<p class="cal-tip">' + (isRange(S.p) && S.date && !S.end ? 'Now tap your departure day (outlined), or another day to change your arrival.' : 'Tap your arrival day' + (isRange(S.p) ? ', then your departure day.' : '.')) + '</p>' : ''}<div class="cal-key">${[
+      <div class="cal-ms">${grid(m)}${two ? grid(m2) : ''}</div>${p.rule ? '<p class="cal-tip">' + (isRange(S.p) && S.date && !S.end ? 'Now tap your departure day (outlined), or another day to change your arrival.' : isRange(S.p) && S.end ? 'To change your dates, tap a new arrival day.' : 'Tap your arrival day' + (isRange(S.p) ? ', then your departure day.' : '.')) + '</p>' : ''}<div class="cal-key">${[
         ['', 'Available'],
         ['off', 'Can’t be booked'],
         ['bh', 'Bank holiday'],
         isRange(S.p) && S.date && !S.end && ['can-end', 'Can leave this day'],
         lenCal && !S.len && ['half-only', 'Half day only'],
         exclOn() && ['no-ex', 'Not available just for you'],
-        roomShow() && ['r-some', 'Shorter extra treatments'],
-        roomShow() && ['r-none', 'Included treatments only']].filter(Boolean).map(([c, t]) => `<span class="ck"><b class="ck-d ${c}">12</b>${t}</span>`).join('')}</div></div><div class="bk-right">${right}${exclPick()}</div></div>`;
+        roomShow() && ['r-some', p.only ? 'Shorter treatments only' : 'Shorter extra treatments'],
+        roomShow() && !p.only && ['r-none', 'Included treatments only']].filter(Boolean).map(([c, t]) => `<span class="ck"><b class="ck-d ${c}">12</b>${t}</span>`).join('')}</div></div><div class="bk-right">${right}${exclPick()}</div></div>`;
   }
 
   // whole house: can the stay end on this day? (must include the set nights, and all of it free)
@@ -803,8 +809,8 @@
       ...(S.date && p.rule && !isRange(S.p) || (isRange(S.p) && S.end) ? stayTimes(S.p, S.date, S.nights).filter(Boolean).map(([a, b]) => [`<span class="sum-sub">${a}</span>`, `<span class="sum-sub">${b}</span>`]) : []),
       pr && !p.only && (isRange(S.p) ? S.end && S.nights : g) && ['Price', unit],
       ln('excl') && ['Just for you', '+' + gbp(ln('excl').amount)],
-      pr && pr.group && [`Group discount`, `−${gbp(pr.group)} (${pr.groupPct}% off)`],
-      ln('single') && ['Room to themselves', gbp(ln('single').amount)],
+      pr && pr.group && [`Group discount`, isRange(S.p) && !S.end ? `${pr.groupPct}% off, once you pick your dates` : `−${gbp(pr.group)} (${pr.groupPct}% off)`],
+      ln('single') && ['Room to themselves', isRange(S.p) && !S.end ? `+${gbp(P[S.p].single || 50)} a night, once you pick your dates` : gbp(ln('single').amount)],
       pr && pr.bf && ['Breakfast', gbp(pr.bf)],
       ...(S.step >= CHOICES ? Array.from({ length: S.guests }, (_, gi) => { const pk = S.picks[gi] || {}, il = incList(S.p) || [];
         const inc = incMode(S.p) === 'treat' ? (pk.treat || (il[0] || {}).name) : incMode(S.p) ? (il[0] || {}).name : null, food = p.food ? pk.food : null;
@@ -817,7 +823,7 @@
     const tot = p.kind === 'ask'
       ? `<div class="big"><span>${g ? 'Estimate' : 'From'}</span><b>${g ? gbp(est) : gbp(p.est)}</b></div><p>${g ? 'We’ll confirm the exact price.' : 'per person'} Nothing to pay now.</p>`
       : ready ? `<div class="big"><span>Total</span><b>${gbp(pr.total)}</b></div>${pr.voucher ? `<p>Gift voucher −${gbp(pr.voucher)}${pr.voucherLeft > 0 ? ` (${gbp(pr.voucherLeft)} left on it)` : ''}. ${pr.now ? `${gbp(pr.now)} to pay today` : 'Nothing to pay today'}${pr.bal ? `, ${gbp(pr.bal)} by ${nice(pr.balDue)}` : ''}.</p>` : pr.bal ? `<p>${gbp(pr.now)} deposit today, ${gbp(pr.bal)} by ${nice(pr.balDue)}.</p>` : '<p>Paid in full today. VAT included.</p>'}`
-      : `<div class="big"><span>From</span><b>${p.from.replace(/^from /, '').split(' ')[0]}</b></div><p>${p.from.replace(/^from /, '').split(' ').slice(1).join(' ')}. Your total appears once you choose ${S.p === 'house' ? 'your dates' : 'your guests'}.</p>`;
+      : `<div class="big"><span>From</span><b>${p.from.replace(/^from /, '').split(' ')[0]}</b></div><p>${p.from.replace(/^from /, '').split(' ').slice(1).join(' ')}. Your total appears once you choose ${isRange(S.p) ? 'your dates' : S.gOK && !S.date ? 'your day' : 'your guests'}.</p>`;
     side.innerHTML = `<div class="side-top"><div class="eyebrow">Your booking</div><button class="side-x" aria-label="Close booking" title="Close (your choices are saved)">&times;</button></div><h3>${p.name}</h3><ul class="sum">${rows.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join('')}</ul>
       <div class="sum-tot">${tot}<button class="sum-toggle">Details</button></div>
       <p class="sum-pol">${{ house:'50% deposit. Move your dates with 6+ months’ notice.', break:'Refundable with 30+ days’ notice.', break2:'Refundable with 30+ days’ notice.', group:'Refundable with 30+ days’ notice.' }[S.p] || (p.only ? 'Pay today. Move your appointment with 30+ days’ notice.' : 'Non-refundable, but you can move your visit with 30+ days’ notice.')}</p>

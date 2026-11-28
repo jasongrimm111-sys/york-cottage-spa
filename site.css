@@ -1447,8 +1447,7 @@ input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,
   .bk-row.wide{grid-template-columns:1fr;gap:20px}
   .bk-row.wide .cal-ms{grid-template-columns:1fr 1fr;gap:36px}
   .bk-row.wide .cal{padding:20px 24px}
-  .bk-row.wide .bk-right{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;align-items:start}
-  .bk-row.wide .bk-right > .bk-group{grid-column:1 / -1}
+  .bk-row.wide .bk-right{display:block}
 }
 .cal-tip{margin:14px 0 0;font-size:13.5px;font-weight:600;color:var(--forest)}
 .cal-key{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
@@ -1462,3 +1461,13 @@ input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,
 .ck-d.r-some::before,.ck-d.r-none::before{content:"";position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%}
 .ck-d.r-some::before{background:#d9a441}
 .ck-d.r-none::before{border:1.5px solid #b0563f;width:3px;height:3px}
+/* stays: "Your stay" full width, times in two tidy columns (2026-11-28) */
+@media (min-width:901px){
+  .bk-row.wide .bk-right .times{display:grid;grid-template-columns:1fr 1fr;column-gap:0}
+  .bk-row.wide .bk-right .times li:nth-child(odd){border-right:1px solid var(--line)}
+  .bk-row.wide .bk-right .excl-q{max-width:none}
+}
+@media (min-width:901px){.bk-row.wide .bk-right .times li:last-child:nth-child(odd){grid-column:1 / -1;border-right:0}}
+.room-note.ok{color:var(--forest)}
+/* step 1: card titles stay on one line (2026-11-28) */
+@media (min-width:901px){.bk-type b{font-size:22px;white-space:nowrap;letter-spacing:-.01em}}
