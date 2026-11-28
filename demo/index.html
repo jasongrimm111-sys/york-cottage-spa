@@ -5,33 +5,61 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Walkthrough | York Cottage Spa</title>
-<meta name="description" content="Video walkthroughs of the new York Cottage Spa admin platform and website.">
+<meta name="description" content="Video walkthroughs of the York Cottage Spa admin platform and website, and the booking rules.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" href="../img/favicon.svg" type="image/svg+xml">
 <style>
-  :root{--forest:#2f3b32;--cream:#f6f1e9;--paper:#fbf8f3;--ink:#23281f;--muted:#6b6f68;--clay:#b4785a;--line:#e3ddd2}
+  :root{--forest:#2f3b32;--cream:#f6f1e9;--paper:#fbf8f3;--ink:#23281f;--muted:#6b6f68;--clay:#b4785a;--line:#e3ddd2;--bad:#b0463a;--r:16px}
   *{box-sizing:border-box}
   html,body{margin:0}
+  html{scroll-padding-top:90px}
   body{background:var(--cream);color:var(--ink);font:400 17px/1.6 Manrope,system-ui,sans-serif}
-  header{background:radial-gradient(ellipse at 50% 30%,#3c4a40 0%,#2a352d 75%);color:#f3ece1;text-align:center;padding:64px 20px 56px}
+  header{background:radial-gradient(ellipse at 50% 30%,#3c4a40 0%,#2a352d 75%);color:#f3ece1;text-align:center;padding:60px 20px 50px}
   header svg{width:110px;height:auto}
   .eyebrow{letter-spacing:.3em;text-transform:uppercase;font-size:13px;font-weight:700;color:#d9a37f;margin:18px 0 8px}
   h1{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:clamp(40px,6vw,64px);line-height:1.05;margin:0}
   h1 em{color:#e8c3a6}
   header p{max-width:680px;margin:16px auto 0;opacity:.85}
-  main{max-width:1080px;margin:0 auto;padding:44px 20px 70px;display:grid;gap:44px}
-  section{background:#fff;border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 30px 60px -45px rgba(35,40,35,.5)}
+  .tabs{position:sticky;top:0;z-index:5;background:rgba(246,241,233,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);display:flex;justify-content:center;gap:8px;padding:12px 16px}
+  .tabs a{padding:9px 22px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink);text-decoration:none;font-weight:600;font-size:15px}
+  .tabs a[aria-selected="true"]{background:var(--forest);border-color:var(--forest);color:#fff}
+  main{max-width:1080px;margin:0 auto;padding:40px 20px 70px}
+  .pane{display:grid;gap:40px}
+  .pane[hidden]{display:none}
+  section.v{background:#fff;border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 30px 60px -45px rgba(35,40,35,.5)}
   .num{display:inline-block;font-size:12px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;color:var(--clay)}
   h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:clamp(30px,4vw,40px);margin:4px 0 6px;line-height:1.1}
-  section > p{color:var(--muted);margin:0 0 18px;max-width:760px}
+  section.v > p{color:var(--muted);margin:0 0 18px;max-width:760px}
   video{width:100%;height:auto;display:block;border-radius:14px;background:#1f2721;aspect-ratio:16/9}
   ul.covers{columns:2;gap:28px;margin:18px 0 0;padding-left:18px;color:var(--muted);font-size:15px}
   ul.covers li{margin:2px 0;break-inside:avoid}
+  /* rules (from the admin's Rules page) */
+  .rules-intro{color:var(--muted);margin:0 0 18px;max-width:780px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:20px 22px}
+  .card + .card{margin-top:14px}
+  .card-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .card-h h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:26px;margin:0}
+  .muted{color:var(--muted)} .small{font-size:13.5px}
+  .tbl{width:100%;border-collapse:collapse;font-size:14px}
+  .tbl th{text-align:left;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--paper)}
+  .tbl td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  .tbl tr:last-child td{border-bottom:0}
+  .rl-toc{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}
+  .rl-toc a{padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:13px;font-weight:600;color:var(--ink);text-decoration:none}
+  .rl-toc a:hover{border-color:var(--ink)}
+  .rl-intro{margin:-4px 0 10px}
+  .rl-list{margin:0;padding-left:20px;display:grid;gap:7px;line-height:1.5;font-size:15.5px}
+  .rl-tbl-wrap{overflow-x:auto;margin-top:6px}
+  .rl-tbl td{vertical-align:top;font-size:13.5px}
+  .rl-tbl td:first-child{white-space:nowrap}
+  .rl-off{color:var(--bad);font-weight:600}
+  .rl-h{font-size:14px;margin:18px 0 8px;letter-spacing:.02em}
+  .note{background:var(--paper);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--muted)}
   footer{text-align:center;color:var(--muted);font-size:14px;padding:0 20px 40px}
   footer a{color:var(--clay)}
-  @media (max-width:640px){section{padding:16px;border-radius:16px}ul.covers{columns:1}header{padding:44px 16px 40px}main{padding:28px 16px 50px;gap:28px}}
+  @media (max-width:640px){section.v{padding:16px;border-radius:16px}ul.covers{columns:1}header{padding:40px 16px 36px}main{padding:24px 16px 50px}.pane{gap:26px}.card{padding:16px}.rl-tbl td:first-child{white-space:normal}}
 </style>
 </head>
 <body>
@@ -39,37 +67,104 @@
   <svg viewBox="0 0 760 500" fill="none" stroke="#f3ece1" stroke-width="22" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M160 190 L160 45 C215 62 268 92 305 132"/><path d="M600 190 L600 45 C545 62 492 92 455 132"/><path d="M380 25 C455 115 515 215 515 325 C515 415 455 470 380 485 C305 470 245 415 245 325 C245 215 305 115 380 25 Z" stroke="#d9a37f"/><path d="M10 180 C150 172 290 212 345 300 C368 337 380 360 380 385 L380 488 C235 488 125 455 82 382 C52 330 27 258 10 180 Z"/><path d="M750 180 C610 172 470 212 415 300 C392 337 380 360 380 385 L380 488 C525 488 635 455 678 382 C708 330 733 258 750 180 Z"/></svg>
   <div class="eyebrow">York Cottage Spa</div>
   <h1>The new <em>platform</em>, walked through</h1>
-  <p>Two short videos: the admin system the team uses every day, and the new website with a complete online booking.</p>
+  <p>Two videos, the admin system the team uses every day and the website with online booking, plus every rule the booking system follows.</p>
 </header>
+<nav class="tabs" role="tablist" aria-label="Walkthrough">
+  <a href="#videos" role="tab" data-tab="videos" aria-selected="true">Videos</a>
+  <a href="#rules" role="tab" data-tab="rules" aria-selected="false">Rules</a>
+</nav>
 <main>
-  <section>
-    <span class="num">Video 1 · about 4½ minutes</span>
-    <h2>The admin platform</h2>
-    <p>Shown with sample guests (no real customer details). Covers running the day, the calendars, bookings, staff and cover, guests, branded emails, marketing emails, the picture gallery and settings.</p>
-    <video controls preload="metadata" playsinline poster="admin-poster.jpg"><source src="admin-walkthrough.mp4?v=6" type="video/mp4">Your browser can’t play this video. <a href="admin-walkthrough.mp4">Download it here</a>.</video>
-    <ul class="covers">
-      <li>Day view, therapists’ days and To do</li><li>Work calendar and room bookings</li>
-      <li>Bookings, the booking page and the message log</li><li>Taking a booking by phone, and the waitlist</li>
-      <li>Consultation forms: handing the iPad to the guest</li><li>Staff, rota, cover for busy days</li><li>Time off, sickness and shift swaps</li>
-      <li>Support messages and customers</li><li>Branded emails guests receive</li>
-      <li>Email guests: templates, pictures (or AI), who gets it</li><li>Test sends and opens/clicks reports</li>
-      <li>Gift vouchers, discount codes and reports</li><li>Gallery &amp; pictures: upload, tag, reorder</li>
-      <li>Treatments, sessions, emails and texts</li><li>The Rules page and settings</li>
-    </ul>
-  </section>
-  <section>
-    <span class="num">Video 2 · under 2 minutes</span>
-    <h2>The website &amp; booking</h2>
-    <p>A tour of the website, then a Day Spa booking for two from start to finish. Payment is shown in Stripe’s test mode, so nothing was charged.</p>
-    <video controls preload="metadata" playsinline poster="website-poster.jpg"><source src="website-walkthrough.mp4?v=5" type="video/mp4">Your browser can’t play this video. <a href="website-walkthrough.mp4">Download it here</a>.</video>
-    <ul class="covers">
-      <li>Home page, offers and ratings</li><li>Experience pages, treatments and gift vouchers</li>
-      <li>Choosing a booking and guests</li><li>Dates, sessions and real availability</li>
-      <li>Each guest’s treatments and times</li><li>Details, review and payment</li>
-      <li>The confirmation</li><li>Booking on a phone</li>
-    </ul>
-  </section>
+  <div class="pane" id="pane-videos" role="tabpanel">
+    <section class="v">
+      <span class="num">Video 1 · about 4½ minutes</span>
+      <h2>The admin platform</h2>
+      <p>Shown with sample guests (no real customer details). Covers running the day, calendars, bookings and the booking types, staff and cover, guests, emails, marketing, prices and the rules.</p>
+      <video controls preload="metadata" playsinline poster="admin-poster.jpg?v=281128a"><source src="admin-walkthrough.mp4?v=281128a" type="video/mp4">Your browser can’t play this video. <a href="admin-walkthrough.mp4">Download it</a>.</video>
+      <ul class="covers">
+        <li>Day view, therapists’ days and To do</li><li>Consultation forms: handing the iPad to the guest</li>
+        <li>Work calendar, week view and room bookings</li><li>Bookings, the booking page and the message log</li>
+        <li>Taking a booking by phone: half or full day, “just for this group”</li><li>Booking types and the waitlist</li>
+        <li>Staff, rota and cover for busy days</li><li>Time off, sickness, support messages and customers</li>
+        <li>Email guests: templates, pictures (or AI), who gets it, results</li><li>Gift vouchers, discount codes and reports</li>
+        <li>Sessions, treatments, gallery and automatic emails</li><li>Rules → Prices, and the price settings</li>
+      </ul>
+    </section>
+    <section class="v">
+      <span class="num">Video 2 · under 5 minutes</span>
+      <h2>The website &amp; booking</h2>
+      <p>A tour of the website, then a booking for each type: a spa day for two, a spa break for six, treatments only and the whole house. Each stops at the payment page, so nothing was charged.</p>
+      <video controls preload="metadata" playsinline poster="website-poster.jpg?v=281128a"><source src="website-walkthrough.mp4?v=281128a" type="video/mp4">Your browser can’t play this video. <a href="website-walkthrough.mp4">Download it</a>.</video>
+      <ul class="covers">
+        <li>Home page, spa days and stays</li><li>The comparison table and “just for your group”</li>
+        <li>Spa day: choosing what’s included and how long</li><li>Spa break for six: arrival and departure, 10% group discount</li>
+        <li>Treatments only: days with treatment time</li><li>Whole house: Friday and Saturday, 50% deposit</li>
+        <li>Each guest’s treatments and times</li><li>Details, review and payment</li>
+      </ul>
+    </section>
+  </div>
+  <div class="pane" id="pane-rules" role="tabpanel" hidden>
+    <div>
+      <p class="rules-intro">Every rule the booking system follows, in plain English, worked out from the current settings. The same rules apply on the website and in the admin.</p>
+      <nav class="rl-toc"><a href="#rl-glance" data-rl="glance">The big rules</a><a href="#rl-hours" data-rl="hours">Hours</a><a href="#rl-types" data-rl="types">Booking types</a><a href="#rl-prices" data-rl="prices">Prices</a><a href="#rl-treat" data-rl="treat">Treatments</a><a href="#rl-plan" data-rl="plan">Planning</a><a href="#rl-cover" data-rl="cover">Staff cover</a><a href="#rl-breaks" data-rl="breaks">Breaks</a><a href="#rl-food" data-rl="food">Food</a><a href="#rl-cap" data-rl="cap">Capacity</a><a href="#rl-online" data-rl="online">Online</a></nav><section class="card rl-card" id="rl-glance"><div class="card-h"><h3>The big rules</h3></div><p class="muted rl-intro">What the booking system always makes sure of, on the website and in the admin.</p><ul class="rl-list"><li>A day or session is only offered if <b>every guest’s included treatment</b> can be given a time, after the lunch or food service has been staffed.</li><li>An extra treatment is only offered if <b>everyone’s treatments still fit</b> with it.</li><li>Guests choose a time for every treatment before they can pay. Changing the date or session clears their treatment choices and times.</li><li>Just before paying, the times are checked again and <b>held for 30 minutes</b>. If two people pay for the same time at once, only the first gets it; the other is asked to choose again and isn’t charged.</li><li>Treatments are planned at the <b>earliest free time</b>. Guests are put side by side only if that delays them by 30 minutes or less.</li><li>Treatments can start on the hour and half hour, or <b>back to back</b>, as soon as a therapist and room are free again (to the nearest 5 minutes).</li><li><b>Treatments only</b> can still be booked while the spa is booked “just for” a group, but never during the hours a whole-house stay has the spa.</li><li>On a <b>whole-house check-in day</b>, morning sessions and treatments only can still be booked (before the house has the spa); on its <b>check-out day</b>, afternoon and evening sessions and treatments only can. Days in between are the house’s alone. <b>Groups</b> can’t be on any day of a whole-house stay.</li><li>No therapist is booked over their hours, breaks, time off, food duty, or daily hands-on limit.</li></ul></section><section class="card rl-card" id="rl-hours"><div class="card-h"><h3>Opening and treatment hours</h3></div>
+      <p class="muted rl-intro">Treatments run inside the treatment hours, which sit inside opening hours. Treatments only have their own days and times on top.</p>
+      <div class="rl-tbl-wrap"><table class="tbl rl-tbl"><thead><tr><th>Day</th><th>Spa open</th><th>Treatments</th><th>Treatment starts</th><th>Treatments only</th></tr></thead><tbody><tr><td><b>Monday</b></td><td>09:30–22:00</td><td>Whenever open</td><td>10:00 to 21:00</td><td>As treatments</td></tr><tr><td><b>Tuesday</b></td><td>09:30–22:00</td><td>Whenever open</td><td>10:00 to 21:00</td><td>As treatments</td></tr><tr><td><b>Wednesday</b></td><td>09:30–22:00</td><td>Whenever open</td><td>10:00 to 21:00</td><td>As treatments</td></tr><tr><td><b>Thursday</b></td><td>09:30–22:00</td><td>Whenever open</td><td>10:00 to 21:00</td><td>As treatments</td></tr><tr><td><b>Friday</b></td><td>09:30–22:00</td><td>Whenever open</td><td>10:00 to 21:00</td><td>As treatments</td></tr><tr><td><b>Saturday</b></td><td>09:30–22:00</td><td>Whenever open</td><td>10:00 to 21:00</td><td>As treatments</td></tr><tr><td><b>Sunday</b></td><td>09:30–22:30</td><td>Whenever open</td><td>10:00 to 21:00</td><td>As treatments</td></tr></tbody></table></div>
+      
+      <p class="small muted">1 closure set (days the spa is shut).</p></section><section class="card rl-card" id="rl-types"><div class="card-h"><h3>Booking types</h3></div><p class="muted rl-intro">What each booking type includes and its rules. Booking types themselves are set up by Claude; their prices and rules can be changed here.</p>
+      <div class="rl-tbl-wrap"><table class="tbl rl-tbl"><thead><tr><th>Type</th><th>Price</th><th>Guests</th><th>When</th><th>Included treatment</th><th>Food</th><th>Payment</th><th>Cancelling</th></tr></thead><tbody><tr><td><b>Spa, Lunch &amp; Treatment</b></td><td>£100 per person</td><td>1–6 guests</td><td>Morning 09:30–13:30 (every day)<br>Afternoon 13:00–17:00 (every day)<br>Full day 09:30–17:00 (every day)</td><td>One of: 20-Minute Aromatherapy Massage, 20-Minute Aromatherapy Facial</td><td>Yes</td><td>Paid in full</td><td>No refund<br><span class="small muted">Can move with 30+ days’ notice</span></td></tr><tr><td><b>Spa Access Only</b></td><td>£50 per person</td><td>1–6 guests</td><td>Morning 09:30–13:30 (every day)<br>Afternoon 13:00–17:00 (every day)<br>Full day 09:30–17:00 (every day)</td><td>—</td><td>—</td><td>Paid in full</td><td>No refund<br><span class="small muted">Can move with 30+ days’ notice</span></td></tr><tr><td><b>Spa Break</b></td><td>£150 pp for 1 night, £250 pp for 2 nights, £350 pp for 3 nights, £450 pp for 4 nights, £550 pp for 5 nights</td><td>1–16 guests</td><td>1 night or 2 nights or 3 nights or 4 nights or 5 nights; arrive 1-night: Mon–Thu, Sun; 2-night: Mon–Wed, Sun; 3-night: Mon, Tue, Sun; 4-night: Mon, Sun; 5-night: Sun</td><td>One of: 20-Minute Aromatherapy Massage, 20-Minute Aromatherapy Facial</td><td>—</td><td>Paid in full</td><td>30+ days before: full refund<br>under 30 days: no refund</td></tr><tr><td><b>Whole House &amp; Spa</b></td><td>£1,840 a night (can vary by date)</td><td>1–16 guests</td><td>2–30 nights</td><td>—</td><td>—</td><td>50% deposit</td><td>42+ days before: deposit kept<br>under 42 days: no refund<br><span class="small muted">Can move with 183+ days’ notice</span></td></tr><tr><td><b>Treatments only</b></td><td>Treatments at their own prices</td><td>1–4 guests</td><td>Any start time in treatments-only hours</td><td>—</td><td>—</td><td>Paid in full</td><td>No refund<br><span class="small muted">Can move with 30+ days’ notice</span></td></tr></tbody></table></div></section><section class="card rl-card" id="rl-treat"><div class="card-h"><h3>Treatments and extras</h3></div>
+      <ul class="rl-list">
+        <li>Each guest can add up to <b>3 extra treatments</b> online.</li>
+        <li>An extra of the <b>same kind</b> as the included treatment (a massage with the included massage) <b>extends it</b> into one longer treatment, up to <b>55 minutes</b> in all. One extension per guest.</li>
+        <li>An extension that fits whole keeps its own price. One that's cut short to fit costs a flat <b>£55</b>.</li>
+        <li>Japanese head spa is <b>10% off</b> with a session or stay.</li>
+        <li>Blue Light Card holders get included treatments of <b>30 minutes</b>.</li>
+      </ul>
+      <div class="rl-tbl-wrap"><table class="tbl rl-tbl"><thead><tr><th>Treatment</th><th>Length</th><th>Price</th><th>Turnover after</th><th>Rooms</th><th>Who can do it</th></tr></thead><tbody><tr><td>Back to Basics Facial</td><td>30 min</td><td>£50</td><td>15 min</td><td>Any</td><td>Gemma Burke, Georgie Parker</td></tr><tr><td>Recipe for Radiance Relaxation Facial</td><td>45 min</td><td>£70</td><td>15 min</td><td>Any</td><td>Gemma Burke, Georgie Parker</td></tr><tr><td>Tension Melt Back, Neck &amp; Shoulder Massage</td><td>30 min</td><td>£50</td><td>15 min</td><td>Any</td><td>Gemma Burke, Georgie Parker</td></tr><tr><td>Ultimate Relaxation Scalp, Neck &amp; Shoulder Massage</td><td>30 min</td><td>£50</td><td>15 min</td><td>Any</td><td>Gemma Burke, Georgie Parker</td></tr><tr><td>Recipe for Relaxation Massage</td><td>45 min</td><td>£70</td><td>15 min</td><td>Any</td><td>Gemma Burke, Georgie Parker</td></tr><tr><td>Relax &amp; Unwind Full Body Massage</td><td>1 hour</td><td>£80</td><td>15 min</td><td>Any</td><td>Gemma Burke, Georgie Parker</td></tr><tr><td>The Classic Renewal</td><td>1 hour</td><td>£90</td><td>15 min</td><td>Any</td><td>Gemma Burke, Georgie Parker</td></tr><tr><td>The Radiance Ritual</td><td>1 h 10 min</td><td>£115</td><td>15 min</td><td>Any</td><td>Gemma Burke, Georgie Parker</td></tr><tr><td>The Ultimate Zen Experience</td><td>1 h 20 min</td><td>£145</td><td>15 min</td><td>Any</td><td>Gemma Burke, Georgie Parker</td></tr><tr><td>20-Minute Aromatherapy Massage <span class="small muted">(included)</span></td><td>20 min</td><td>—</td><td>15 min</td><td>Any</td><td>Gemma Burke, Georgie Parker</td></tr><tr><td>20-Minute Aromatherapy Facial <span class="small muted">(included)</span></td><td>20 min</td><td>—</td><td>15 min</td><td>Any</td><td>Gemma Burke, Georgie Parker</td></tr><tr><td>20-Minute Luxury Facial <span class="small muted">(included)</span></td><td>20 min</td><td>—</td><td>15 min</td><td>Any</td><td>Gemma Burke, Georgie Parker</td></tr></tbody></table></div></section><section class="card rl-card" id="rl-plan"><div class="card-h"><h3>How treatments are planned</h3></div><ul class="rl-list"><li>Every treatment is followed by at least <b>15 minutes</b> to reset the room (longer if the treatment says so).</li><li>Treatments-only guests are asked to arrive <b>15 minutes</b> before their first treatment. <span>Change</span></li><li>When more than one therapist is working: <b>fill one therapist’s day before using the next</b>, in this order: Gemma Burke, Georgie Parker. Cover therapists are only booked when the others are full.</li><li>Groups of <b>2 or more</b> are treated side by side where it costs at most 30 minutes.</li><li>A therapist does at most <b>6 hours</b> of hands-on treatments a day (unless their own limit is set in Staff).</li><li>Treatment rooms: Treatment room 1 (2 beds), Treatment room 2 (1 bed).</li><li>A therapist <b>only ever treats one guest at a time</b>, and a treatment room is <b>one guest’s at a time</b>.</li><li>Two guests <b>from the same booking</b> can be treated <b>together</b> in a 2-bed room (each with their own therapist, at the same time) when they ask for it while booking. Guests from different bookings never share a room.</li></ul></section><section class="card rl-card" id="rl-cover"><div class="card-h"><h3>Staff cover for busy days</h3></div><p class="muted rl-intro">How the system spots days that need another therapist, and how to add one just for that day.</p><ul class="rl-list"><li><b>How treatments are shared:</b> each therapist’s day is filled before the next is used, so a busy day shows clearly when one person is nearly full. <span>Change</span></li><li><b>Staffing suggestions</b> look six weeks ahead and flag a day when: therapist time is <b>85%+ booked</b>; a therapist is within <b>90% of their daily hands-on limit</b>; a session <b>still has places but no therapist time</b> is left for its included treatments (so it can’t be sold online); only the included treatments fit, so guests can’t add extras; or no therapist is rostered while the spa is open.</li><li>Red means sales are being lost or someone is over their limit; amber means worth considering. They show on the <span>Rota</span>, in the <span>To do</span> list, and at the top of each day on <span>Future days</span>.</li><li><b>To add cover:</b> press <b>Add cover</b> on a suggestion (or on the day). Pick a therapist who isn’t working that day, or add someone new, and set their hours. It’s a one-off shift for that day only; their usual week doesn’t change.</li><li>When cover is added, the day’s <b>booked treatments are shared out</b> between everyone on shift where possible. Guests keep exactly the same times; only who treats them (and which room) can change, and you see the list before anything moves. Therapists whose treatments change are emailed their new list (if they have schedule alerts on).</li><li>As soon as cover is on the rota, the website can <b>sell more that day</b>: more times for extras and longer treatments, and sessions that had no therapist time become bookable again.</li><li><b>Cover-only therapists</b> (Staff → Edit → “Cover only”) are only booked when the regular therapists are full, whichever sharing rule is chosen. Nobody is marked cover-only yet; anyone new added through Add cover is. On days they aren’t rostered they add nothing to what the website offers.</li></ul></section><section class="card rl-card" id="rl-breaks"><div class="card-h"><h3>Therapists’ lunch and breaks</h3></div><p class="muted rl-intro">The planner leaves room for these in everyone’s day.</p><ul class="rl-list"><li>No one works more than <b>4 hours</b> without a break of <b>15–30 minutes</b>.</li><li>On days over <b>6 hours</b>, a lunch of <b>30–60 minutes</b> between 11:30 and 15:00.</li><li>Food duty counts as work, so a therapist serving lunch still needs their break around it.</li></ul></section><section class="card rl-card" id="rl-food"><div class="card-h"><h3>Food service</h3></div><p class="muted rl-intro">Someone with food duty serves these; while they do, they can’t give treatments.</p>
+      <div class="rl-tbl-wrap"><table class="tbl rl-tbl"><thead><tr><th>Service</th><th>Time</th><th>For</th><th>Staff needed</th></tr></thead><tbody><tr><td>Spa lunch service</td><td>13:00–14:00</td><td>Spa, Lunch &amp; Treatment, Private Spa, Spa Break</td><td>1</td></tr><tr><td>Grazing board service</td><td>18:00–18:30 <span class="small muted">(other times on some days)</span></td><td>Spa Break, 2-Night Spa Break, Group Spa Break</td><td>1</td></tr></tbody></table></div>
+      <p class="small muted" style="margin-top:8px">Food duty: nobody yet. Menus: Afternoon tea, Sweet &amp; savoury grazing board, Lunch.</p></section><section class="card rl-card" id="rl-prices"><div class="card-h"><h3>Prices</h3></div>
+      <p class="muted rl-intro">What guests can book, what each costs, and the thinking behind every price. Change prices in Booking types; change the “just for us” prices in Settings → Booking rules.</p>
+      <h4 class="rl-h">What’s on offer</h4>
+      <div class="rl-tbl-wrap"><table class="tbl rl-tbl"><thead><tr><th>Booking</th><th>What’s included</th><th>Length</th><th>Guests</th><th>Price</th></tr></thead><tbody><tr><td><b>Spa Access Only</b></td><td>Spa pool, sauna and lounge, hot &amp; cold drinks, towel and robe. No food or treatment.</td><td>Half day (09:30–13:30 or 13:00–17:00) or full day (09:30–17:00)</td><td>1–6</td><td>£50 half day · £75 full day, per person</td></tr><tr><td><b>Spa, Lunch &amp; Treatment</b></td><td>Everything in Spa Access Only, plus lunch (afternoon tea or a grazing board) and a 20-minute massage or facial each.</td><td>Half day (09:30–13:30 or 13:00–17:00) or full day (09:30–17:00)</td><td>1–6</td><td>£100 half day · £135 full day, per person</td></tr><tr><td><b>Spa Break</b></td><td>A bedroom for every 2 guests, the spa from 2pm on arrival until 6pm on the last evening (Sunday arrivals 18:00–22:30), lunch every day, the kitchen for dinner, a 20-minute massage or facial each.</td><td>Sunday to Thursday nights, 1 to 5 nights, ending by Friday morning</td><td>1–16</td><td>1 night £150 · 2 nights £250 · 3 nights £350 · 4 nights £450 · 5 nights £550 per person, 2 sharing. Room to themselves +£50 a night.</td></tr><tr><td><b>Whole House &amp; Spa</b></td><td>The whole house and spa: 8 bedrooms, kitchen, 2 living rooms, hot tub and sauna.</td><td>Must include Friday and Saturday night; extra nights either side (up to 30)</td><td>up to 16</td><td>From £1,840 a night for the house</td></tr><tr><td><b>Treatments only</b></td><td>Massages, facials and Japanese head spa, without a spa session.</td><td>Guests pick a start time</td><td>1–4</td><td>Each treatment’s own price</td></tr><tr><td><b>Breakfast</b> (spa breaks)</td><td>Continental breakfast</td><td>Each morning</td><td></td><td>£10 per person per morning</td></tr></tbody></table></div>
+      <h4 class="rl-h">How the prices work</h4>
+      <ul class="rl-list">
+        <li><b>Half days are 4 hours</b>: Spa Access Only £50 and Spa, Lunch &amp; Treatment £100 per person.</li>
+        <li><b>Full days (7½ hours) cost less per hour than two half days.</b> Spa Access Only full day £75 (half day + 50%). Spa, Lunch &amp; Treatment full day £135: the same spa time, but lunch and the treatment are only had once, so it adds £35 to the half day rather than doubling it. Both fill the spa from 09:30 to 17:00, so a full-day guest takes the place of a morning and an afternoon guest; the premium covers most of the second half day, and a longer day is a reason to book.</li>
+        <li><b>The difference between the two spa days is lunch and a treatment</b>: £50 per person for a half day.</li>
+        <li><b>Spa Break: £150 for the first night, then £100 for each extra night.</b> Each night includes the room, spa time and lunch. Extra nights cost less than the first because check-in, changeover and the room clean happen once per stay.</li>
+        <li><b>Room to themselves +£50 a night</b>: break prices are based on 2 sharing, so a guest alone in a room pays towards the empty half. Not charged when the break has 6 or more guests or is booked “just for us”: those nights are closed to other guests, so every bedroom is theirs and a guest sleeping alone takes no room that could have been sold.</li>
+        <li><b>Whole House</b>: £1,840 a night. It’s the only booking that gives a group the whole house, and it must include Friday and Saturday, when hen parties and big groups want it.</li>
+        <li><b>Head spa</b> is 10% off with a spa day or stay.</li>
+        <li><b>Group discount: 10% off for 6 or more guests</b> on Spa Access Only, Spa, Lunch &amp; Treatment and Spa Breaks, to help more groups book. A group of 6 fills the spa in one sale (no empty places to sell and less admin), so a small discount is worth it, and they also get the spa to themselves. It’s off the booking price only: extra treatments, where most groups spend more, and breakfast stay full price. Not on the Whole House, which is already priced for the group. Only one discount per booking, so a code or the head spa offer is used instead if it saves more. Example: 6 on a half-day Spa, Lunch &amp; Treatment pay £540 instead of £600.</li>
+      </ul>
+      <h4 class="rl-h">“Just for us” (exclusive use)</h4>
+      <ul class="rl-list">
+        <li><b>6 or more guests have it free.</b> The spa holds 6 at once, so a booking of 6 fills it anyway. On a spa break, 6+ also means no other guests stay those nights.</li>
+        <li><b>Fewer than 6 pay for each empty place, at about half the price of that place</b>: £25 per empty place for a half day and £40 for a full day (half of Spa Access Only, because what the business loses is spa space, not lunch or treatments), and £75 per empty place per night on a spa break (half the first-night price, because the spare bedrooms close too).</li>
+        <li><b>Why half price:</b> empty places wouldn’t all have sold, so charging about half of each one leaves the business level on average, while a couple pays far less than for 6 people. Exclusive bookings also tend to add extra treatments.</li>
+        <li><b>The fewer guests, the more it costs</b>, but the more of them, the better value it is. The guest sees the exact amount on the tick box, on the half-day / full-day buttons and as its own line in the summary before paying.</li>
+        <li><b>Last minute: 50% off when booked 7 days or fewer before the visit</b>, because empty places that late rarely sell.</li>
+        <li>Only offered when nobody else is booked in. If a day can’t be just theirs, the guest is told and can choose another day or carry on without it.</li>
+      </ul>
+      <div class="rl-tbl-wrap"><table class="tbl rl-tbl"><thead><tr><th>Guests</th><th>Empty places</th><th>Half day</th><th>Full day</th><th>Spa break</th></tr></thead><tbody><tr><td>1 guest</td><td>5</td><td>£125</td><td>£200</td><td>£375 a night</td></tr><tr><td>2 guests</td><td>4</td><td>£100</td><td>£160</td><td>£300 a night</td></tr><tr><td>3 guests</td><td>3</td><td>£75</td><td>£120</td><td>£225 a night</td></tr><tr><td>4 guests</td><td>2</td><td>£50</td><td>£80</td><td>£150 a night</td></tr><tr><td>5 guests</td><td>1</td><td>£25</td><td>£40</td><td>£75 a night</td></tr></tbody></table></div>
+      <p class="small muted" style="margin-top:8px">“Just for us” amounts before any last-minute discount.</p></section><section class="card rl-card" id="rl-cap"><div class="card-h"><h3>Spa capacity and bedrooms</h3></div><ul class="rl-list"><li>At most <b>6 guests</b> in the spa at once, with <b>30 minutes</b> between sessions.</li><li>Spa, Lunch &amp; Treatment · Morning: up to <b>6</b> guests.</li><li>Spa, Lunch &amp; Treatment · Afternoon: up to <b>6</b> guests.</li><li>Spa, Lunch &amp; Treatment · Full day: up to <b>6</b> guests.</li><li>Spa Access Only · Morning: up to <b>6</b> guests.</li><li>Spa Access Only · Afternoon: up to <b>6</b> guests.</li><li>Spa Access Only · Full day: up to <b>6</b> guests.</li><li>Bedrooms: Room 1 (sleeps 2), Room 2 (sleeps 2), Room 3 (sleeps 2), Room 4 (sleeps 2), Room 5 (sleeps 2), Room 6 (sleeps 2), Room 7 (sleeps 2), Room 8 (sleeps 2).</li><li>A whole-house booking, a spa day or spa break of 6+, or one booked “just for us” has the spa to itself.</li></ul></section><section class="card rl-card" id="rl-online"><div class="card-h"><h3>Booking online</h3></div><ul class="rl-list"><li>Online bookings can be made up to <b>365 days</b> ahead, with at least <b>24 hours’</b> notice.</li><li>Times are held for <b>30 minutes</b> while a guest pays.</li><li>Staff booking in the admin follow the same rules, and can see times guests are paying for as taken.</li></ul></section>
+    </div>
+  </div>
 </main>
 <footer>See the website itself: <a href="../">yorkcottages.grimmittgames.com</a></footer>
+<script>
+  // tabs: #videos / #rules (and any #rl-… link inside the rules opens the Rules tab)
+  (function () {
+    const tabs = document.querySelectorAll('[data-tab]');
+    function show(name, keepScroll) {
+      tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
+      document.getElementById('pane-videos').hidden = name !== 'videos';
+      document.getElementById('pane-rules').hidden = name !== 'rules';
+      if (name !== 'videos') document.querySelectorAll('video').forEach(v => v.pause());
+      if (!keepScroll) window.scrollTo({ top: document.querySelector('.tabs').offsetTop, behavior: 'smooth' });
+    }
+    tabs.forEach(t => t.addEventListener('click', e => { e.preventDefault(); history.replaceState(null, '', '#' + t.dataset.tab); show(t.dataset.tab); }));
+    const h = location.hash.slice(1);
+    if (h === 'rules' || h.startsWith('rl-')) { show('rules', true); if (h.startsWith('rl-')) setTimeout(() => document.getElementById(h)?.scrollIntoView(), 50); }
+  })();
+</script>
 </body>
 </html>
