@@ -1541,3 +1541,16 @@ input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,
 .legal{justify-content:flex-start;column-gap:28px;padding-bottom:72px}
 .legal .legal-links{order:-1}
 @media (max-width:700px){.legal{padding-bottom:150px}}
+/* legal pages (2026-11-28): a plain heading instead of a big photo, and normal indented bullets */
+.page-hero.ph-plain{min-height:0;color:var(--ink);background:var(--cream);padding-top:clamp(150px,18vh,190px)}
+.page-hero.ph-plain::after{display:none}
+.page-hero.ph-plain .wrap{padding-bottom:28px}
+.page-hero.ph-plain h1{font-size:clamp(40px,5.5vw,64px);margin:10px 0 8px}
+.page-hero.ph-plain h1 em,.page-hero.ph-plain .eyebrow{color:var(--clay)}
+.page-hero.ph-plain p{opacity:.75}
+.legal-text ul{list-style:disc;padding-left:1.6em;margin:0 0 14px}
+.legal-text li{color:var(--ink);font-size:15.5px;margin:0 0 8px;padding-left:.3em}
+.legal-text li::marker{color:var(--clay)}
+.page-hero.ph-plain + .psec{padding-top:28px}
+.page-hero.ph-plain{background:transparent;border-bottom:1px solid var(--line)}
+.page-hero.ph-plain{padding-bottom:0}.page-hero.ph-plain .wrap{padding-top:0;min-height:0}
