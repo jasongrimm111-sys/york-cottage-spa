@@ -28,6 +28,7 @@
   main{max-width:1080px;margin:0 auto;padding:40px 20px 70px}
   .pane{display:grid;gap:40px}
   .pane[hidden]{display:none}
+.pane{grid-template-columns:minmax(0,1fr)}.pane > *{min-width:0}#pane-rules table{display:block;overflow-x:auto;max-width:100%}#pane-rules p,#pane-rules li,#pane-rules td{overflow-wrap:anywhere}
   section.v{background:#fff;border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 30px 60px -45px rgba(35,40,35,.5)}
   .num{display:inline-block;font-size:12px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;color:var(--clay)}
   h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:clamp(30px,4vw,40px);margin:4px 0 6px;line-height:1.1}
