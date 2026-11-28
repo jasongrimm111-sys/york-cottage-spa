@@ -648,13 +648,15 @@
     const cnt = id => (S.roomOf || []).filter(x => x === id).length;
     const p = P[S.p], ex = S.p === 'house' || exclAuto() || exclOn(), supp = p.single || 0;
     const alone = rs.filter(r => cnt(r.id) === 1).length, nn = S.nights || 1;
-    const bed = r => /single/i.test(r.bed || '') ? (r.bed || '') + ' (twin)' : (r.bed ? r.bed + ' bed' : '');
+    const bed = r => /single/i.test(r.bed || '') ? (r.bed || '').replace(/singles?/i, 'Single beds') + ' (Twin)' : (r.bed ? r.bed + ' bed' : '');
+    const blds = [...new Set(rs.map(r => r.building || ''))].sort((a, b) => (a ? 1 : 0) - (b ? 1 : 0)), multi = blds.length > 1;
+    const groups = blds.map(x => [x, rs.filter(r => (r.building || '') === x)]);
     const priceNote = ex ? '<p class="rooms-note ok">Every bedroom is yours, so sleep as you like. There’s no extra charge for having a room to yourself.</p>'
       : `<p class="rooms-note">Prices are for 2 sharing a room. Anyone with a room to themselves adds <b>${gbp(supp)} a night</b>. ${alone ? `Right now <b>${alone} guest${alone === 1 ? ' has' : 's have'} a room to themselves</b>: +${gbp(alone * supp * nn)} for ${nn} night${nn === 1 ? '' : 's'}.` : 'Right now everyone is sharing, so there’s no extra charge.'}</p>`;
     return `<h2>Who’s in <em>which room</em>?</h2><p class="bk-sub">${ex ? 'All the bedrooms are yours.' : `${rs.length} bedrooms are free for your dates.`} Tap a guest under a room to put them in it. Choose a twin room if you’d rather not share a bed.</p>${priceNote}
-      <div class="rooms-pick">${rs.map(r => `<div class="rp-card ${cnt(r.id) >= r.people ? 'full' : ''} ${r.building ? 'other-bld' : ''}"><div class="rp-img" style="background-image:url('${esc(r.photo || '')}')">${r.building ? `<span class="rp-bld">${esc(r.building)}</span>` : ''}</div>
-        <div class="rp-body"><div class="rp-h"><b>${esc(r.name)}</b><span>${cnt(r.id)} of ${r.people}</span></div><small>${esc([bed(r), r.ensuite ? 'ensuite' : 'shared bathroom', 'sleeps ' + r.people].filter(Boolean).join(' · '))}</small>${r.building ? `<small class="rp-bld-note">In ${esc(r.building)}, a separate building on the grounds</small>` : ''}
-        <div class="rp-guests">${Array.from({ length: S.guests }, (_, i) => { const here = (S.roomOf || [])[i] === r.id, elsewhere = (S.roomOf || [])[i] && !here; return `<button type="button" class="rp-g ${here ? 'on' : ''} ${elsewhere ? 'away' : ''}" data-rg="${r.id}|${i}" ${!here && cnt(r.id) >= r.people ? 'disabled' : ''}>${here ? '✓ ' : ''}${esc(gName(i))}</button>`; }).join('')}</div></div></div>`).join('')}</div>`;
+      ${groups.map(([bld, list]) => `${multi ? `<h3 class="rp-group ${bld ? 'away' : ''}">${bld ? `In ${esc(bld)}<small>A separate building on the grounds</small>` : 'In the house'}</h3>` : ''}<div class="rooms-pick">${list.map(r => `<div class="rp-card ${cnt(r.id) >= r.people ? 'full' : ''} ${r.building ? 'other-bld' : ''}"><div class="rp-img" style="background-image:url('${esc(r.photo || '')}')">${r.building ? `<span class="rp-bld">${esc(r.building)}</span>` : ''}</div>
+        <div class="rp-body"><div class="rp-h"><b>${esc(r.name)}</b><span>${cnt(r.id)} of ${r.people}</span></div><small>${esc([bed(r), r.ensuite ? 'Ensuite' : 'Shared bathroom', 'Sleeps ' + r.people].filter(Boolean).map(x => x[0].toUpperCase() + x.slice(1)).join(' · '))}</small>${r.building ? `<small class="rp-bld-note">In ${esc(r.building)}, a separate building on the grounds</small>` : ''}
+        <div class="rp-guests">${Array.from({ length: S.guests }, (_, i) => { const here = (S.roomOf || [])[i] === r.id, elsewhere = (S.roomOf || [])[i] && !here; return `<button type="button" class="rp-g ${here ? 'on' : ''} ${elsewhere ? 'away' : ''}" data-rg="${r.id}|${i}" ${!here && cnt(r.id) >= r.people ? 'disabled' : ''}>${here ? '✓ ' : ''}${esc(gName(i))}</button>`; }).join('')}</div></div></div>`).join('')}</div>`).join('')}`;
   }
 
   function detailView(){

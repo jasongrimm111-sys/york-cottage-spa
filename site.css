@@ -1489,3 +1489,7 @@ input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,
 .stay-cols{display:grid;gap:12px}
 @media (min-width:901px){.bk-row.wide .stay-cols{grid-template-columns:1fr 1fr;align-items:start}}
 .stay-cols .times{margin:0}
+/* room step: a heading for each building (2026-11-28) */
+.rp-group{font-family:var(--serif);font-weight:500;font-size:24px;margin:22px 0 10px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.rp-group small{font-family:inherit;font-size:14px;color:var(--clay);font-weight:600;font-family:Manrope,system-ui,sans-serif}
+.rp-group.away{padding-top:16px;border-top:1px solid var(--line)}
