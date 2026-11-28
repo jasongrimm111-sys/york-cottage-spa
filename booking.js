@@ -52,17 +52,17 @@
       const t = YE.stayTimes(L.cfg, k, iso(d), nights), p = L.cfg.products[k];
       if (p.lunchDaily) { const sun = d.getDay() === 0, mid = (p.times.default || {}).spaMid;
         return [['Check-in', 'from ' + t.checkIn], ['Spa on arrival', `${t.spa[0]} – ${t.spa[1]}`], nights > 1 && mid && ['Spa on other days', `${mid[0]} – ${mid[1]}`],
-          sun && nights === 1 ? ['Grazing board', 'from ' + t.food] : ['Lunch', sun ? 'each day from Monday, 13:00' : 'each day, 13:00'], ['Dinner', 'use of the kitchen'], ['Check-out', t.checkOut]].filter(Boolean); }
-      return [['Check-in', 'from ' + t.checkIn], t.food && [p.kind === 'house' ? 'Food' : 'Food', 'from ' + t.food], t.spa && [p.kind === 'house' ? 'Spa pool & hot tub' : 'Spa & treatments', `${t.spa[0]} – ${t.spa[1]}`], ['Check-out', t.checkOut]].filter(Boolean);
+          sun && nights === 1 ? ['Grazing board', 'from ' + t.food] : ['Lunch', sun ? 'each day from Monday, 13:00' : 'each day, 13:00'], ['Dinner', 'use of the kitchen'], ['Check-out', 'By ' + t.checkOut]].filter(Boolean); }
+      return [['Check-in', 'from ' + t.checkIn], t.food && [p.kind === 'house' ? 'Food' : 'Food', 'from ' + t.food], t.spa && [p.kind === 'house' ? 'Spa pool & hot tub' : 'Spa & treatments', `${t.spa[0]} – ${t.spa[1]}`], ['Check-out', 'By ' + t.checkOut]].filter(Boolean);
     }
     const sun = d.getDay() === 0;
     if (k === 'break' || k === 'break2') return sun
-      ? [['Check-in', 'from 14:00'], ['Grazing board', 'from 16:30'], ['Spa & treatments', nights > 1 ? '17:30 – 22:00' : '18:00 – 22:30'], ['Check-out', '11:00']]
-      : [['Check-in', 'from 13:30'], ['Spa & treatments', '14:00 – 18:00'], ['Grazing board', 'from 18:00'], ['Check-out', '11:00']];
+      ? [['Check-in', 'from 14:00'], ['Grazing board', 'from 16:30'], ['Spa & treatments', nights > 1 ? '17:30 – 22:00' : '18:00 – 22:30'], ['Check-out', 'By 11:00']]
+      : [['Check-in', 'from 13:30'], ['Spa & treatments', '14:00 – 18:00'], ['Grazing board', 'from 18:00'], ['Check-out', 'By 11:00']];
     if (k === 'group') return sun
-      ? [['Check-in', 'from 15:30'], ['Grazing board or afternoon tea', 'from 16:30'], ['Spa & treatments', '17:30 – 22:00'], ['Check-out', '11:00']]
-      : [['Check-in', 'from 13:30'], ['Spa & treatments', '14:00 – 22:00'], ['Check-out', '11:00']];
-    if (k === 'house') return [['Check-in', 'from 16:00'], ['Spa pool & hot tub', '08:00 – 22:00 daily'], ['Check-out', '11:00']];
+      ? [['Check-in', 'from 15:30'], ['Grazing board or afternoon tea', 'from 16:30'], ['Spa & treatments', '17:30 – 22:00'], ['Check-out', 'By 11:00']]
+      : [['Check-in', 'from 13:30'], ['Spa & treatments', '14:00 – 22:00'], ['Check-out', 'By 11:00']];
+    if (k === 'house') return [['Check-in', 'from 16:00'], ['Spa pool & hot tub', '08:00 – 22:00 daily'], ['Check-out', 'By 11:00']];
     return [];
   }
   const sesTime = (p, name) => { const x = (p.sessions || []).find(z => z[0] === name); return x ? x[1] : ''; };
