@@ -880,6 +880,12 @@
   E.platformRates = cfg => { const p = cfg.platform || {}; const r = (p.rates || []).filter(x => x && x.from).slice().sort((a, b) => (a.from < b.from ? -1 : 1));
     return r.length ? r : [{ from: '2000-01-01', to: null, pct: +(p.feePct ?? 1) || 0 }]; };
   E.platformRate = (cfg, d) => { const r = E.platformRates(cfg).filter(x => x.from <= d && (!x.to || x.to >= d)).pop(); return r ? +r.pct || 0 : 0; };
+  // the minimum monthly invoice in force on a date (from the same dated rates)
+  E.platformMin = (cfg, d) => { const r = E.platformRates(cfg).filter(x => x.from <= d && (!x.to || x.to >= d)).pop(); return r ? +r.minMonthly || 0 : 0; };
+  // a calendar month's invoice: the fee, raised to the minimum if it's lower (month = 'YYYY-MM'; upTo stops at today for this month)
+  E.platformMonth = (cfg, bookings, month, upTo) => { const first = month + '-01', last = E.addD(E.addD(first, 32).slice(0, 8) + '01', -1);
+    const f = E.platformFee(cfg, bookings, first, upTo && upTo < last ? upTo : last), min = E.platformMin(cfg, last);
+    return { ...f, min, invoice: Math.max(f.fee, min), topUp: Math.max(0, Math.round((min - f.fee) * 100) / 100) }; };
   E.platformFee = (cfg, bookings, from, to) => { let taken = 0, fee = 0, n = 0; const ids = new Set(), pcts = new Set();
     (bookings || []).forEach(b => (b.payments || []).forEach(p => { const d = String(p.at || '').slice(0, 10); if (d >= from && d <= to) { const a = +p.amount || 0, pc = E.platformRate(cfg, d);
       taken += a; fee += a * pc / 100; n++; ids.add(b.id); pcts.add(pc); } }));
