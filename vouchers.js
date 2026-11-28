@@ -2,8 +2,8 @@
    CONNECT: create the order on your server, confirm with Stripe, then email the voucher. */
 (() => {
   const VO = {
-    day1:   { name:'Day Spa gift voucher', who:'For one', desc:'A Day Spa session with afternoon tea and a massage.', price:90, was:100 },
-    day2:   { name:'Day Spa for Two gift voucher', who:'For two', desc:'A Day Spa session for two, with afternoon tea and a massage each.', price:181, was:200 },
+    day1:   { name:'Spa, Lunch & Treatment gift voucher', who:'For one', desc:'A half day in the spa with lunch and a 20-minute massage.', price:90, was:100 },
+    day2:   { name:'Spa, Lunch & Treatment for Two gift voucher', who:'For two', desc:'A half day in the spa for two, with lunch and a massage each.', price:181, was:200 },
     break2: { name:'Ensuite Spa Break for 2 gift voucher', who:'For two', desc:'A night for two in an ensuite room, with a grazing platter and massages.', price:290 }
   };
   const $ = (s, r = document) => r.querySelector(s);

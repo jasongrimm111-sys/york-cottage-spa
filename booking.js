@@ -4,23 +4,23 @@
    two places marked CONNECT below. */
 (() => {
   const P = {
-    day:    { name:'Day Spa', group:'Spa', kind:'pay', price:100, per:'per person', from:'£100 per person', min:1, max:8, treat:true, food:true,
-              sessions:[['Morning','09:30 – 13:30'],['Afternoon','13:00 – 17:00']],
-              blurb:'4-hour session: 20-minute massage or facial, afternoon tea or grazing board, spa pool, sauna & lounge.' },
-    access: { name:'Spa Access', group:'Spa', kind:'pay', price:50, per:'per person', from:'£50 per person', min:1, max:8,
-              sessions:[['Morning','09:30 – 13:30'],['Afternoon','14:00 – 18:00'],['Evening','times confirmed when you book']],
-              blurb:'4-hour session: hot tub, sauna and lounge with hot & cold refreshments, towel and robe.' },
-    private:{ name:'Private Spa', group:'Spa', kind:'pay', price:100, per:'per person', from:'from £100 per person', min:4, max:16, treat:true, food:true, facial:'Luxury facial',
+    access: { name:'Spa Access Only', group:'Spa', kind:'pay', price:50, per:'per person', from:'from £50 per person', min:1, max:6, exOpt:true, exFrom:6, exCharge:6,
+              sessions:[['Morning','09:30 – 13:30',null,'half',50],['Afternoon','13:00 – 17:00',null,'half',50],['Full day','09:30 – 17:00',null,'full',75]],
+              blurb:'Just the spa: pool, sauna and relaxation lounge, with hot & cold drinks, towel and robe. No food or treatment. Half day (4 hours) or full day (7½ hours).' },
+    day:    { name:'Spa, Lunch & Treatment', group:'Spa', kind:'pay', price:100, per:'per person', from:'from £100 per person', min:1, max:6, treat:true, food:true, exOpt:true, exFrom:6, exCharge:6,
+              sessions:[['Morning','09:30 – 13:30',null,'half',100],['Afternoon','13:00 – 17:00',null,'half',100],['Full day','09:30 – 17:00',null,'full',135]],
+              blurb:'Everything in Spa Access Only, plus lunch (afternoon tea or a grazing board) and a 20-minute massage or facial each. Half day (4 hours) or full day (7½ hours).' },
+    private:{ off:true, name:'Private Spa', group:'Spa', kind:'pay', price:100, per:'per person', from:'from £100 per person', min:4, max:16, treat:true, food:true, facial:'Luxury facial',
               sessions:[['Morning','time confirmed by email'],['Afternoon','time confirmed by email']],
               blurb:'The spa just for your group, with food, drinks and a 20-minute massage or luxury facial each. Minimum 4 guests (6 on Sundays, from 11:30).' },
-    break:  { name:'1-Night Spa Break', group:'Stay', kind:'pay', priceN:{1:145}, per:'per person', from:'£145 per person', min:2, max:6, rule:'mid', nights:[1], bfast:true,
-              blurb:'One night, from £145 per person based on 2 sharing. King ensuite room, grazing board, a 20-minute aromatherapy massage or facial each and spa access. Sunday to Thursday.' },
-    break2: { name:'2-Night Spa Break', group:'Stay', kind:'pay', priceN:{2:220}, per:'per person', from:'£220 per person', min:2, max:6, rule:'mid', nights:[2], bfast:true,
+    break:  { name:'Spa Break', group:'Stay', kind:'pay', priceN:{1:150,2:250,3:350,4:450,5:550}, per:'per person', from:'from £150 per person', min:1, max:16, rule:'mid', nights:[1,2,3,4,5], bfast:true, exOpt:true, exFrom:6, exCharge:6, single:50,
+              blurb:'Sunday to Thursday nights, 1 to 5 nights, 1 to 16 guests. The spa from 2pm on the day you arrive until 6pm on your last evening, lunch every day, the kitchen for your dinner and a 20-minute massage or facial each.' },
+    break2: { off:true, name:'2-Night Spa Break', group:'Stay', kind:'pay', priceN:{2:220}, per:'per person', from:'£220 per person', min:2, max:6, rule:'mid', nights:[2], bfast:true,
               blurb:'Two nights, from £220 per person based on 2 sharing. King ensuite room, grazing board, a 20-minute aromatherapy massage or facial each and spa access. Arrive Sunday to Wednesday.' },
-    group:  { name:'Group Spa Break', group:'Stay', kind:'pay', priceN:{1:145}, per:'per person', from:'from £145 per person', min:7, max:16, rule:'mid', nights:[1], food:true, foods:['Grazing board','Afternoon tea'], bfast:true,
+    group:  { off:true, name:'Group Spa Break', group:'Stay', kind:'pay', priceN:{1:145}, per:'per person', from:'from £145 per person', min:7, max:16, rule:'mid', nights:[1], food:true, foods:['Grazing board','Afternoon tea'], bfast:true,
               blurb:'7+ guests, Sunday to Thursday. Up to 8 rooms, the spa just for your group, a grazing board or afternoon tea and a 20-minute aromatherapy massage or facial each.' },
     house:  { name:'Whole House & Spa', group:'House', kind:'pay', night:1840, per:'per night', from:'from £1,840 per night', min:1, max:16, rule:'range', minN:2, maxN:30,
-              blurb:'Exclusive use of the house and spa for up to 16 guests: 8 bedrooms, kitchen, 2 living rooms, hot tub and sauna. 2-night minimum.' },
+              blurb:'The whole house and spa just for your group, up to 16 guests: 8 bedrooms, kitchen, 2 living rooms, hot tub and sauna. Friday and Saturday nights, and you can add nights either side.' },
     treat:  { name:'Treatments only', group:'Treat', kind:'pay', price:0, per:'', from:'from £50', min:1, max:6, only:true,
               sessions:[['Morning','time confirmed when you book'],['Afternoon','time confirmed when you book']],
               blurb:'Just here for a massage, facial or head spa? Choose your treatments with no spa session.' }
@@ -50,6 +50,9 @@
   function stayTimes(k, d, nights){
     if (YE && L.cfg && L.cfg.products[k] && L.cfg.products[k].times) {
       const t = YE.stayTimes(L.cfg, k, iso(d), nights), p = L.cfg.products[k];
+      if (p.lunchDaily) { const sun = d.getDay() === 0, mid = (p.times.default || {}).spaMid;
+        return [['Check-in', 'from ' + t.checkIn], ['Spa on arrival', `${t.spa[0]} – ${t.spa[1]}`], nights > 1 && mid && ['Spa on other days', `${mid[0]} – ${mid[1]}`],
+          sun && nights === 1 ? ['Grazing board', 'from ' + t.food] : ['Lunch', sun ? 'each day from Monday, 13:00' : 'each day, 13:00'], ['Dinner', 'use of the kitchen'], ['Check-out', t.checkOut]].filter(Boolean); }
       return [['Check-in', 'from ' + t.checkIn], t.food && [p.kind === 'house' ? 'Food' : 'Food', 'from ' + t.food], t.spa && [p.kind === 'house' ? 'Spa pool & hot tub' : 'Spa & treatments', `${t.spa[0]} – ${t.spa[1]}`], ['Check-out', t.checkOut]].filter(Boolean);
     }
     const sun = d.getDay() === 0;
@@ -93,7 +96,9 @@
       if (q.min) p.min = q.min; if (q.max) p.max = q.max; if (q.blurb) p.blurb = q.blurb; if (q.minN) p.minN = q.minN; if (q.maxN) p.maxN = q.maxN;
       if (q.nights) p.nights = q.nights;
       p.from = q.kind === 'house' ? `from £${q.night.toLocaleString('en-GB')} per night` : q.priceN ? `from £${q.priceN[1] ?? Object.values(q.priceN)[0]} per person` : q.kind === 'treat' ? p.from : `${q.kind === 'private' ? 'from ' : ''}£${q.price} per person`;
-      if (q.kind === 'session' || q.kind === 'private') p.sessions = c.sessions.filter(x => x.product === k && x.active !== false).map(x => [x.name, `${x.start} – ${x.end}`, x.id]);
+      if (q.kind === 'session' || q.kind === 'private') p.sessions = c.sessions.filter(x => x.product === k && x.active !== false).map(x => [x.name, `${x.start} – ${x.end}`, x.id, x.length || 'half', x.price != null ? x.price : q.price]);
+      p.exOpt = !!q.exclusiveOption; p.exFrom = q.exclusiveFrom || 0; p.exCharge = q.exclusiveCharge || 0; p.single = q.singleSupp || 0;
+      if (q.kind === 'session' && p.sessions.some(x => x[3] === 'full')) p.from = `from £${Math.min(...p.sessions.map(x => x[4]))} per person`;
       p.off = q.active === false || q.online === false;
     }
     const menu = c.treatments.filter(t => YE.sellable(t) && t.online !== false).map(t => ({ id: t.id, cat: t.cat, name: t.name, min: t.min, price: t.price, head: !!t.head, desc: t.desc || '' }));
@@ -114,9 +119,22 @@
     const c = L.cfg, p = c.products[S.p], d = S.date ? iso(S.date) : null;
     const inc = v => { const ids = YE.includedFor(c, S.p).map(t => t.id); if (!ids.length) return null; if (ids.includes(v)) return v; const byName = YE.includedFor(c, S.p).find(t => t.name === v); if (byName) return byName.id; const want = /facial/i.test(v || '') ? 'facial' : 'massage'; return ids.find(id => id.includes(want)) || ids[0]; };
     const food = v => { if (!v) return null; const f = c.foods.find(x => x.name === v) || c.foods.find(x => (/tea/i.test(v) && x.id === 'tea') || (/grazing/i.test(v) && x.id === 'grazing')); return f ? f.id : null; };
-    return { id: 'web', product: S.p, date: d, nights: P[S.p].rule ? S.nights : 0, sessionId: sesId(S.p, S.session, S.date), guests: S.guests, blueLight: !!S.blue, treatStart: null, times: S.times || {}, pairs: S.pairs || {},
+    return { id: 'web', product: S.p, date: d, nights: P[S.p].rule ? S.nights : 0, sessionId: sesId(S.p, S.session, S.date), guests: S.guests, exclusive: exclOn(), blueLight: !!S.blue, treatStart: null, times: S.times || {}, pairs: S.pairs || {},
       guestList: Array.from({ length: S.guests }, (_, i) => ({ name: ((S.names || [])[i] || '').trim(), room: (S.roomOf || [])[i] || null, included: incMode(S.p) === 'treat' ? inc((S.picks[i] || {}).treat) : null, food: P[S.p].food ? food((S.picks[i] || {}).food) : null, extras: (S.adds[i] || []).slice() })) };
   }
+  // exclusive use (user 2026-11-28): ticked for 5 or fewer, automatic from 6 guests
+  const exclOn = () => !!(S.p && P[S.p] && P[S.p].exOpt && S.excl && S.guests < (P[S.p].exFrom || 99));
+  // can the spa be theirs alone on this day (any session, or the whole stay)?
+  const exOK = d => { if (!exclOn() || !YE || !L.cfg || !d) return true; const k = S.p, P0 = P[k];
+    if (P0.sessions && !P0.only) return YE.sessions(L.cfg, L.ix, k, iso(d), S.guests, { exclusive: true }).some(x => x.ok);
+    return YE.dateCheck(L.cfg, L.ix, { product: k, date: iso(d), nights: S.nights, guests: S.guests, exclusive: true }).ok; };
+  // what "just for us" adds for a half or full day on the chosen date (last-minute discount included)
+  const exAdd = len => { if (!exclOn() || !YE || !L.cfg || !YE.exclusiveExtra) return 0; const x = (P[S.p].sessions || []).find(z => (z[3] || 'half') === len);
+    const r = YE.exclusiveExtra(L.cfg, { ...engineBooking(), sessionId: x ? x[2] || sesId(S.p, x[0], S.date) : null }); return r ? r.amount : 0; };
+  const exclAuto = () => !!(S.p && P[S.p] && P[S.p].exFrom && S.guests >= P[S.p].exFrom);
+  // half day or full day (sessions carry their length)
+  const lens = () => { const ss = (P[S.p] || {}).sessions || []; return [...new Set(ss.map(x => x[3] || 'half'))]; };
+  const hrs = t => { const [a, b] = String(t).split('–').map(x => x.trim().split(':').map(Number)); if (!b) return ''; const h = (b[0] * 60 + b[1] - a[0] * 60 - a[1]) / 60; return (h % 1 ? Math.floor(h) + '½' : h) + ' hours'; };
   // the engine sets every treatment time (spa days, stays, whole house); guests only choose a start time for treatments-only
   // answers are worked out once per redraw (picking a time redraws)
   let memo = {}; const memoKey = () => JSON.stringify([S.p, S.date && +S.date, S.session, S.nights, S.guests, S.adds, S.picks && S.picks.map(x => x.treat), S.times, S.pairs, S.blue]);
@@ -196,8 +214,10 @@
     if (d < first || d > last) return false;
     if (YE && L.cfg) {
       const n = P[k].rule === 'range' ? (L.cfg.products.house || {}).minN || 2 : P[k].rule ? S.nights : 0;
-      const c = YE.dateCheck(L.cfg, L.ix, { product: k, date: iso(d), nights: n, guests: S.gOK ? S.guests : (P[k].min || 1) });
-      if (!c.ok) return false;
+      if (P[k].rule === 'range' && YE.houseMinNights && !YE.houseStartOK(L.cfg, L.ix, iso(d), { guests: S.guests })) return false;
+      const q = { product: k, date: iso(d), nights: n, guests: S.gOK ? S.guests : (P[k].min || 1) };
+      const c = P[k].rule === 'range' ? { ok: true } : YE.dateCheck(L.cfg, L.ix, { ...q, exclusive: exclOn() });
+      if (!c.ok && !(exclOn() && YE.dateCheck(L.cfg, L.ix, q).ok)) return false;
       return true;   // the admin's rules (arrival days, nights, minimum guests) have decided
     }
     const p = P[k];
@@ -209,7 +229,7 @@
 
   const S = { step:0 };
   const reset = k => Object.assign(S, { p:k || null, step:0, date:null, nights:k && P[k].nights ? P[k].nights[0] : 1, session:null,
-    guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, gOK:false, treatStart:null, plan:null, times:{}, tpDate:{}, names:[], g0Own:false, roomOf:[], promo:S.promo || null, promoMsg:'', end:null, bfast:false, picks:[], adds:[], pending:null, tg:0, cat:undefined, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
+    guests:k ? Math.max(P[k].min, k === 'group' ? 8 : k === 'treat' ? 1 : 2) : 2, gOK:false, excl:false, len:null, treatStart:null, plan:null, times:{}, tpDate:{}, names:[], g0Own:false, roomOf:[], promo:S.promo || null, promoMsg:'', end:null, bfast:false, picks:[], adds:[], pending:null, tg:0, cat:undefined, pm:'card', paid:null, d:{}, agree:false, adult:false, mkt:false, month:null, ref:null, paying:false });
 
   const steps = () => ['Booking', 'Guests', 'Date', 'Rooms', 'Guest choices', 'Details', S.p && P[S.p].kind === 'ask' ? 'Send' : 'Pay'];
   const LAST = 6, DETAILS = 5, TIMES = -1, CHOICES = 4, ROOMS = 3, DATE = 2, GUESTS = 1;
@@ -241,12 +261,16 @@
   function price(){
     const p = P[S.p]; if (!p || p.kind === 'ask') return null;
     const nights = p.rule ? S.nights : 0, tc = treatCost();
-    const base = S.p === 'house' ? p.night * nights : p.priceN ? p.priceN[nights] * S.guests : p.price * S.guests;
+    const bl = YE && L.cfg && YE.baseLines && S.p !== 'house' && !p.only ? YE.baseLines(L.cfg, engineBooking()) : null;
+    const base = S.p === 'house' ? p.night * nights : bl ? bl.reduce((a, l) => a + l.amount, 0) : p.priceN ? p.priceN[nights] * S.guests : p.price * S.guests;
     const bf = S.bfast && p.bfast ? BFAST * S.guests * nights : 0;
     // only one discount per booking: the code or the head spa offer, whichever saves more (user 2026-11-27)
-    const code = promoOff({ base, bf, tc }), useCode = code > 0 && code > tc.off, promo = useCode ? code : 0, codeBeaten = !!S.promo && !useCode;
-    if (useCode) tc.off = 0;
-    const total = base + bf + tc.sub - tc.off - promo;
+    // the group discount (6+) joins them: whichever single discount saves most (user 2026-11-28)
+    const gd = YE && L.cfg && YE.groupOff && S.p !== 'house' && !p.only ? YE.groupOff(L.cfg, engineBooking()) : null, grp = gd ? gd.amount : 0;
+    const code = promoOff({ base, bf, tc }), useCode = code > 0 && code > tc.off && code > grp, promo = useCode ? code : 0, codeBeaten = !!S.promo && !useCode;
+    const useGroup = !useCode && grp > 0 && grp >= tc.off, group = useGroup ? grp : 0;
+    if (useCode || useGroup) tc.off = 0;
+    const total = base + bf + tc.sub - tc.off - promo - group;
     let now = total, bal = 0, balDue = null;
     if (S.p === 'house' && S.date && (S.date - today) / 864e5 > 42){ now = total / 2; bal = total - now; balDue = add(S.date, -42); }
     // a checked gift voucher pays today's amount first, then any balance; what's left stays on the voucher (user 2026-11-27)
@@ -255,7 +279,7 @@
     const voucher = S.voucher && S.voucher.balance != null ? r2(Math.min(S.voucher.balance, total)) : 0;
     const vNow = Math.min(voucher, now); now = r2(now - vNow); bal = r2(bal - (voucher - vNow));
     const voucherLeft = voucher ? r2(S.voucher.balance - voucher) : 0;
-    return { base, bf, tc, total, now, bal, balDue, nights, promo, codeBeaten, voucher, voucherLeft };
+    return { base, bf, tc, total, now, bal, balDue, nights, promo, codeBeaten, voucher, voucherLeft, lines: bl, group, groupPct: gd && gd.pct };
   }
 
   // ---------- shell ----------
@@ -324,7 +348,7 @@
     if (at !== lastAt){ if (PAGE && lastAt) { const y = box.getBoundingClientRect().top + scrollY - 90; if (scrollY > y) scrollTo({ top: Math.max(0, y) }); } else { body.scrollTop = 0; $('.bk-main', box).scrollTop = 0; box.scrollTop = 0; side.scrollTop = 0; } lastAt = at; }
   }
 
-  const TYPE_NAMES = { Spa:'Spa day', Treat:'Treatments only', Stay:'Overnight stay', House:'Exclusive use' };
+  const TYPE_NAMES = { Spa:'Spa day', Treat:'Treatments only', Stay:'Spa break', House:'Whole house' };
   function selBar(){
     if (!S.cat) return '';
     const p = S.p && P[S.p] && P[S.p].group === S.cat ? P[S.p] : null;
@@ -333,17 +357,19 @@
   const typeView = () => chooseView(), optionView = () => chooseView();
   function chooseView(){
     const cost = p => p.price || (p.priceN && (p.priceN[1] ?? Object.values(p.priceN)[0])) || p.night || 0;
-    const RANK = { break: 1, break2: 2, group: 3 };   // stays: the two spa breaks side by side, then groups (user, 2026-11-27)
-    const grp = g => Object.entries(P).filter(([, p]) => p.group === g && !p.off).sort((a, b) => (RANK[a[0]] ?? 50) - (RANK[b[0]] ?? 50) || cost(a[1]) - cost(b[1])).map(([k, p]) => `<button class="bk-opt ${S.p === k ? 'sel' : ''}" data-p="${k}"><small>${k === 'break' ? '1 night · Sunday to Thursday' : k === 'break2' ? '2 nights · arrive Sunday to Wednesday' : k === 'group' ? 'Sun – Thu · 7+ guests' : k === 'house' ? '2 – 30 nights' : p.only ? 'No spa session' : k === 'private' ? '4+ guests (6+ on Sundays)' : '4-hour sessions'}</small><b>${p.name}</b><span>${p.blurb}</span><em>${p.from[0] === 'f' ? 'F' + p.from.slice(1) : p.from}</em><span class="opt-cta">${S.p === k ? 'Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('');
+    const RANK = { access: 1, day: 2, break: 1, break2: 2, group: 3 };   // Spa Access Only, then with lunch & treatment (user 2026-11-28)
+    const grp = g => Object.entries(P).filter(([, p]) => p.group === g && !p.off).sort((a, b) => (RANK[a[0]] ?? 50) - (RANK[b[0]] ?? 50) || cost(a[1]) - cost(b[1])).map(([k, p]) => `<button class="bk-opt ${S.p === k ? 'sel' : ''}" data-p="${k}"><small>${k === 'break' ? '1 – 5 nights · Sunday to Thursday' : k === 'break2' ? '2 nights · arrive Sunday to Wednesday' : k === 'group' ? 'Sun – Thu · 7+ guests' : k === 'house' ? 'Friday & Saturday nights' : p.only ? 'No spa session' : k === 'private' ? '4+ guests (6+ on Sundays)' : k === 'access' ? 'Spa only' : k === 'day' ? 'Lunch & a treatment included' : 'Half or full day'}</small><b>${p.name}</b><span>${p.blurb}</span><em>${p.from[0] === 'f' ? 'F' + p.from.slice(1) : p.from}</em><span class="opt-cta">${S.p === k ? 'Selected' : 'Select'} <span class="arrow">→</span></span></button>`).join('');
     const pend = S.pending ? `<div class="notice"><b>${TRi[S.pending].name}</b> is ready to add. Book it on its own, or add it to a spa day or a stay (Japanese head spa is 10% off with a spa session or stay).</div>` : '';
     const TYPES = [
-      ['Spa', 'Spa day', 'Day Spa, Spa Access or the Private Spa', 'From £50 pp', 'https://static.wixstatic.com/media/7a9273_c527bfae78d645c096615f66806d3b0f~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_c527bfae78d645c096615f66806d3b0f~mv2.jpg'],
+      ['Spa', 'Spa day', 'Spa Access Only, or Spa, Lunch & Treatment · half or full day', 'From £50 pp', 'https://static.wixstatic.com/media/7a9273_c527bfae78d645c096615f66806d3b0f~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_c527bfae78d645c096615f66806d3b0f~mv2.jpg'],
       ['Treat', 'Treatments only', 'Massage, facials & Japanese head spa', 'From £50', 'https://static.wixstatic.com/media/7a9273_0fed7351ea044db299d21524d0244378~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_0fed7351ea044db299d21524d0244378~mv2.jpg'],
-      ['Stay', 'Overnight stay', 'Spa breaks for 2 or groups of 7+', 'From £145 pp', 'https://static.wixstatic.com/media/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg'],
-      ['House', 'Exclusive use', 'The whole house & spa, up to 16 guests', 'From £1,840 / night', 'https://static.wixstatic.com/media/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg']];
+      ['Stay', 'Spa break', 'Sunday to Thursday nights, 1 to 16 guests', 'From £150 pp', 'https://static.wixstatic.com/media/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_372efc1386f3463b863c2d3b93d28915~mv2.jpg'],
+      ['House', 'Whole house', 'Friday & Saturday nights, the house & spa for up to 16', 'From £1,840 / night', 'https://static.wixstatic.com/media/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg/v1/fill/w_640,h_396,al_c,q_80,enc_auto/7a9273_2f589cc654944731b1719bd595e8039c~mv2.jpeg']];
     if (S.cat === undefined) S.cat = S.p ? P[S.p].group : null;
     const T = TYPES.find(t => t[0] === S.cat), many = S.cat && Object.values(P).filter(x => x.group === S.cat && !x.off).length > 1;
-    return `<h2>What would you like to <em>book</em>?</h2>${pend}<div class="bk-types">${TYPES.map(([g, t, d, f, img]) => `<button class="bk-type ${S.cat === g ? 'sel' : ''}" data-cat="${g}"><span class="bt-img" style="background-image:url('${img}')"></span><b>${t}</b><span>${d}</span><em>${f}</em><span class="opt-cta">${S.cat === g ? 'Selected' : 'Choose'} <span class="arrow">→</span></span></button>`).join('')}</div>${T && many ? `<div class="bk-group bk-opts-h" id="bkOpts">${T[1]}: choose one</div><div class="bk-opts">${grp(S.cat)}</div>` : ''}`;
+    const G0 = YE && L.cfg && YE.groupRates ? YE.groupRates(L.cfg) : { on: true, from: 6, pct: 10 };
+    const gNote = G0.on && (S.cat === 'Spa' || S.cat === 'Stay') ? `<p class="group-nudge"><b>Coming as a group?</b> ${G0.from} or more guests get ${G0.pct}% off and the spa to themselves.</p>` : '';
+    return `<h2>What would you like to <em>book</em>?</h2>${pend}<div class="bk-types">${TYPES.map(([g, t, d, f, img]) => `<button class="bk-type ${S.cat === g ? 'sel' : ''}" data-cat="${g}"><span class="bt-img" style="background-image:url('${img}')"></span><b>${t}</b><span>${d}</span><em>${f}</em><span class="opt-cta">${S.cat === g ? 'Selected' : 'Choose'} <span class="arrow">→</span></span></button>`).join('')}</div>${T && many ? `<div class="bk-group bk-opts-h" id="bkOpts">${T[1]}: choose one</div><div class="bk-opts">${grp(S.cat)}</div>` : ''}${gNote}`;
   }
 
   // the first day that can be booked (with a session free, for session bookings), chosen for the guest (user, 2026-11-26)
@@ -354,8 +380,10 @@
   function firstFree(){
     const p = P[S.p];
     for (let d = new Date(first); d <= last; d = add(d, 1)) {
+      if (p.rule === 'range' && d.getDay() !== 5) continue;   // whole house: Friday check-in first (user 2026-11-28)
+      if (!exOK(d)) continue;
       if (!dateOK(S.p, d)) continue;
-      if (p.sessions && !p.only && YE && L.cfg) { const l = YE.sessions(L.cfg, L.ix, S.p, iso(d), S.guests); if (l && l.length && !l.some(x => x.ok)) continue; }
+      if (p.sessions && !p.only && YE && L.cfg) { const l = YE.sessions(L.cfg, L.ix, S.p, iso(d), S.guests, { exclusive: exclOn() }); if (l && l.length && !l.some(x => x.ok)) continue; }
       return d;
     }
     return null;
@@ -382,12 +410,13 @@
       const startW = (mm.getDay() + 6) % 7, dim = new Date(mm.getFullYear(), mm.getMonth() + 1, 0).getDate();
       let cells = ['Mo','Tu','We','Th','Fr','Sa','Su'].map(d => `<span class="dw">${d}</span>`).join('') + '<span></span>'.repeat(startW);
       for (let i = 1; i <= dim; i++){
-        const d = new Date(mm.getFullYear(), mm.getMonth(), i), ok = dateOK(S.p, d);
+        const d = new Date(mm.getFullYear(), mm.getMonth(), i), ok = range && S.date && !S.end && d > S.date ? houseEnd(d) : dateOK(S.p, d);
         let c = BH.has(iso(d)) ? 'bh' : '';
         if (S.date && +d === +S.date) c += ' sel';
         else if (endSel && d > S.date && d < endSel) c += ' in';
         else if (endSel && +d === +endSel) c += ' end';
         const rm = ok ? dayRoom(d) : null; if (rm === 0) c += ' r-none'; else if (rm > 0 && rm < 60) c += ' r-some';
+        if (ok && exclOn() && !exOK(d)) c += ' no-ex';
         cells += `<button data-d="${iso(d)}" class="${c}" ${ok ? '' : 'disabled'} aria-label="${nice(d, { year:'numeric' })}${rm != null && roomText(rm) ? ' · ' + roomText(rm) : ''}">${i}</button>`;
       }
       return `<div class="cal-m"><b class="cal-t">${mm.toLocaleDateString('en-GB', { month:'long', year:'numeric' })}</b><div class="cal-g">${cells}</div></div>`;
@@ -396,12 +425,18 @@
     const prevOK = new Date(m.getFullYear(), m.getMonth(), 0) >= first, nextOK = new Date(m.getFullYear(), m.getMonth() + (two ? 2 : 1), 1) <= last;
     const times = rows => `<ul class="times">${rows.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join('')}</ul>`;
     let right = '';
-    const live = YE && L.cfg && S.date && p.sessions && !p.only ? YE.sessions(L.cfg, L.ix, S.p, iso(S.date), S.guests) : null;
-    const sesList = p.only ? [] : (p.sessions || []).filter(x => !S.date || !live || live.some(l => l.name === x[0]));
+    const exMsg = S.date && exclOn() && !exOK(S.date) ? `<div class="notice bad ex-msg"><b>Exclusive use isn’t available on this day.</b> Other guests are already booked in${p.rule ? ' during your stay' : ''}. If you’d like the spa just for you, please choose another day (marked days aren’t available just for you).<button type="button" class="linkbtn-site" data-noexcl>Carry on without exclusive use</button></div>` : '';
+    const live = YE && L.cfg && S.date && p.sessions && !p.only ? YE.sessions(L.cfg, L.ix, S.p, iso(S.date), S.guests, { exclusive: exclOn() }) : null;
+    const LN = lens(), twoLen = LN.length > 1;
+    if (twoLen && S.session && !S.len) { const x = p.sessions.find(z => z[0] === S.session); if (x) S.len = x[3] || 'half'; }
+    const sesList = p.only ? [] : (p.sessions || []).filter(x => (!S.date || !live || live.some(l => l.name === x[0])) && (!twoLen || (x[3] || 'half') === S.len));
+    const lenPick = !twoLen ? '' : `<div class="bk-group" style="margin-top:0">Half day or full day?</div><div class="pills len-pills">${['half', 'full'].filter(l => LN.includes(l)).map(l => { const x = p.sessions.find(z => (z[3] || 'half') === l), any = !live || live.some(v => v.length === l && v.ok);
+      return `<button class="pill ${S.len === l ? 'sel' : ''}" data-len="${l}" ${any ? '' : 'disabled'}>${l === 'full' ? 'Full day' : 'Half day'} · ${hrs(x[1])} · ${gbp(x[4] != null ? x[4] : p.price)} pp${exAdd(l) ? ` + ${gbp(exAdd(l))} just for you` : ''}${any ? '' : ' · full'}</button>`; }).join('')}</div>${S.len === 'full' ? '' : S.len ? '<div class="bk-group">Morning or afternoon?</div>' : ''}`;
     if (p.only) right = `<div class="bk-group" style="margin-top:0">Your time</div><p class="cal-note">Choose your treatments next, then pick from the start times that are free on this day.</p>`;
-    else if (p.sessions) right = `<div class="bk-group" style="margin-top:0">Session</div><div class="ses">${sesList.map(([n, t]) => { const l = live && live.find(x => x.name === n); const off = l && !l.ok; return `<button class="ses-opt ${S.session === n ? 'sel' : ''}" data-s="${n}" ${off ? 'disabled' : ''}><b>${n}</b><span>${t}</span>${l ? `<small class="${off ? 'full' : ''}">${off ? esc(l.why) : l.left <= 3 ? `Only ${l.left} place${l.left === 1 ? '' : 's'} left` : 'Available'}</small>` : ''}${!off && S.date && roomShow() && roomText(roomAt(S.date, n)) ? `<em class="ses-room">${roomText(roomAt(S.date, n))}</em>` : ''}</button>`; }).join('') || '<p class="cal-note">No sessions on this day.</p>'}</div>
+    else if (p.sessions) right = (twoLen ? lenPick : `<div class="bk-group" style="margin-top:0">Session</div>`) + (twoLen && !S.len ? '' : `<div class="ses">${sesList.map(([n, t]) => { const l = live && live.find(x => x.name === n); const off = l && !l.ok; return `<button class="ses-opt ${S.session === n ? 'sel' : ''}" data-s="${n}" ${off ? 'disabled' : ''}><b>${n}</b><span>${t}</span>${l ? `<small class="${off ? 'full' : ''}">${off ? esc(l.why) : l.left <= 3 ? `Only ${l.left} place${l.left === 1 ? '' : 's'} left` : 'Available'}</small>` : ''}${!off && S.date && roomShow() && roomText(roomAt(S.date, n)) ? `<em class="ses-room">${roomText(roomAt(S.date, n))}</em>` : ''}</button>`; }).join('') || '<p class="cal-note">No sessions on this day.</p>'}</div>`) + `
       ${S.p === 'private' ? `<p class="cal-note">Minimum 4 guests, or 6 on Sundays (from 11:30).${S.guests < 6 ? ' Sundays open up for groups of 6 or more.' : ''}</p>` : ''}`;
-    else if (p.nights && p.nights.length > 1) right = `<div class="bk-group" style="margin-top:0">How many nights?</div><div class="pills">${p.nights.map(n => `<button class="pill ${S.nights === n ? 'sel' : ''}" data-n="${n}">${n} night${n > 1 ? 's' : ''} · ${gbp(p.priceN[n])} pp</button>`).join('')}</div>`;
+    else if (p.nights && p.nights.length > 1) { const q = L.cfg && L.cfg.products[S.p], fits = n => !S.date || !q || !q.arriveDays || !q.arriveDays[n] || q.arriveDays[n].includes(S.date.getDay());
+      right = `<div class="bk-group" style="margin-top:0">How many nights?</div><div class="pills nights-pills">${p.nights.map(n => `<button class="pill ${S.nights === n ? 'sel' : ''}" data-n="${n}" ${fits(n) ? '' : 'disabled title="Breaks end by Friday morning"'}>${n} night${n > 1 ? 's' : ''} · ${gbp(p.priceN[n])} pp</button>`).join('')}</div>${p.single ? `<p class="cal-note">Prices are per person, based on 2 sharing a room. Breaks end by Friday morning.</p>` : ''}`; }
     const stayRoom = S.date && !p.sessions && roomShow() ? roomText(roomAt(S.date, null)) : '';
     if (p.rule === 'mid' || p.rule === 'stay'){
       right += `<div class="bk-group">Your stay</div>` + (S.date
@@ -410,15 +445,18 @@
     }
     if (range){
       right = `<div class="bk-group" style="margin-top:0">Your stay</div>` + (!S.date
-        ? `<p class="cal-note">Pick your check-in day, then your check-out day. Minimum 2 nights, up to 30.</p>`
-        : !S.end ? `<p class="stay-when">Check-in <b>${nice(S.date)}</b></p><p class="cal-note">Now pick your check-out day (at least 2 nights).</p>`
+        ? `<p class="cal-note">Pick your check-in day, then your check-out day. Your stay includes Friday and Saturday night; add nights either side if you like.</p>`
+        : !S.end ? `<p class="stay-when">Check-in <b>${nice(S.date)}</b></p><p class="cal-note">Now pick your check-out day (your stay must include Friday and Saturday night).</p>`
         : `<p class="stay-when"><b>${nice(S.date)}</b> → <b>${nice(S.end)}</b> · ${S.nights} nights</p>${times(stayTimes('house', S.date, S.nights))}<p class="cal-note">From £1,840 per night for the whole house. Rates can vary by date.</p>`);
     }
-    return `<h2>Choose your <em>${p.rule ? 'dates' : 'day'}</em></h2><p class="bk-sub">${p.name}${p.rule === 'mid' ? ' · Sunday to Thursday' : range ? ' · 2 to 30 nights' : p.only ? ' · you’ll pick a start time after choosing treatments' : ' · 4-hour sessions'}</p>
+    return `<h2>Choose your <em>${p.rule ? 'dates' : 'day'}</em></h2><p class="bk-sub">${p.name}${p.rule === 'mid' ? ' · Sunday to Thursday nights' : range ? ' · Friday & Saturday nights, plus any nights either side' : p.only ? ' · you’ll pick a start time after choosing treatments' : twoLen ? ' · half day (4 hours) or full day (7½ hours)' : ' · 4-hour sessions'}</p>
       <div class="bk-row ${two ? 'wide' : ''}"><div class="cal"><div class="cal-nav"><button data-m="-1" ${prevOK ? '' : 'disabled'} aria-label="Previous month">‹</button><button data-m="1" ${nextOK ? '' : 'disabled'} aria-label="Next month">›</button></div>
-      <div class="cal-ms">${grid(m)}${two ? grid(m2) : ''}</div><div class="cal-note"><span><i></i>Bank holiday</span>${roomShow() ? '<span><i class="k-some"></i>Shorter extra treatments</span><span><i class="k-none"></i>Included treatments only</span>' : ''}${p.rule ? '<span>Tap your arrival day' + (p.rule === 'range' ? ', then your departure day' : '') + '</span>' : ''}</div></div><div class="bk-right">${right}</div></div>`;
+      <div class="cal-ms">${grid(m)}${two ? grid(m2) : ''}</div><div class="cal-note"><span><i></i>Bank holiday</span>${exclOn() ? '<span><i class="k-noex"></i>Not available just for you</span>' : ''}${roomShow() ? '<span><i class="k-some"></i>Shorter extra treatments</span><span><i class="k-none"></i>Included treatments only</span>' : ''}${p.rule ? '<span>Tap your arrival day' + (p.rule === 'range' ? ', then your departure day' : '') + '</span>' : ''}</div></div><div class="bk-right">${exMsg}${right}</div></div>`;
   }
 
+  // whole house: can the stay end on this day? (must include the set nights, and all of it free)
+  function houseEnd(d){ const n = Math.round((d - S.date) / 864e5); if (n < 1 || n > ((L.cfg && L.cfg.products.house.maxN) || 30)) return false;
+    if (!(YE && L.cfg)) return n >= 2; return YE.dateCheck(L.cfg, L.ix, { product: 'house', date: iso(S.date), nights: n, guests: S.guests }).ok; }
   const gMin = () => P[S.p].min;
   function guestView(){
     const p = P[S.p], minG = gMin();
@@ -426,26 +464,43 @@
     while (S.picks.length < S.guests) S.picks.push({ treat:'Aromatherapy massage', food:(p.foods || ['Afternoon tea'])[0] });
     S.picks.length = S.guests; syncAdds();
     const quick = [...new Set([minG, 2, 4, 6, 8, 10, 12, 16].filter(n => n >= minG && n <= p.max))].slice(0, 6);
-    const note = /^break/.test(S.p) ? `${Math.ceil(S.guests / 2)} king ensuite room${S.guests > 2 ? 's' : ''} · prices are based on 2 sharing`
+    const note = S.p === 'break' ? (exclAuto() || exclOn() ? 'Every bedroom is yours, sleep as you like · prices are based on 2 sharing' : `${Math.ceil(S.guests / 2)} bedroom${S.guests > 2 ? 's' : ''} · prices are based on 2 sharing${S.guests % 2 && p.single ? ` · one guest has a room to themselves (+${gbp(p.single)} a night)` : ''}`)
+      : /^break/.test(S.p) ? `${Math.ceil(S.guests / 2)} king ensuite room${S.guests > 2 ? 's' : ''} · prices are based on 2 sharing`
       : S.p === 'group' ? 'Groups of 7 to 16 guests.</p><p class="gc-alt">6 or fewer? <button type="button" class="linkbtn-site" data-alt="break">Choose a Spa Break instead</button>'
       : S.p === 'house' ? 'Up to 16 guests · the price is for the whole house'
       : S.p === 'private' ? 'Minimum 4 guests, 6 on Sundays'
       : `Up to ${p.max} guests per booking`;
+    const exBox = exclBox();
     let h = `<h2>How many <em>guests</em>?</h2>
       <div class="gcount">
         <div class="gc-main"><button class="gc-btn" data-g="-1" ${S.guests <= minG ? 'disabled' : ''} aria-label="Fewer guests">−</button>
           <div class="gc-num"><b>${S.guests}</b><span>guest${S.guests > 1 ? 's' : ''}</span></div>
           <button class="gc-btn" data-g="1" ${S.guests >= p.max ? 'disabled' : ''} aria-label="More guests">+</button></div>
         <div class="gc-side"><p>${note}</p></div>
-      </div>
+      </div>${exBox}
       <div class="bk-group">Who’s coming?</div><p class="cal-note" style="margin:-4px 0 10px">The full name of each guest, so we can welcome everyone and your therapists know who they’re treating.</p>
       <div class="bk-2 gnames">${Array.from({ length: S.guests }, (_, i) => `<div class="bk-field" data-fd="g${i}"><label for="bk_g${i}">Guest ${i + 1}${i === 0 ? ' (lead guest)' : ''}</label><input id="bk_g${i}" type="text" autocomplete="${i === 0 ? 'name' : 'off'}" value="${esc((S.names || [])[i] || '')}" placeholder="First and last name"><small class="err">Please enter this guest’s name</small></div>`).join('')}</div>${incMode(S.p) && (!L.cfg || (L.cfg.rules || {}).blueLight !== false) ? `<label class="check blue-q"><input type="checkbox" id="bkBlue" ${S.blue ? 'checked' : ''}> Someone in the group has a Blue Light Card <span class="opt">included treatments become ${(L.cfg && L.cfg.rules.blueLightMin) || 30} minutes, free</span></label>` : ''}`;
-    if (p.bfast && (S.p === 'group' || S.nights > 1))
+    if (p.bfast && (S.p === 'group' || S.p === 'break' || S.nights > 1))
       h += `<label class="check opt-line"><input type="checkbox" id="bkBf" ${S.bfast ? 'checked' : ''}> Add continental breakfast · £${BFAST} per person, per morning</label>`;
     return h;
   }
 
   const pricePart = () => '';
+  // "just for us": spa days and spa breaks of 5 or fewer can have the spa to themselves, priced per empty place; 6+ have it anyway
+  function exclBox(){
+    const p = P[S.p]; if (!p.exFrom) return '';
+    const stay = !!p.rule, what = stay ? 'the spa during your spa times, and no other guests stay those nights' : 'the spa for your whole session';
+    const G = YE && L.cfg && YE.groupRates ? YE.groupRates(L.cfg) : { on: true, from: 6, pct: 10 }, gOn = G.on && p.group !== 'House' && (!L.cfg || (L.cfg.products[S.p] || {}).groupDiscount);
+    if (exclAuto()) return `<div class="notice excl-note group-yes"><b>${p.exFrom} or more guests: ${gOn ? `${G.pct}% off, and ` : ''}it’s just for you.</b> ${gOn ? `Your group saves ${G.pct}% on the ${p.rule ? 'break' : 'spa day'} price, and you` : 'You'} have ${what}, at no extra cost. Guests booked only for treatments may still come in.</div>`;
+    const nudge = gOn && S.guests < G.from ? `<p class="group-nudge"><b>Bring ${G.from - S.guests} more and save ${G.pct}%.</b> Groups of ${G.from} or more get ${G.pct}% off and the spa to themselves.</p>` : '';
+    if (!p.exOpt) return nudge;
+    const R = YE && L.cfg && YE.exclusiveRates ? YE.exclusiveRates(L.cfg) : { half: 25, full: 40, night: 75, lastOn: false, lastDays: 7, lastPct: 50 };
+    const empty = p.exFrom - S.guests, each = n => `${empty} empty place${empty === 1 ? '' : 's'} × ${gbp(n)}`;
+    const cost = stay ? `<b>+${gbp(empty * R.night)} a night</b> (${each(R.night)})`
+      : `<b>+${gbp(empty * R.half)} for a half day, +${gbp(empty * R.full)} for a full day</b> (${empty} empty place${empty === 1 ? '' : 's'} × ${gbp(R.half)} or ${gbp(R.full)})`;
+    const last = R.lastOn ? ` Booking within ${R.lastDays} days of your visit? It’s ${R.lastPct}% off.` : '';
+    return `<label class="excl-q ${S.excl ? 'on' : ''}"><input type="checkbox" id="bkExcl" ${S.excl ? 'checked' : ''}><span><b>Make it just for us</b><small>${what[0].toUpperCase() + what.slice(1)}. ${cost}.${last} Guests booked only for treatments may still come in.</small></span></label>${nudge}`;
+  }
   const INCLUDED = { day:'treat', private:'treat', break:'treat', break2:'treat', group:'treat' };
   // most extra treatments one guest can add online (set per booking type in the admin; staff can add more)
   const maxExtras = () => { const q = L.cfg && L.cfg.products[S.p]; if (q && q.maxExtras) return q.maxExtras; return P[S.p].rule ? 3 * ((S.nights || 1) + 1) : 3; };
@@ -626,7 +681,7 @@
       return `<div class="rv-guest"><div class="rv-gh"><b>${esc(gName(i))}</b>${multi && i === 0 ? '<span>Lead guest</span>' : ''}</div>
         ${rows.length ? `<ul class="rv-tr">${rows.join('')}</ul>` : '<p class="small muted">No treatments</p>'}
         ${facts.length ? `<dl class="rv-facts">${facts.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>` : ''}</div>`; };
-    const plines = pr ? [[S.p === 'house' ? `Whole house · ${S.nights} night${S.nights > 1 ? 's' : ''}` : `${p.name} · ${S.guests} × ${gbp(pr.base / S.guests)}`, pr.base], pr.bf && ['Breakfast', pr.bf], pr.tc.sub && ['Extra treatments', pr.tc.sub], pr.tc.off && ['Head spa discount', -pr.tc.off], pr.promo && ['Discount code', -pr.promo]].filter(x => x && x[1]) : [];
+    const plines = pr ? [...(pr.lines && pr.lines.length ? pr.lines.map(l => [esc(l.label.replace(/ · (\d+) × £(\d+)/, (m, a, b) => ` · ${a} × ${gbp(+b)}`)), l.amount]) : [[S.p === 'house' ? `Whole house · ${S.nights} night${S.nights > 1 ? 's' : ''}` : `${p.name} · ${S.guests} × ${gbp(pr.base / S.guests)}`, pr.base]]), pr.bf && ['Breakfast', pr.bf], pr.tc.sub && ['Extra treatments', pr.tc.sub], pr.tc.off && ['Head spa discount', -pr.tc.off], pr.group && [`Group discount (${pr.groupPct}% off)`, -pr.group], pr.promo && ['Discount code', -pr.promo]].filter(x => x && x[1]) : [];
     const money = pr ? `<ul class="sum rv-money">${plines.map(([l, v]) => `<li><span>${l}</span><b>${v < 0 ? '−' : ''}${gbp(Math.abs(v))}</b></li>`).join('')}<li class="rv-total"><span>Total</span><b>${gbp(pr.total)}</b></li>${pr.voucher ? `<li><span>Gift voucher ${esc(S.voucher.code)}</span><b>−${gbp(pr.voucher)}</b></li>` : ''}${pr.now !== pr.total ? `<li><span>Paying today</span><b>${gbp(pr.now)}</b></li>` : ''}</ul>` : '';
     return `<div class="pay review">
       <ul class="sum" style="color:var(--ink)">${top.map(([a, b]) => `<li><span style="color:var(--muted)">${a}</span><b>${b}</b></li>`).join('')}</ul>
@@ -653,7 +708,7 @@
   function problem(){
     const p = P[S.p];
     if (S.step === 0) return !S.cat ? 'Choose what you’d like to book' : S.p && P[S.p].group === S.cat ? '' : 'Choose an option';
-    if (S.step === DATE){ if (!S.date) return p.rule ? 'Choose your arrival day' : 'Choose a day'; if (p.rule === 'range' && !S.end) return 'Choose your check-out day'; if (p.sessions && !p.only && !S.session) return 'Choose a session'; }
+    if (S.step === DATE){ if (!S.date) return p.rule ? 'Choose your arrival day' : 'Choose a day'; if (exclOn() && !exOK(S.date)) return 'Exclusive use isn’t available on this day: choose another day, or carry on without it'; if (p.rule === 'range' && !S.end) return 'Choose your check-out day'; if (p.sessions && !p.only && lens().length > 1 && !S.len) return 'Choose half day or full day'; if (p.sessions && !p.only && !S.session) return S.len === 'half' ? 'Choose morning or afternoon' : 'Choose a session'; }
     if (S.step === GUESTS) { S.gOK = true; const bad = []; for (let i = 0; i < S.guests; i++) if (((S.names || [])[i] || '').trim().length < 2) bad.push('g' + i); if (bad.length) return { bad }; }
     if (S.step === ROOMS && needRooms()) { const miss = Array.from({ length: S.guests }, (_, i) => i).filter(i => !(S.roomOf || [])[i]); if (miss.length) return `Choose a room for ${gName(miss[0])}`; }
     if (S.step === CHOICES && P[S.p].only && !S.adds[S.tg].length) return 'Choose at least one treatment for this guest';
@@ -662,7 +717,7 @@
     if (S.step === CHOICES && S.tg >= S.guests - 1 && YE && L.cfg) {
       const r = planNow(); if (r && !r.ok) return `Sorry, we can’t fit ${r.fail && r.fail.name ? r.fail.name : 'all the treatments'} in on this ${P[S.p].rule ? 'stay' : 'day'}. Try fewer treatments or another ${P[S.p].rule ? 'date' : 'session'}.`;
     }
-    if (S.step === DATE && S.session && YE && L.cfg && !P[S.p].only) { const l = YE.sessions(L.cfg, L.ix, S.p, iso(S.date), S.guests).find(x => x.name === S.session); if (l && !l.ok) return S.session + ': ' + l.why; }
+    if (S.step === DATE && S.session && YE && L.cfg && !P[S.p].only) { const l = YE.sessions(L.cfg, L.ix, S.p, iso(S.date), S.guests, { exclusive: exclOn() }).find(x => x.name === S.session); if (l && !l.ok) return S.session + ': ' + l.why; }
     if (S.step === DETAILS){
       const d = S.d, bad = [];
       if (!(d.first || '').trim()) bad.push('first'); if (!(d.last || '').trim()) bad.push('last');
@@ -687,13 +742,17 @@
     const p = P[S.p], pr = price(), est = estimate();
     if (!p){ side.innerHTML = `<div class="side-top"><div class="eyebrow">Your booking</div><button class="side-x" aria-label="Close booking">&times;</button></div><h3>Nothing chosen yet</h3><p class="sum-empty">Pick a spa day, a stay or a treatment to see your total here.</p><p class="foot-note">Questions? Call 01933 580 100 or message us on WhatsApp.</p>`; return; }
     const tc = treatCost(), g = S.gOK;
-    const unit = S.p === 'house' ? `${gbp(p.night)} × ${S.nights} nights` : p.priceN ? `${gbp(p.priceN[S.nights])} × ${S.guests}` : `${gbp(p.price)} × ${S.guests}`;
+    const cg = S.guests, u1 = pr && pr.lines && pr.lines[0] ? pr.lines[0].amount / cg : null, ln = k => pr && pr.lines && pr.lines.find(l => l.k === k);
+    const unit = S.p === 'house' ? `${gbp(p.night)} × ${S.nights} nights` : u1 != null ? `${gbp(u1)} × ${cg}` : p.priceN ? `${gbp(p.priceN[S.nights])} × ${S.guests}` : `${gbp(p.price)} × ${S.guests}`;
     const rows = [['Booking', p.name],
       S.date && ['Date', p.rule ? `${nice(S.date)}${endDate() ? ' → ' + nice(endDate()) : ''}` : nice(S.date)],
       S.session && ['Session', sesLabel()],
       g && ['Guests', S.guests],
       ...(S.date && p.rule && S.p !== 'house' || (S.p === 'house' && S.end) ? stayTimes(S.p, S.date, S.nights).filter(Boolean).map(([a, b]) => [`<span class="sum-sub">${a}</span>`, `<span class="sum-sub">${b}</span>`]) : []),
-      pr && !p.only && (S.p === 'house' ? S.nights : g) && ['Price', unit],
+      pr && !p.only && (S.p === 'house' ? S.end && S.nights : g) && ['Price', unit],
+      ln('excl') && ['Just for you', '+' + gbp(ln('excl').amount)],
+      pr && pr.group && [`Group discount`, `−${gbp(pr.group)} (${pr.groupPct}% off)`],
+      ln('single') && ['Room to themselves', gbp(ln('single').amount)],
       pr && pr.bf && ['Breakfast', gbp(pr.bf)],
       ...(S.step >= CHOICES ? Array.from({ length: S.guests }, (_, gi) => { const pk = S.picks[gi] || {}, il = incList(S.p) || [];
         const inc = incMode(S.p) === 'treat' ? (pk.treat || (il[0] || {}).name) : incMode(S.p) ? (il[0] || {}).name : null, food = p.food ? pk.food : null;
@@ -725,15 +784,19 @@
     body.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.d.split('-').map(Number); const D = new Date(y, m - 1, d);
       if (S.p === 'house'){
         if (!S.date || S.end || D <= S.date){ S.date = D; S.end = null; S.nights = 0; resetAfter(); }
-        else { const n = Math.round((D - S.date) / 864e5); if (n < 2){ $('.bk-msg', nav).textContent = 'The whole house has a 2-night minimum'; return; } if (n > 30){ $('.bk-msg', nav).textContent = 'Stays are up to 30 nights'; return; }
+        else { const n = Math.round((D - S.date) / 864e5); if (n < 2 || (YE && L.cfg && YE.houseNightsOK && !YE.houseNightsOK(L.cfg, iso(S.date), n))){ $('.bk-msg', nav).textContent = YE && L.cfg && YE.houseRule ? YE.houseRule(L.cfg) : 'The whole house has a 2-night minimum'; return; } if (n > 30){ $('.bk-msg', nav).textContent = 'Stays are up to 30 nights'; return; }
           if (YE && L.cfg){ const c = YE.dateCheck(L.cfg, L.ix, { product: 'house', date: iso(S.date), nights: n, guests: S.guests }); if (!c.ok){ $('.bk-msg', nav).textContent = 'Those dates aren’t all free: ' + c.why; return; } }
           S.end = D; S.nights = n; }
       } else { if (!S.date || +S.date !== +D) resetAfter(); S.date = D; }
       draw(); });
     body.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { if (S.session !== b.dataset.s) resetAfter(); S.session = b.dataset.s; draw(); });
     body.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { if (S.nights !== +b.dataset.n) resetAfter(); S.nights = +b.dataset.n; if (S.date && !dateOK(S.p, S.date)) S.date = null; draw(); });
-    body.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { const p = P[S.p]; S.guests = Math.min(p.max, Math.max(gMin(), S.guests + +b.dataset.g)); S.gOK = true; if (S.date && !dateOK(S.p, S.date)){ S.date = null; S.end = null; } draw(); });
+    body.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { const p = P[S.p]; S.guests = Math.min(p.max, Math.max(gMin(), S.guests + +b.dataset.g)); S.gOK = true; if (S.guests >= (p.exFrom || 99)) S.excl = false; if (S.date && !dateOK(S.p, S.date)){ S.date = null; S.end = null; } draw(); });
     const bf = $('#bkBf', body); if (bf) bf.onchange = () => { S.bfast = bf.checked; draw(); };
+    const nx = $('[data-noexcl]', body); if (nx) nx.onclick = () => { S.excl = false; S.session = null; resetAfter(); draw(); };
+    const ex = $('#bkExcl', body); if (ex) ex.onchange = () => { S.excl = ex.checked; S.session = null; resetAfter(); if (S.date && !dateOK(S.p, S.date)) { S.date = null; S.end = null; } draw(); };
+    body.querySelectorAll('[data-len]').forEach(b => b.onclick = () => { if (S.len !== b.dataset.len) { resetAfter(); S.session = null; } S.len = b.dataset.len;
+      const one = (P[S.p].sessions || []).filter(x => (x[3] || 'half') === S.len); if (one.length === 1) S.session = one[0][0]; draw(); });
     body.querySelectorAll('[data-pk]').forEach(b => b.onclick = () => { S.picks[+b.dataset.pk][b.dataset.f] = b.dataset.v; if (b.dataset.f === 'treat' && S.times) Object.keys(S.times).filter(k => k.startsWith(`g${b.dataset.pk}-inc`)).forEach(k => delete S.times[k]); draw(); });
     body.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const gi = +b.dataset.gi, g = S.adds[gi], id = b.dataset.add, i = g.indexOf(id);
       if (i >= 0) { g.splice(i, 1); if (S.times) { const keep = {}; g.forEach((x, j) => { const old = S.times[`g${gi}-x${j + (j >= i ? 1 : 0)}`]; if (old) keep[`g${gi}-x${j}`] = old; }); Object.keys(S.times).filter(k => k.startsWith(`g${gi}-x`)).forEach(k => delete S.times[k]); Object.assign(S.times, keep); } }
