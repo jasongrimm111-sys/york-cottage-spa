@@ -766,6 +766,8 @@
   const cfPanel = (title, rows) => !rows.length ? '' : `<section class="cf-sec"><div class="cf-h">${title}</div><ul class="cf-rows">${rows.map(r =>
     r.sub ? `<li class="cf-sub">${esc(r.sub)}</li>` : r.t ? `<li class="cf-t"><span>${esc(r.t)}</span><b>${esc(r.v)}</b></li>` : r.note ? `<li class="cf-note">${r.html ? r.note : esc(r.note)}</li>`
       : `<li class="${r.big ? 'cf-big' : ''}"><span>${esc(r.l)}</span><b>${r.html ? r.v : esc(r.v)}</b></li>`).join('')}</ul></section>`;
+  // the booking just made, read-only, for the demo video and anything that shows its confirmation email (2026-11-28)
+  function lastBooking(){ try { const pr = price(); window.YCLastBooking = Object.freeze({ ...engineBooking(), items: (S.plan || []).slice(), ref: S.ref, nights: P[S.p].rule ? S.nights : 0, customer: { first: S.d.first, last: S.d.last, email: S.d.email, phone: S.d.phone }, total: pr ? pr.total : 0, paid: pr ? pr.now : 0, balance: pr ? pr.bal : 0, balanceDue: pr && pr.balDue ? iso(pr.balDue) : null }); } catch (e) {} }
   function doneView(){
     const p = P[S.p], ask = p.kind === 'ask', pr = price(), stay = !!p.rule;
     const paidLine = S.paid && S.paid.voucher ? `${gbp(S.paid.voucher.amount)} from gift voucher ${esc(S.paid.voucher.code)}${S.paid.voucher.left > 0 ? ` (${gbp(S.paid.voucher.left)} left on it)` : ''}` : '';
@@ -991,13 +993,13 @@
       const msg = [`Enquiry: ${p.name}`, p.rule ? `Arriving ${nice(S.date, { year: 'numeric' })}, ${S.nights} night${S.nights > 1 ? 's' : ''}` : `Date: ${nice(S.date, { year: 'numeric' })}${S.session ? ', ' + S.session : ''}`, `Guests: ${S.guests}${(S.names || []).filter(Boolean).length ? ' (' + S.names.filter(Boolean).join(', ') + ')' : ''}`, treatLines('; ', true) ? 'Treatments: ' + treatLines('; ', true) : '', S.d.notes ? 'Notes: ' + S.d.notes : '', `Website reference: ${ref}`].filter(Boolean).join('\n');
       (window.YCSupport ? window.YCSupport.send({ name: `${S.d.first} ${S.d.last}`.trim(), email: S.d.email, phone: S.d.phone, topic: 'Booking enquiry', ref, message: msg }) : Promise.reject(new Error('not available')))
         .then(t => { S.ticket = t; }).catch(e => { S.sendErr = e.message || 'Could not send'; })
-        .finally(() => { S.paying = false; S.ref = ref; draw(); });
+        .finally(() => { S.paying = false; S.ref = ref; lastBooking(); draw(); });
       return;
     }
     const ref = 'YC-' + Math.random().toString(36).slice(2, 8).toUpperCase(), ep = L.cfg && (L.cfg.consult || {}).endpoint;
     // payment went through: take the gift voucher amount off its balance (held for this booking since the hold)
     const redeem = S.paid && S.paid.voucher && S.hold && ep ? fetch(ep.replace(/\/$/, '') + '/redeem', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hold: S.hold, ref }) }).then(r => r.json()).then(j => { if (j.ok && S.paid.voucher) S.paid.voucher.left = j.balance; }).catch(() => {}) : Promise.resolve();
-    Promise.all([redeem, new Promise(r => setTimeout(r, 1400))]).then(() => { S.paying = false; S.ref = ref; draw(); });
+    Promise.all([redeem, new Promise(r => setTimeout(r, 1400))]).then(() => { S.paying = false; S.ref = ref; lastBooking(); draw(); });
   }
   // just before paying, the receiver re-checks the times against every booking and anyone else paying right now, and holds
   // them for 30 minutes. If someone got there first, the guest goes back to choose again.
