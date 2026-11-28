@@ -1472,5 +1472,10 @@ input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,
 /* step 1: card titles stay on one line (2026-11-28) */
 @media (min-width:901px){.bk-type b{font-size:22px;white-space:nowrap;letter-spacing:-.01em}}
 /* booking summary: labels never squeeze; long values wrap under the right edge (2026-11-28) */
-.sum li > span:first-child{flex:none;white-space:nowrap}
-.sum li > b{min-width:0}
+.sum li > span:first-child{flex:0 1 auto;min-width:7em;white-space:normal}
+.sum li > b{flex:0 1 auto;min-width:0;white-space:normal;text-wrap:balance}
+/* booking summary panel: nothing runs to the edge; long text wraps inside the padding (2026-11-28) */
+.bk-side .sum,.bk-side .sum li,.bk-side .side-top,.bk-side > *{max-width:100%;min-width:0}
+.bk-side .sum li > *{min-width:0;overflow-wrap:anywhere}
+.bk-side .sum li > b{white-space:normal}
+.bk-side .sum li .sum-sub{white-space:normal}
