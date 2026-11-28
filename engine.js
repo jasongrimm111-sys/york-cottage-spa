@@ -874,6 +874,17 @@
     if (pay.deposit < 100 && (!pay.balanceDays || between(t0, b.date) > pay.balanceDays)) { deposit = Math.round(total * pay.deposit) / 100; balanceDue = addD(b.date, -(pay.balanceDays || 0)); }
     return { lines, total, deposit, balance: Math.round((total - deposit) * 100) / 100, balanceDue, damage: pay.damage || 0 };
   };
+  // Grimmitt Games licence fee (2026-11-28): the rate is set by Grimmitt Games only (cfg.platform, locked in the admin)
+  // rates have start and end dates (from/to, inclusive; to null = still in force): a payment is charged at the rate on the day it was
+  // taken, so a new rate never changes past months
+  E.platformRates = cfg => { const p = cfg.platform || {}; const r = (p.rates || []).filter(x => x && x.from).slice().sort((a, b) => (a.from < b.from ? -1 : 1));
+    return r.length ? r : [{ from: '2000-01-01', to: null, pct: +(p.feePct ?? 1) || 0 }]; };
+  E.platformRate = (cfg, d) => { const r = E.platformRates(cfg).filter(x => x.from <= d && (!x.to || x.to >= d)).pop(); return r ? +r.pct || 0 : 0; };
+  E.platformFee = (cfg, bookings, from, to) => { let taken = 0, fee = 0, n = 0; const ids = new Set(), pcts = new Set();
+    (bookings || []).forEach(b => (b.payments || []).forEach(p => { const d = String(p.at || '').slice(0, 10); if (d >= from && d <= to) { const a = +p.amount || 0, pc = E.platformRate(cfg, d);
+      taken += a; fee += a * pc / 100; n++; ids.add(b.id); pcts.add(pc); } }));
+    if (!pcts.size) pcts.add(E.platformRate(cfg, to));
+    return { pct: [...pcts].sort((a, b) => a - b).map(x => x.toLocaleString('en-GB', { maximumFractionDigits: 2 })).join(' / '), taken: Math.round(taken * 100) / 100, fee: Math.round(fee * 100) / 100, payments: n, bookings: ids.size }; };
   E.paid = b => Math.round((b.payments || []).reduce((a, x) => a + (+x.amount || 0), 0) * 100) / 100;
 
   // ---------- discount codes ----------

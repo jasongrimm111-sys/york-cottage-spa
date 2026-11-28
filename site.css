@@ -1534,3 +1534,6 @@ input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,
 .cf-rows li.cf-big + li.cf-big{border-top-color:#d5e2d1}
 .cf-rows li.cf-big:last-child{border-radius:0 0 13px 13px}
 .cf .done-ico{margin:0 auto 22px}
+/* summary values never split a word ("Include/d"): the value keeps its longest word whole and the label wraps instead (2026-11-28) */
+.bk-side .sum li > span:first-child{flex:1 1 0;min-width:0}
+.bk-side .sum li > b{flex:0 1 auto;min-width:min-content;max-width:60%;overflow-wrap:normal;word-break:normal}
