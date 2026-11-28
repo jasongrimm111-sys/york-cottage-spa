@@ -13,7 +13,10 @@ document.addEventListener('input', e => { const i = e.target; if (i.matches && i
     if (p){ const r = p.parentElement.getBoundingClientRect(); p.style.transform = `translateY(${(r.top + r.height/2 - innerHeight/2) * -0.08}px)`; }
   };
   addEventListener('scroll', onScroll, { passive:true }); onScroll();
-  b.addEventListener('click', () => { const o = document.body.classList.toggle('open'); b.setAttribute('aria-expanded', o); });
+  // the mobile menu opens below the header bar, so its items never scroll under the logo (2026-11-28)
+  const hdrB = () => document.documentElement.style.setProperty('--hdr-b', Math.max(0, Math.round(h.getBoundingClientRect().bottom)) + 'px');
+  b.addEventListener('click', () => { hdrB(); const o = document.body.classList.toggle('open'); b.setAttribute('aria-expanded', o); });
+  addEventListener('resize', () => { if (document.body.classList.contains('open')) hdrB(); });
   document.querySelectorAll('.menu a').forEach(a => a.addEventListener('click', () => document.body.classList.remove('open')));
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold:.12, rootMargin:'0px 0px -40px 0px' });
   document.querySelectorAll('.rv').forEach(el => io.observe(el));
