@@ -267,9 +267,8 @@
   // one room for everyone: nothing to choose
   function autoRooms(rs){ S.roomOf = (S.roomOf || []).map(x => rs.some(r => r.id === x) ? x : '');
     if (rs.length === 1) { for (let i = 0; i < S.guests; i++) S.roomOf[i] = rs[0].id; return; }
-    if (S.roomOf.filter(Boolean).length) return;   // the guest has started choosing
-    const ids = YE && L.cfg ? (YE.pickRooms(L.cfg, L.ix, S.p, iso(S.date), S.nights, S.guests, null, exclOn()) || []) : [];
-    let i = 0; for (const id of ids) { const r = rs.find(x => x.id === id); for (let k = 0; k < Math.min(2, (r || {}).people || 2) && i < S.guests; k++) S.roomOf[i++] = id; } }
+    // guests choose their own rooms: nobody is put in a room for them (user 2026-11-28)
+  }
   const treatLines = (sep, withMin) => S.adds.map((a, i) => a.length ? `${gName(i)}: ` + a.map(id => TRi[id].name + (withMin ? ' (' + TRi[id].min + ' min)' : '')).join(', ') : '').filter(Boolean).join(sep);
 
   function estimate(){ const p = P[S.p]; return p && p.kind === 'ask' ? p.est * S.guests * (p.rule ? S.nights : 1) + (S.bfast && p.bfast ? BFAST * S.guests * S.nights : 0) + treatCost().sub - treatCost().off : 0; }
@@ -652,7 +651,7 @@
     const blds = [...new Set(rs.map(r => r.building || ''))].sort((a, b) => (a ? 1 : 0) - (b ? 1 : 0)), multi = blds.length > 1;
     const groups = blds.map(x => [x, rs.filter(r => (r.building || '') === x)]);
     const priceNote = ex ? '<p class="rooms-note ok">Every bedroom is yours, so sleep as you like. There’s no extra charge for having a room to yourself.</p>'
-      : `<p class="rooms-note">Prices are for 2 sharing a room. Anyone with a room to themselves adds <b>${gbp(supp)} a night</b>. ${alone ? `Right now <b>${alone} guest${alone === 1 ? ' has' : 's have'} a room to themselves</b>: +${gbp(alone * supp * nn)} for ${nn} night${nn === 1 ? '' : 's'}.` : 'Right now everyone is sharing, so there’s no extra charge.'}</p>`;
+      : `<p class="rooms-note">Prices are for 2 sharing a room. Anyone with a room to themselves adds <b>${gbp(supp)} a night</b>. ${alone ? `Right now <b>${alone} guest${alone === 1 ? ' has' : 's have'} a room to themselves</b>: +${gbp(alone * supp * nn)} for ${nn} night${nn === 1 ? '' : 's'}.` : 'Right now nobody has a room to themselves.'}</p>`;
     return `<h2>Who’s in <em>which room</em>?</h2><p class="bk-sub">${ex ? 'All the bedrooms are yours.' : `${rs.length} bedrooms are free for your dates.`} Tap a guest under a room to put them in it. Choose a twin room if you’d rather not share a bed.</p>${priceNote}
       ${groups.map(([bld, list]) => `${multi ? `<h3 class="rp-group ${bld ? 'away' : ''}">${bld ? `In ${esc(bld)}<small>A separate building on the grounds</small>` : 'In the house'}</h3>` : ''}<div class="rooms-pick">${list.map(r => `<div class="rp-card ${cnt(r.id) >= r.people ? 'full' : ''}"><div class="rp-img" style="background-image:url('${esc(r.photo || '')}')"></div>
         <div class="rp-body"><div class="rp-h"><b>${esc(r.name)}</b><span>${cnt(r.id)} of ${r.people}</span></div><small>${esc([bed(r), r.ensuite ? 'Ensuite' : 'Shared bathroom', 'Sleeps ' + r.people].filter(Boolean).map(x => x[0].toUpperCase() + x.slice(1)).join(' · '))}</small>
