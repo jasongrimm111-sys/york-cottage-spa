@@ -1493,3 +1493,7 @@ input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,
 .rp-group{font-family:var(--serif);font-weight:500;font-size:24px;margin:22px 0 10px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
 .rp-group small{font-family:inherit;font-size:14px;color:var(--clay);font-weight:600;font-family:Manrope,system-ui,sans-serif}
 .rp-group.away{padding-top:16px;border-top:1px solid var(--line)}
+/* room step: a room with anyone in it looks chosen (2026-11-28) */
+.rp-card.used{border-color:var(--forest);box-shadow:0 0 0 2px var(--forest);background:#f4f7f2}
+.rp-card.used .rp-h span{color:var(--forest);font-weight:700}
+.rp-card.used .rp-h b::before{content:"✓";display:inline-grid;place-items:center;width:20px;height:20px;margin-right:8px;border-radius:50%;background:var(--forest);color:#fff;font:700 11px/1 Manrope,system-ui,sans-serif;vertical-align:3px}
