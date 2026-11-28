@@ -1463,11 +1463,8 @@ input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,
 .ck-d.r-none::before{border:1.5px solid #b0563f;width:3px;height:3px}
 /* stays: "Your stay" full width, times in two tidy columns (2026-11-28) */
 @media (min-width:901px){
-  .bk-row.wide .bk-right .times{display:grid;grid-template-columns:1fr 1fr;column-gap:0}
-  .bk-row.wide .bk-right .times li:nth-child(odd){border-right:1px solid var(--line)}
   .bk-row.wide .bk-right .excl-q{max-width:none}
 }
-@media (min-width:901px){.bk-row.wide .bk-right .times li:last-child:nth-child(odd){grid-column:1 / -1;border-right:0}}
 .room-note.ok{color:var(--forest)}
 /* step 1: card titles stay on one line (2026-11-28) */
 @media (min-width:901px){.bk-type b{font-size:22px;white-space:nowrap;letter-spacing:-.01em}}
@@ -1479,3 +1476,16 @@ input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,
 .bk-side .sum li > *{min-width:0;overflow-wrap:anywhere}
 .bk-side .sum li > b{white-space:normal}
 .bk-side .sum li .sum-sub{white-space:normal}
+
+/* room step: pricing note, buildings (2026-11-28) */
+.rooms-note{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 16px;font-size:14px;color:var(--muted);margin:4px 0 16px}
+.rooms-note b{color:var(--ink)}
+.rooms-note.ok{color:var(--forest)}
+.rp-img{position:relative}
+.rp-bld{position:absolute;left:10px;top:10px;background:rgba(255,255,255,.94);color:var(--ink);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600}
+.rp-bld-note{display:block;color:var(--clay)!important;font-weight:600;margin-top:2px}
+.rp-card.other-bld{border-color:#e2c9b8}
+/* "Your stay": check-in and check-out together on the left, spa and food on the right (2026-11-28) */
+.stay-cols{display:grid;gap:12px}
+@media (min-width:901px){.bk-row.wide .stay-cols{grid-template-columns:1fr 1fr;align-items:start}}
+.stay-cols .times{margin:0}

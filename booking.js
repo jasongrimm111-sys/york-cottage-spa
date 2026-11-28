@@ -258,14 +258,18 @@
     return { sub, off, n: S.adds.reduce((n, a) => n + a.length, 0) };
   }
   const gName = i => ((S.names || [])[i] || '').trim() || `Guest ${i + 1}`;
-  const needRooms = () => stayRooms().length > 1;
+  const needRooms = () => S.guests >= 1 && stayRooms().length > 1;
   function stayRooms(){
     if (!(YE && L.cfg && S.date && P[S.p] && P[S.p].rule)) return [];
-    const ids = YE.pickRooms(L.cfg, L.ix, S.p, iso(S.date), S.nights, S.guests) || [];
-    return ids.map(id => L.cfg.rooms.find(r => r.id === id)).filter(Boolean);
+    return YE.roomChoices ? YE.roomChoices(L.cfg, L.ix, S.p, iso(S.date), S.nights, S.guests, exclOn())
+      : (YE.pickRooms(L.cfg, L.ix, S.p, iso(S.date), S.nights, S.guests) || []).map(id => L.cfg.rooms.find(r => r.id === id)).filter(Boolean);
   }
   // one room for everyone: nothing to choose
-  function autoRooms(rs){ S.roomOf = S.roomOf || []; if (rs.length === 1) for (let i = 0; i < S.guests; i++) S.roomOf[i] = rs[0].id; else S.roomOf = S.roomOf.map(x => rs.some(r => r.id === x) ? x : ''); }
+  function autoRooms(rs){ S.roomOf = (S.roomOf || []).map(x => rs.some(r => r.id === x) ? x : '');
+    if (rs.length === 1) { for (let i = 0; i < S.guests; i++) S.roomOf[i] = rs[0].id; return; }
+    if (S.roomOf.filter(Boolean).length) return;   // the guest has started choosing
+    const ids = YE && L.cfg ? (YE.pickRooms(L.cfg, L.ix, S.p, iso(S.date), S.nights, S.guests, null, exclOn()) || []) : [];
+    let i = 0; for (const id of ids) { const r = rs.find(x => x.id === id); for (let k = 0; k < Math.min(2, (r || {}).people || 2) && i < S.guests; k++) S.roomOf[i++] = id; } }
   const treatLines = (sep, withMin) => S.adds.map((a, i) => a.length ? `${gName(i)}: ` + a.map(id => TRi[id].name + (withMin ? ' (' + TRi[id].min + ' min)' : '')).join(', ') : '').filter(Boolean).join(sep);
 
   function estimate(){ const p = P[S.p]; return p && p.kind === 'ask' ? p.est * S.guests * (p.rule ? S.nights : 1) + (S.bfast && p.bfast ? BFAST * S.guests * S.nights : 0) + treatCost().sub - treatCost().off : 0; }
@@ -460,6 +464,8 @@
     };
     const m2 = new Date(m.getFullYear(), m.getMonth() + 1, 1);
     const prevOK = new Date(m.getFullYear(), m.getMonth(), 0) >= first, nextOK = new Date(m.getFullYear(), m.getMonth() + (two ? 2 : 1), 1) <= last;
+    // stays: arrival and departure together on the left, spa and food on the right (user 2026-11-28)
+    const stayCols = rows => { const ad = rows.filter(([a]) => /check-(in|out)/i.test(a)), rest = rows.filter(([a]) => !/check-(in|out)/i.test(a)); return `<div class="stay-cols">${times(ad)}${times(rest)}</div>`; };
     const times = rows => `<ul class="times">${rows.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join('')}</ul>`;
     let right = '';
     const exMsg = S.date && exclOn() && !exOK(S.date) ? `<div class="notice bad ex-msg"><b>Exclusive use isn’t available on this day.</b> Other guests are already booked in${p.rule ? ' during your stay' : ''}. If you’d like the spa just for you, please choose another day (marked days aren’t available just for you).<button type="button" class="linkbtn-site" data-noexcl>Carry on without exclusive use</button></div>` : '';
@@ -482,7 +488,7 @@
       right = `<div class="bk-group" style="margin-top:0">Your stay</div>` + (!S.date
         ? `<p class="cal-note">Tap your arrival day, then your departure day. Breaks are Sunday to Thursday nights, 1 to ${maxN('break')} nights, leaving by Friday morning.</p>`
         : !S.end ? `<p class="stay-when">Arriving <b>${nice(S.date)}</b></p><ul class="times nights-list">${(p.nights || []).filter(n => houseEnd(add(S.date, n))).map(n => `<li><span>${n} night${n > 1 ? 's' : ''} · leave ${nice(add(S.date, n))}</span><b>${pp(n)} pp</b></li>`).join('')}</ul>`
-        : `<p class="stay-when"><b>${nice(S.date)}</b> → <b>${nice(S.end)}</b> · ${S.nights} night${S.nights > 1 ? 's' : ''} · <b>${pp(S.nights)} pp</b></p>${roomShow() && roomText(roomAt(S.date, null)) ? `<p class="room-note">${roomText(roomAt(S.date, null))} on these dates. Other dates have more treatment time.</p>` : ''}${times(stayTimes(S.p, S.date, S.nights))}`);
+        : `<p class="stay-when"><b>${nice(S.date)}</b> → <b>${nice(S.end)}</b> · ${S.nights} night${S.nights > 1 ? 's' : ''} · <b>${pp(S.nights)} pp</b></p>${roomShow() && roomText(roomAt(S.date, null)) ? `<p class="room-note">${roomText(roomAt(S.date, null))} on these dates. Other dates have more treatment time.</p>` : ''}${stayCols(stayTimes(S.p, S.date, S.nights))}`);
     }
     else if (p.rule === 'mid' || p.rule === 'stay'){
       right += `<div class="bk-group">Your stay</div>` + (S.date
@@ -493,7 +499,7 @@
       right = `<div class="bk-group" style="margin-top:0">Your stay</div>` + (!S.date
         ? `<p class="cal-note">Pick your check-in day, then your check-out day. Your stay includes Friday and Saturday night; add nights either side if you like.</p>`
         : !S.end ? `<p class="stay-when">Check-in <b>${nice(S.date)}</b></p><p class="cal-note">Now pick your check-out day (your stay must include Friday and Saturday night).</p>`
-        : `<p class="stay-when"><b>${nice(S.date)}</b> → <b>${nice(S.end)}</b> · ${S.nights} nights</p>${times(stayTimes('house', S.date, S.nights))}<p class="cal-note">From £1,840 per night for the whole house. Rates can vary by date.</p>`);
+        : `<p class="stay-when"><b>${nice(S.date)}</b> → <b>${nice(S.end)}</b> · ${S.nights} nights</p>${stayCols(stayTimes('house', S.date, S.nights))}<p class="cal-note">From £1,840 per night for the whole house. Rates can vary by date.</p>`);
     }
     return `<h2>Choose your <em>${p.rule ? 'dates' : 'day'}</em></h2><p class="bk-sub">${p.name}${p.rule === 'mid' ? ' · Sunday to Thursday nights, 1 to 5 nights' : range ? ' · Friday & Saturday nights, plus any nights either side' : p.only ? ' · you’ll pick a start time after choosing treatments' : twoLen ? (S.len === 'full' ? ' · full day, 09:30–17:00' : S.len === 'half' ? ' · half day, morning or afternoon' : ' · half day (4 hours) or full day (7½ hours)') : ' · 4-hour sessions'}</p>
       ${twoLen && !S.len ? lenPick + '<div class="bk-group">2 · Choose your day</div>' : ''}<div class="bk-row ${two ? 'wide' : ''}"><div class="cal"><div class="cal-nav"><button data-m="-1" ${prevOK ? '' : 'disabled'} aria-label="Previous month">‹</button><button data-m="1" ${nextOK ? '' : 'disabled'} aria-label="Next month">›</button></div>
@@ -640,9 +646,14 @@
     const rs = stayRooms(); autoRooms(rs);
     if (rs.length < 2) return `<h2>Your <em>room</em></h2><p class="bk-sub">${rs[0] ? esc(rs[0].name) + ' is yours for the stay.' : 'We’ll get your room ready.'}</p>`;
     const cnt = id => (S.roomOf || []).filter(x => x === id).length;
-    return `<h2>Who’s in <em>which room</em>?</h2><p class="bk-sub">Your stay has ${rs.length} bedrooms. Tap a guest under each room to put them in it.</p>
-      <div class="rooms-pick">${rs.map(r => `<div class="rp-card ${cnt(r.id) >= r.people ? 'full' : ''}"><div class="rp-img" style="background-image:url('${esc(r.photo || '')}')"></div>
-        <div class="rp-body"><div class="rp-h"><b>${esc(r.name)}</b><span>${cnt(r.id)} of ${r.people}</span></div><small>${esc([r.bed ? r.bed + ' bed' : '', r.ensuite ? 'ensuite' : '', 'sleeps ' + r.people].filter(Boolean).join(' · '))}</small>
+    const p = P[S.p], ex = S.p === 'house' || exclAuto() || exclOn(), supp = p.single || 0;
+    const alone = rs.filter(r => cnt(r.id) === 1).length, nn = S.nights || 1;
+    const bed = r => /single/i.test(r.bed || '') ? (r.bed || '') + ' (twin)' : (r.bed ? r.bed + ' bed' : '');
+    const priceNote = ex ? '<p class="rooms-note ok">Every bedroom is yours, so sleep as you like. There’s no extra charge for having a room to yourself.</p>'
+      : `<p class="rooms-note">Prices are for 2 sharing a room. Anyone with a room to themselves adds <b>${gbp(supp)} a night</b>. ${alone ? `Right now <b>${alone} guest${alone === 1 ? ' has' : 's have'} a room to themselves</b>: +${gbp(alone * supp * nn)} for ${nn} night${nn === 1 ? '' : 's'}.` : 'Right now everyone is sharing, so there’s no extra charge.'}</p>`;
+    return `<h2>Who’s in <em>which room</em>?</h2><p class="bk-sub">${ex ? 'All the bedrooms are yours.' : `${rs.length} bedrooms are free for your dates.`} Tap a guest under a room to put them in it. Choose a twin room if you’d rather not share a bed.</p>${priceNote}
+      <div class="rooms-pick">${rs.map(r => `<div class="rp-card ${cnt(r.id) >= r.people ? 'full' : ''} ${r.building ? 'other-bld' : ''}"><div class="rp-img" style="background-image:url('${esc(r.photo || '')}')">${r.building ? `<span class="rp-bld">${esc(r.building)}</span>` : ''}</div>
+        <div class="rp-body"><div class="rp-h"><b>${esc(r.name)}</b><span>${cnt(r.id)} of ${r.people}</span></div><small>${esc([bed(r), r.ensuite ? 'ensuite' : 'shared bathroom', 'sleeps ' + r.people].filter(Boolean).join(' · '))}</small>${r.building ? `<small class="rp-bld-note">In ${esc(r.building)}, a separate building on the grounds</small>` : ''}
         <div class="rp-guests">${Array.from({ length: S.guests }, (_, i) => { const here = (S.roomOf || [])[i] === r.id, elsewhere = (S.roomOf || [])[i] && !here; return `<button type="button" class="rp-g ${here ? 'on' : ''} ${elsewhere ? 'away' : ''}" data-rg="${r.id}|${i}" ${!here && cnt(r.id) >= r.people ? 'disabled' : ''}>${here ? '✓ ' : ''}${esc(gName(i))}</button>`; }).join('')}</div></div></div>`).join('')}</div>`;
   }
 
