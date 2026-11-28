@@ -808,6 +808,8 @@
   }
 
   function sideWire(){ const x = $('.side-x', side); if (x) x.onclick = close; side.querySelectorAll('[data-sgoto]').forEach(b => b.onclick = () => { S.step = +b.dataset.sgoto; draw(); }); }
+  // the summary: every line starts with a capital (user 2026-11-28), also when the text sits inside a tag
+  const capFirst = v => String(v ?? '').replace(/^((?:\s|<[^>]+>)*)([a-z])/,(m, pre, c) => pre + c.toUpperCase());
   function sideView(){
     const p = P[S.p], pr = price(), est = estimate();
     if (!p){ side.innerHTML = `<div class="side-top"><div class="eyebrow">Your booking</div><button class="side-x" aria-label="Close booking">&times;</button></div><h3>Nothing chosen yet</h3><p class="sum-empty">Pick a spa day, a stay or a treatment to see your total here.</p><p class="foot-note">Questions? Call 01933 580 100 or message us on WhatsApp.</p>`; return; }
@@ -815,7 +817,7 @@
     const cg = S.guests, u1 = pr && pr.lines && pr.lines[0] ? pr.lines[0].amount / cg : null, ln = k => pr && pr.lines && pr.lines.find(l => l.k === k);
     const unit = S.p === 'house' ? `${gbp(p.night)} × ${S.nights} nights` : u1 != null ? `${gbp(u1)} × ${cg}` : p.priceN ? `${gbp(p.priceN[S.nights])} × ${S.guests}` : `${gbp(p.price)} × ${S.guests}`;
     const rows = [['Booking', p.name],
-      S.date && ['Date', p.rule ? `${nice(S.date)}${endDate() ? ' → ' + nice(endDate()) : ''}` : nice(S.date)],
+      S.date && [endDate() ? 'Dates' : 'Date', p.rule ? `${nice(S.date)}${endDate() ? ' → ' + nice(endDate()) : ''}` : nice(S.date)],
       S.session && ['Session', sesLabel()],
       g && ['Guests', S.guests],
       ...(S.date && p.rule && !isRange(S.p) || (isRange(S.p) && S.end) ? stayTimes(S.p, S.date, S.nights).filter(Boolean).map(([a, b]) => [`<span class="sum-sub">${a}</span>`, `<span class="sum-sub">${b}</span>`]) : []),
@@ -836,7 +838,7 @@
       ? `<div class="big"><span>${g ? 'Estimate' : 'From'}</span><b>${g ? gbp(est) : gbp(p.est)}</b></div><p>${g ? 'We’ll confirm the exact price.' : 'per person'} Nothing to pay now.</p>`
       : ready ? `<div class="big"><span>Total</span><b>${gbp(pr.total)}</b></div>${pr.voucher ? `<p>Gift voucher −${gbp(pr.voucher)}${pr.voucherLeft > 0 ? ` (${gbp(pr.voucherLeft)} left on it)` : ''}. ${pr.now ? `${gbp(pr.now)} to pay today` : 'Nothing to pay today'}${pr.bal ? `, ${gbp(pr.bal)} by ${nice(pr.balDue)}` : ''}.</p>` : pr.bal ? `<p>${gbp(pr.now)} deposit today, ${gbp(pr.bal)} by ${nice(pr.balDue)}.</p>` : '<p>Paid in full today. VAT included.</p>'}`
       : `<div class="big"><span>From</span><b>${p.from.replace(/^from /, '').split(' ')[0]}</b></div><p>${p.from.replace(/^from /, '').split(' ').slice(1).join(' ')}. Your total appears once you choose ${isRange(S.p) ? 'your dates' : S.gOK && !S.date ? 'your day' : 'your guests'}.</p>`;
-    side.innerHTML = `<div class="side-top"><div class="eyebrow">Your booking</div><button class="side-x" aria-label="Close booking" title="Close (your choices are saved)">&times;</button></div><h3>${p.name}</h3><ul class="sum">${rows.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join('')}</ul>
+    side.innerHTML = `<div class="side-top"><div class="eyebrow">Your booking</div><button class="side-x" aria-label="Close booking" title="Close (your choices are saved)">&times;</button></div><h3>${p.name}</h3><ul class="sum">${rows.map(([a, b]) => `<li><span>${capFirst(a)}</span><b>${capFirst(b)}</b></li>`).join('')}</ul>
       <div class="sum-tot">${tot}<button class="sum-toggle">Details</button></div>
       <p class="sum-pol">${{ house:'50% deposit. Move your dates with 6+ months’ notice.', break:'Refundable with 30+ days’ notice.', break2:'Refundable with 30+ days’ notice.', group:'Refundable with 30+ days’ notice.' }[S.p] || (p.only ? 'Pay today. Move your appointment with 30+ days’ notice.' : 'Non-refundable, but you can move your visit with 30+ days’ notice.')}</p>
       <p class="foot-note">Questions? Call 01933 580 100 or message us on WhatsApp.${S.p && !S.ref ? '<br><button class="bk-reset" title="Clear everything and start again">Start again</button>' : ''}</p>`;
