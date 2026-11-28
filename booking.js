@@ -465,7 +465,7 @@
     const prevOK = new Date(m.getFullYear(), m.getMonth(), 0) >= first, nextOK = new Date(m.getFullYear(), m.getMonth() + (two ? 2 : 1), 1) <= last;
     // stays: arrival and departure together on the left, spa and food on the right (user 2026-11-28)
     const stayCols = rows => { const ad = rows.filter(([a]) => /check-(in|out)/i.test(a)), rest = rows.filter(([a]) => !/check-(in|out)/i.test(a)); return `<div class="stay-cols">${times(ad)}${times(rest)}</div>`; };
-    const times = rows => `<ul class="times">${rows.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join('')}</ul>`;
+    const times = rows => `<ul class="times">${rows.map(([a, b]) => `<li><span>${capFirst(a)}</span><b>${capFirst(b)}</b></li>`).join('')}</ul>`;
     let right = '';
     const exMsg = S.date && exclOn() && !exOK(S.date) ? `<div class="notice bad ex-msg"><b>Exclusive use isn’t available on this day.</b> Other guests are already booked in${p.rule ? ' during your stay' : ''}. If you’d like the spa just for you, please choose another day (marked days aren’t available just for you).<button type="button" class="linkbtn-site" data-noexcl>Carry on without exclusive use</button></div>` : '';
     const live = YE && L.cfg && S.date && p.sessions && !p.only ? YE.sessions(L.cfg, L.ix, S.p, iso(S.date), S.guests, { exclusive: exclOn() }) : null;
