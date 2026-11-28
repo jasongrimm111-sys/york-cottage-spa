@@ -1537,3 +1537,7 @@ input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,
 /* summary values never split a word ("Include/d"): the value keeps its longest word whole and the label wraps instead (2026-11-28) */
 .bk-side .sum li > span:first-child{flex:1 1 0;min-width:0}
 .bk-side .sum li > b{flex:0 1 auto;min-width:min-content;max-width:60%;overflow-wrap:normal;word-break:normal}
+/* footer legal line (2026-11-28): links first and everything on the left, with room underneath so the chat button never covers it */
+.legal{justify-content:flex-start;column-gap:28px;padding-bottom:72px}
+.legal .legal-links{order:-1}
+@media (max-width:700px){.legal{padding-bottom:150px}}
