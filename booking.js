@@ -449,7 +449,7 @@
         const rm = ok ? dayRoom(d) : null; if (rm === 0) c += ' r-none'; else if (rm > 0 && rm < 60) c += ' r-some';
         if (ok && exclOn() && !exOK(d)) c += ' no-ex';
         if (ok && lenCal && !S.len) { const lo = lensOn(d); if (lo.half && !lo.full) c += ' half-only'; }
-        cells += `<button data-d="${iso(d)}" class="${c}" ${ok ? '' : 'disabled'} aria-label="${nice(d, { year:'numeric' })}${rm != null && roomText(rm) ? ' · ' + roomText(rm) : ''}">${i}</button>`;
+        cells += `<button data-d="${iso(d)}" class="${c}" ${ok ? '' : 'disabled title="Can’t be booked on this day"'} aria-label="${nice(d, { year:'numeric' })}${ok ? '' : ', can’t be booked'}${rm != null && roomText(rm) ? ' · ' + roomText(rm) : ''}">${i}</button>`;
       }
       return `<div class="cal-m"><b class="cal-t">${mm.toLocaleDateString('en-GB', { month:'long', year:'numeric' })}</b><div class="cal-g">${cells}</div></div>`;
     };
@@ -475,7 +475,7 @@
       const pp = n => gbp((p.priceN || {})[n] || 0);
       right = `<div class="bk-group" style="margin-top:0">Your stay</div>` + (!S.date
         ? `<p class="cal-note">Tap your arrival day, then your departure day. Breaks are Sunday to Thursday nights, 1 to ${maxN('break')} nights, leaving by Friday morning.</p>`
-        : !S.end ? `<p class="stay-when">Arriving <b>${nice(S.date)}</b></p><p class="cal-note">Now tap your departure day.</p><ul class="times nights-list">${(p.nights || []).filter(n => houseEnd(add(S.date, n))).map(n => `<li><span>${n} night${n > 1 ? 's' : ''} · leave ${nice(add(S.date, n))}</span><b>${pp(n)} pp</b></li>`).join('')}</ul>`
+        : !S.end ? `<p class="stay-when">Arriving <b>${nice(S.date)}</b></p><ul class="times nights-list">${(p.nights || []).filter(n => houseEnd(add(S.date, n))).map(n => `<li><span>${n} night${n > 1 ? 's' : ''} · leave ${nice(add(S.date, n))}</span><b>${pp(n)} pp</b></li>`).join('')}</ul>`
         : `<p class="stay-when"><b>${nice(S.date)}</b> → <b>${nice(S.end)}</b> · ${S.nights} night${S.nights > 1 ? 's' : ''} · <b>${pp(S.nights)} pp</b></p>${roomShow() && roomText(roomAt(S.date, null)) ? `<p class="room-note">${roomText(roomAt(S.date, null))} on these dates. Other dates have more treatment time.</p>` : ''}${times(stayTimes(S.p, S.date, S.nights))}<p class="cal-note">Tap another day to start again.</p>`);
     }
     else if (p.rule === 'mid' || p.rule === 'stay'){
@@ -491,7 +491,15 @@
     }
     return `<h2>Choose your <em>${p.rule ? 'dates' : 'day'}</em></h2><p class="bk-sub">${p.name}${p.rule === 'mid' ? ' · Sunday to Thursday nights, 1 to 5 nights' : range ? ' · Friday & Saturday nights, plus any nights either side' : p.only ? ' · you’ll pick a start time after choosing treatments' : twoLen ? (S.len === 'full' ? ' · full day, 09:30–17:00' : S.len === 'half' ? ' · half day, morning or afternoon' : ' · half day (4 hours) or full day (7½ hours)') : ' · 4-hour sessions'}</p>
       ${twoLen && !S.len ? lenPick + '<div class="bk-group">2 · Choose your day</div>' : ''}<div class="bk-row ${two ? 'wide' : ''}"><div class="cal"><div class="cal-nav"><button data-m="-1" ${prevOK ? '' : 'disabled'} aria-label="Previous month">‹</button><button data-m="1" ${nextOK ? '' : 'disabled'} aria-label="Next month">›</button></div>
-      <div class="cal-ms">${grid(m)}${two ? grid(m2) : ''}</div><div class="cal-note"><span><i></i>Bank holiday</span>${lenCal && !S.len ? '<span><i class="k-half"></i>Half day only</span>' : ''}${exclOn() ? '<span><i class="k-noex"></i>Not available just for you</span>' : ''}${roomShow() ? '<span><i class="k-some"></i>Shorter extra treatments</span><span><i class="k-none"></i>Included treatments only</span>' : ''}${p.rule ? '<span>' + (isRange(S.p) && S.date && !S.end ? 'Tap your departure day (outlined), or another arrival day' : 'Tap your arrival day' + (isRange(S.p) ? ', then your departure day' : '')) + '</span>' : ''}</div></div><div class="bk-right">${right}${exclPick()}</div></div>`;
+      <div class="cal-ms">${grid(m)}${two ? grid(m2) : ''}</div>${p.rule ? '<p class="cal-tip">' + (isRange(S.p) && S.date && !S.end ? 'Now tap your departure day (outlined), or another day to change your arrival.' : 'Tap your arrival day' + (isRange(S.p) ? ', then your departure day.' : '.')) + '</p>' : ''}<div class="cal-key">${[
+        ['', 'Available'],
+        ['off', 'Can’t be booked'],
+        ['bh', 'Bank holiday'],
+        isRange(S.p) && S.date && !S.end && ['can-end', 'Can leave this day'],
+        lenCal && !S.len && ['half-only', 'Half day only'],
+        exclOn() && ['no-ex', 'Not available just for you'],
+        roomShow() && ['r-some', 'Shorter extra treatments'],
+        roomShow() && ['r-none', 'Included treatments only']].filter(Boolean).map(([c, t]) => `<span class="ck"><b class="ck-d ${c}">12</b>${t}</span>`).join('')}</div></div><div class="bk-right">${right}${exclPick()}</div></div>`;
   }
 
   // whole house: can the stay end on this day? (must include the set nights, and all of it free)
@@ -519,7 +527,7 @@
         <div class="gc-side"><p>${note}</p></div>
       </div>${exBox}
       <div class="bk-group">Who’s coming?</div><p class="cal-note" style="margin:-4px 0 10px">The full name of each guest, so we can welcome everyone and your therapists know who they’re treating.</p>
-      <div class="bk-2 gnames">${Array.from({ length: S.guests }, (_, i) => `<div class="bk-field" data-fd="g${i}"><label for="bk_g${i}">Guest ${i + 1}${i === 0 ? ' (lead guest)' : ''}</label><input id="bk_g${i}" type="text" autocomplete="${i === 0 ? 'name' : 'off'}" value="${esc((S.names || [])[i] || '')}" placeholder="First and last name"><small class="err">Please enter this guest’s name</small></div>`).join('')}</div>${incMode(S.p) && (!L.cfg || (L.cfg.rules || {}).blueLight !== false) ? `<label class="check blue-q"><input type="checkbox" id="bkBlue" ${S.blue ? 'checked' : ''}> Someone in the group has a Blue Light Card <span class="opt">included treatments become ${(L.cfg && L.cfg.rules.blueLightMin) || 30} minutes, free</span></label>` : ''}`;
+      <div class="bk-2 gnames">${Array.from({ length: S.guests }, (_, i) => `<div class="bk-field" data-fd="g${i}"><label for="bk_g${i}">Guest ${i + 1}${i === 0 ? ' (lead guest)' : ''}</label><input id="bk_g${i}" type="text" autocomplete="${i === 0 ? 'name' : 'off'}" value="${esc((S.names || [])[i] || '')}" placeholder="First and last name"><small class="err">Please enter this guest’s name</small></div>`).join('')}</div>${incMode(S.p) && (!L.cfg || (L.cfg.rules || {}).blueLight !== false) ? `<label class="blue-q ${S.blue ? 'on' : ''}"><input type="checkbox" id="bkBlue" ${S.blue ? 'checked' : ''}><svg class="bl-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4.5 5.4v6.1c0 4.6 3.1 8.6 7.5 10 4.4-1.4 7.5-5.4 7.5-10V5.4L12 2.5Z" fill="#1d5fb8"/><path d="m12 7.3 1.35 2.75 3.03.44-2.19 2.14.52 3.02L12 14.22l-2.71 1.43.52-3.02-2.19-2.14 3.03-.44L12 7.3Z" fill="#fff"/></svg><span><b>Someone in the group has a Blue Light Card</b><small>Everyone’s included treatment becomes ${(L.cfg && L.cfg.rules.blueLightMin) || 30} minutes, free. Please bring the card with you.</small></span></label>` : ''}`;
     if (p.bfast && (S.p === 'group' || S.p === 'break' || S.nights > 1))
       h += `<label class="check opt-line"><input type="checkbox" id="bkBf" ${S.bfast ? 'checked' : ''}> Add continental breakfast · £${BFAST} per person, per morning</label>`;
     return h;
@@ -540,7 +548,7 @@
     const stay = !!p.rule; if (!stay && !S.session) return '';
     const can = stay ? YE.dateCheck(L.cfg, L.ix, { product: S.p, date: iso(S.date), nights: S.nights, guests: S.guests, exclusive: true }).ok
       : (YE.sessions(L.cfg, L.ix, S.p, iso(S.date), S.guests, { exclusive: true }).find(x => x.name === S.session) || {}).ok;
-    if (!can) { if (S.excl) S.excl = false; return `<p class="excl-none">Not available just for you ${stay ? 'on these dates' : 'in this session'}. Choose another ${stay ? 'day' : 'session or day'} if you’d like the spa to yourselves.</p>`; }
+    if (!can) { if (S.excl) S.excl = false; return `<p class="excl-none">Other guests are already booked ${stay ? 'on these dates' : 'in this session'}, so you’ll share the spa. Would you like it to yourselves? Choose ${stay ? 'other dates' : 'another session or day'} with no other bookings.</p>`; }
     const x = YE.exclusiveExtra(L.cfg, { ...engineBooking(), exclusive: true }); if (!x) return '';
     return `<label class="excl-q ${S.excl ? 'on' : ''}"><input type="checkbox" id="bkExcl" ${S.excl ? 'checked' : ''}><span><b>Make it just for us <em>+${gbp(x.amount)}</em></b><small>No other guests in the spa${stay ? ' or staying, during your break' : ' during your session'}${x.last ? ` · ${x.pct}% last-minute discount included` : ''}.</small></span></label>`;
   }

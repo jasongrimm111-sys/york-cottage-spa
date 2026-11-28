@@ -1246,8 +1246,6 @@ body.book-page .hdr-book{display:none}
 .rv-facts dd{margin:0;font-weight:600}
 .rv-money .rv-total{border-top:1px solid var(--line);padding-top:6px;font-size:16px}
 .review .bk-backlink{margin-top:12px}
-.blue-q{margin-top:14px}
-.blue-q .opt{display:block;font-size:12.5px;color:var(--muted);margin-left:26px}
 /* completed steps keep their names (user 2026-11-27); a little smaller so the bar still fits */
 @media (max-width:1280px){ .bk.page .bk-steps li.done b{display:inline} .bk.page .bk-steps li b{font-size:11.5px;letter-spacing:.06em} .bk.page .bk-steps{gap:2px} }
 /* guest tabs by name (2026-11-27) */
@@ -1431,3 +1429,36 @@ input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,
 @media (max-width:900px){.bk-type b{min-height:0}}
 /* step 1 on phones: keep the short description, so a Spa Break says what's included (2026-11-28) */
 @media (max-width:900px){.bk-type > span:not(.bt-ico):not(.opt-cta):not(.bt-img){display:block!important;font-size:12px;line-height:1.4;margin-left:14px!important;margin-right:14px!important}}
+/* Blue Light Card: a card like the other panels, with its own icon (2026-11-28) */
+.blue-q{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:14px 0 4px;cursor:pointer;transition:border-color .2s}
+.blue-q.on{border-color:#1d5fb8;box-shadow:0 0 0 1px #1d5fb8 inset}
+.blue-q input{width:20px;height:20px;accent-color:var(--forest);flex:none;margin:0}
+.blue-q .bl-ico{width:30px;height:30px;flex:none}
+.blue-q b{display:block;font-size:15px;color:var(--ink);font-weight:600}
+.blue-q small{display:block;font-size:13px;line-height:1.45;color:var(--muted);margin-top:2px}
+/* calendar key: a crossed-out day can't be booked (2026-11-28) */
+.cal-note .k-off{display:inline-block;margin-right:6px;color:var(--muted);opacity:.7;font-size:12px;text-decoration:line-through}
+/* calendar: bigger for stays, tidy key with sample days (2026-11-28) */
+.cal-t{white-space:nowrap;font-size:19px}
+.cal-g{gap:5px}
+.cal-g button{font-size:15px;min-height:40px}
+.cal-g button.r-some::before,.cal-g button.r-none::before{top:4px;right:4px}
+@media (min-width:901px){
+  .bk-row.wide{grid-template-columns:1fr;gap:20px}
+  .bk-row.wide .cal-ms{grid-template-columns:1fr 1fr;gap:36px}
+  .bk-row.wide .cal{padding:20px 24px}
+  .bk-row.wide .bk-right{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;align-items:start}
+  .bk-row.wide .bk-right > .bk-group{grid-column:1 / -1}
+}
+.cal-tip{margin:14px 0 0;font-size:13.5px;font-weight:600;color:var(--forest)}
+.cal-key{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.ck{display:inline-flex;align-items:center;gap:8px}
+.ck-d{position:relative;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;font-size:12px;font-weight:500;color:var(--ink);background:#fff;border:1px solid var(--line)}
+.ck-d.off{color:#c3c0b8;text-decoration:line-through;text-decoration-color:rgba(0,0,0,.25)}
+.ck-d.bh::after{content:"";position:absolute;bottom:3px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--clay)}
+.ck-d.can-end{border-color:var(--forest);box-shadow:inset 0 0 0 1px var(--forest);font-weight:600}
+.ck-d.half-only{background-image:linear-gradient(#5f7d64,#5f7d64);background-size:12px 2px;background-position:50% calc(100% - 3px);background-repeat:no-repeat}
+.ck-d.no-ex{color:var(--muted);text-decoration:underline dotted;text-underline-offset:3px}
+.ck-d.r-some::before,.ck-d.r-none::before{content:"";position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%}
+.ck-d.r-some::before{background:#d9a441}
+.ck-d.r-none::before{border:1.5px solid #b0563f;width:3px;height:3px}
