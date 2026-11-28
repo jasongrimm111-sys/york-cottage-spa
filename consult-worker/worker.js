@@ -25,9 +25,11 @@ import E from '../engine.js';
 
 // ---- holds: holds/active.json in the data store ----
 const raw = async (env, path) => { const r = await fetch(`https://api.github.com/repos/${env.DATA_REPO}/contents/${path}`, { headers: GH(env) }); if (r.status === 404) return { data: null, sha: null }; if (!r.ok) throw new Error('read ' + path); const j = await r.json(); return { data: JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\s/g, ''))))), sha: j.sha }; };
+// what the public /holds list shows: no id (the id is what lets a guest release or use their hold), just a tag
+const publicHold = h => { const v = holdView(h); delete v.id; return v; };
 const monthsOf = (date, nights) => [...new Set([0, nights || 0, 31].map(n => E.addD(date, n).slice(0, 7)))];
 const live = list => (list || []).filter(h => new Date(h.expires).getTime() > Date.now());
-const holdView = h => ({ id: h.id, product: h.product, date: h.date, nights: h.nights || 0, sessionId: h.sessionId || null, guests: h.guests, rooms: h.rooms || [], items: (h.items || []).map(i => ({ key: i.key, date: i.date, start: i.start, min: i.min, buffer: i.buffer, staff: i.staff, troom: i.troom, tid: i.tid, guest: i.guest })), food: h.food || null, status: 'hold', expires: h.expires });
+const holdView = h => ({ id: h.id, pub: h.pub || null, product: h.product, date: h.date, nights: h.nights || 0, sessionId: h.sessionId || null, guests: h.guests, rooms: h.rooms || [], items: (h.items || []).map(i => ({ key: i.key, date: i.date, start: i.start, min: i.min, buffer: i.buffer, staff: i.staff, troom: i.troom, tid: i.tid, guest: i.guest })), food: h.food || null, status: 'hold', expires: h.expires });
 // ---- gift vouchers: vouchers.json in the data store ----
 const VCODE = /^[A-Z0-9][A-Z0-9-]{3,30}$/;
 const todayUK = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date());
@@ -44,7 +46,7 @@ function voucherState(list, holds, code, except) {
 }
 // a few tries per visitor, so codes can't be guessed
 const tries = new Map();
-const tooMany = ip => { const now = Date.now(), t = (tries.get(ip) || []).filter(x => now - x < 10 * 60000); t.push(now); tries.set(ip, t); if (tries.size > 5000) tries.clear(); return t.length > 8; };
+const tooMany = (ip, max = 8) => { const now = Date.now(), t = (tries.get(ip) || []).filter(x => now - x < 10 * 60000); t.push(now); tries.set(ip, t); if (tries.size > 5000) tries.clear(); return t.length > max; };
 async function redeem(env, holdId, ref) {
   for (let attempt = 0; attempt < 5; attempt++) {
     const [vs, hs] = await Promise.all([raw(env, 'vouchers.json'), raw(env, 'holds/active.json')]);
@@ -116,12 +118,12 @@ async function takeHold(env, b, release, voucher) {
       const moved = plan.ok && plan.items.some(i => b.times && b.times[i.key] && (b.times[i.key].start !== i.start || (b.times[i.key].date || b.date) !== (i.date || b.date)));
       if (why || !ses.ok || roomsTaken || !plan.ok || moved) return { ok: false, gone: true, why: why || (!ses.ok ? ses.why : roomsTaken ? 'A room you chose has just been booked' : 'Someone has just booked one of your treatment times') };
       const mins = +((cfg.rules || {}).holdMinutes) || 30;
-      var hold = holdView({ ...b, id: 'H-' + rid(8), items: plan.items, expires: new Date(Date.now() + mins * 60000).toISOString() });
+      var hold = holdView({ ...b, id: 'H-' + rid(8), pub: rid(10), items: plan.items, expires: new Date(Date.now() + mins * 60000).toISOString() });
       if (voucher) hold.voucher = { code: voucher.code, amount: voucher.amount };
       list = list.concat(hold);
     }
     const r = await fetch(`https://api.github.com/repos/${env.DATA_REPO}/contents/holds/active.json`, { method: 'PUT', headers: GH(env), body: JSON.stringify({ message: b ? 'Hold ' + hold.id : 'Release hold', content: b64(JSON.stringify(list)), ...(holds.sha ? { sha: holds.sha } : {}) }) });
-    if (r.ok) return { ok: true, hold: hold ? hold.id : null, expires: hold ? hold.expires : null };
+    if (r.ok) return { ok: true, hold: hold ? hold.id : null, pub: hold ? hold.pub : null, expires: hold ? hold.expires : null };
     if (r.status !== 409 && r.status !== 422) throw new Error('save hold ' + r.status);
     // someone else saved a hold at the same moment: read again and re-check against theirs
   }
@@ -165,9 +167,13 @@ export default {
     }
     if (request.method === 'GET' && url.pathname === '/holds') {
       const { data } = await raw(env, 'holds/active.json');
-      return out({ holds: live(data).map(holdView) });
+      return out({ holds: live(data).map(publicHold) });
     }
     if (request.method !== 'POST') return out({ error: 'Not allowed' }, 405);
+    // per-visitor limits, so a script can't flood the data store or hold every slot (pen test 2026-11-28)
+    const ip = request.headers.get('CF-Connecting-IP') || 'x';
+    const LIMIT = { '/hold': 20, '/release': 30, '/redeem': 10, '/contact': 6, '/booking-request': 6, '/reply': 15, '/unsubscribe': 10, '/': 40 };
+    if (LIMIT[url.pathname] && tooMany(url.pathname + ip, LIMIT[url.pathname])) return out({ error: 'Too many tries. Please wait 10 minutes and try again.' }, 429);
     const text = await request.text();
     if (text.length > 40000) return out({ error: 'Too large' }, 413);
     let body; try { body = JSON.parse(text); } catch { return out({ error: 'Bad request' }, 400); }
@@ -176,9 +182,9 @@ export default {
       try {
         if (url.pathname === '/release') return out(await takeHold(env, null, clean(body.hold, 12)));
         const b = body.booking || {};
-        if (!b.product || !/^\d{4}-\d{2}-\d{2}$/.test(b.date || '') || !(b.guests >= 1 && b.guests <= 30)) return out({ error: 'Bad request' }, 400);
+        if (!b.product || !/^\d{4}-\d{2}-\d{2}$/.test(b.date || '') || !(b.guests >= 1 && b.guests <= 30) || !((+b.nights || 0) >= 0 && (+b.nights || 0) <= 14)) return out({ error: 'Bad request' }, 400);
         // names and notes are never kept in a hold; only what's needed to keep the times
-        const bk = { product: clean(b.product, 20), date: b.date, nights: +b.nights || 0, sessionId: b.sessionId ? clean(b.sessionId, 30) : null, guests: +b.guests, blueLight: !!b.blueLight, rooms: (b.rooms || []).map(r => clean(r, 20)).slice(0, 12), times: b.times || {}, pairs: Object.fromEntries(Object.entries(b.pairs || {}).slice(0, 30).map(([k, v]) => [clean(k, 20), clean(v, 20)])),
+        const bk = { product: clean(b.product, 20), date: b.date, nights: +b.nights || 0, sessionId: b.sessionId ? clean(b.sessionId, 30) : null, guests: +b.guests, blueLight: !!b.blueLight, rooms: (b.rooms || []).map(r => clean(r, 20)).slice(0, 12), times: Object.fromEntries(Object.entries(b.times && typeof b.times === 'object' ? b.times : {}).slice(0, 80).filter(([, v]) => v && /^\d\d:\d\d$/.test(v.start || '') && (!v.date || /^\d{4}-\d\d-\d\d$/.test(v.date))).map(([k, v]) => [clean(k, 40), { start: v.start, ...(v.date ? { date: v.date } : {}) }])), pairs: Object.fromEntries(Object.entries(b.pairs || {}).slice(0, 30).map(([k, v]) => [clean(k, 20), clean(v, 20)])),
           guestList: (b.guestList || []).slice(0, 30).map(g => ({ included: g.included ? clean(g.included, 40) : null, food: g.food ? clean(g.food, 40) : null, extras: (g.extras || []).slice(0, 6).map(x => clean(x, 40)) })) };
         const vcode = body.voucher ? clean(body.voucher.code, 32).toUpperCase() : '';
         const vc = vcode && VCODE.test(vcode) && +body.voucher.amount > 0 ? { code: vcode, amount: Math.round(+body.voucher.amount * 100) / 100 } : null;

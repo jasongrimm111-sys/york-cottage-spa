@@ -41,7 +41,7 @@
       if (c) L.cfg = fill(c, JSON.parse(JSON.stringify(window.YC_DEFAULTS)));
       if (b) L.ix = YE.fromBusy(b);
       const ep = c && (c.consult || {}).endpoint;
-      if (ep && L.ix) { try { const h = await (await fetch(ep.replace(/\/$/, '') + '/holds', { cache: 'no-store' })).json(); for (const x of (h.holds || [])) if (x.id !== S.hold) YE.addToIndex(L.cfg, L.ix, x); } catch (e) {} }
+      if (ep && L.ix) { try { const h = await (await fetch(ep.replace(/\/$/, '') + '/holds', { cache: 'no-store' })).json(); for (const x of (h.holds || [])) if (x.pub ? x.pub !== S.holdPub : x.id !== S.hold) YE.addToIndex(L.cfg, L.ix, x); } catch (e) {} }
       L.ok = !!c; applyLive();
       if (box.classList.contains('on')) draw();
     } catch (e) { /* keep the built-in rules */ }
@@ -1014,7 +1014,7 @@
       const r = await fetch(ep.replace(/\/$/, '') + '/hold', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ booking: b, release: S.hold || null, voucher }) });
       const j = await r.json().catch(() => ({}));
       S.paying = false;
-      if (r.ok && j.ok) { S.hold = j.hold; S.holdOK = true; next(); return; }
+      if (r.ok && j.ok) { S.hold = j.hold; S.holdPub = j.pub || null; S.holdOK = true; next(); return; }
       if (j.voucher) { S.voucher = j.voucher.balance > 0 ? { ...S.voucher, balance: j.voucher.balance } : null; S.promoMsg = j.why; draw(); return; }
       if (j.gone) { await loadLive(); resetAfter(); S.step = DATE; S.goneMsg = (j.why || 'Someone has just booked that time') + '. Please choose again; nothing has been charged.'; draw(); return; }
       navView(); $('.bk-msg', nav).textContent = j.error || j.why || 'We couldn’t check availability just now. Please try again.';

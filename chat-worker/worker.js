@@ -22,6 +22,10 @@ FACTS
 
 When the guest clearly wants to book something, end your reply with one tag on its own line: [book:day], [book:access], [book:private], [book:break], [book:group] or [book:house]. When the guest needs a person, end with [human].`;
 
+// a few questions per visitor, so nobody can run up the AI bill (pen test 2026-11-28)
+const seen = new Map();
+const tooMany = (ip) => { const now = Date.now(), t = (seen.get(ip) || []).filter((x) => now - x < 10 * 60000); t.push(now); seen.set(ip, t); if (seen.size > 5000) seen.clear(); return t.length > 20; };
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -35,9 +39,12 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
     if (request.method !== "POST" || !allowed.includes(origin)) return Response.json({ error: "Not allowed" }, { status: 403, headers: cors });
 
+    if (tooMany(request.headers.get("CF-Connecting-IP") || "x")) return Response.json({ error: "Too many questions. Please wait a few minutes, or call us on 01933 580 100." }, { status: 429, headers: cors });
+    const raw = await request.text();
+    if (raw.length > 30000) return Response.json({ error: "Too large" }, { status: 413, headers: cors });
     let messages;
     try {
-      const body = await request.json();
+      const body = JSON.parse(raw);
       messages = (body.messages || [])
         .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
         .slice(-12)
@@ -53,7 +60,7 @@ export default {
       // Server-side fallback: if Claude Opus 5.5 declines, the API retries on a suitable model.
       const response = await client.beta.messages.create({
         model: "claude-opus-5-5",
-        max_tokens: 2000,
+        max_tokens: 700,
         betas: ["server-side-fallback-2026-07-01"],
         fallbacks: "default",
         output_config: { effort: "low" },
