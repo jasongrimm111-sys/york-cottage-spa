@@ -1497,3 +1497,40 @@ input.em-bad{border-color:#c8574a!important;box-shadow:0 0 0 3px rgba(200,87,74,
 .rp-card.used{border-color:var(--forest);box-shadow:0 0 0 2px var(--forest);background:#f4f7f2}
 .rp-card.used .rp-h span{color:var(--forest);font-weight:700}
 .rp-card.used .rp-h b::before{content:"✓";display:inline-grid;place-items:center;width:20px;height:20px;margin-right:8px;border-radius:50%;background:var(--forest);color:#fff;font:700 11px/1 Manrope,system-ui,sans-serif;vertical-align:3px}
+
+.times li.times-note span{color:var(--muted);font-size:13px}
+
+/* confirmation page and manage page: the same panels as the emails (2026-11-28) */
+.cf{max-width:640px;margin:0 auto;text-align:center}
+.cf .ref{margin-bottom:6px}
+.cf-test{font-size:12.5px;color:var(--muted);margin:0 0 6px}
+.cf-sec{text-align:left;margin:22px 0 0}
+.cf-h{font:700 12px/1.4 Manrope,system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--clay);margin:0 0 8px}
+.cf-rows{list-style:none;margin:0;padding:2px 18px;background:#fbf8f3;border:1px solid var(--line);border-radius:14px}
+.cf-rows li{display:flex;justify-content:space-between;align-items:baseline;gap:18px;padding:11px 0;border-top:1px solid var(--line);font-size:15px;line-height:1.45}
+.cf-rows li:first-child{border-top:0}
+.cf-rows li > span{color:var(--muted);flex:0 0 auto;max-width:45%}
+.cf-rows li > b{font-weight:600;color:var(--ink);text-align:right;min-width:0}
+.cf-rows li.cf-sub{display:block;font-weight:700;color:var(--ink);padding-top:14px}
+.cf-rows li.cf-t{justify-content:flex-start}
+.cf-rows li.cf-t > span{color:var(--ink);font-weight:700;width:96px;flex:0 0 96px;padding-left:12px}
+.cf-rows li.cf-t > b{font-weight:400;text-align:left}
+.cf-rows li.cf-note{display:block;color:var(--muted);font-size:13.5px}
+.cf-next{text-align:left;margin:0;padding:14px 18px 14px 38px;background:#fff;border:1px solid var(--line);border-radius:14px;display:grid;gap:8px;font-size:15px}
+.cf .hero-cta{justify-content:center;margin-top:24px}
+@media (max-width:600px){.cf-rows{padding:2px 14px}.cf-rows li{flex-wrap:wrap;gap:2px 12px}.cf-rows li > b{text-align:left}.cf-rows li > span{max-width:none}}
+/* fixes (2026-11-28): panels never pick up the page-section spacing; words only wrap at spaces; times stay on one line */
+.cf-sec{padding:0!important;min-height:0!important;background:none!important}
+.bk-side .sum li > *{overflow-wrap:break-word;word-break:normal}
+.cf-rows li.cf-t > span{width:auto;flex:0 0 auto;min-width:96px;white-space:nowrap;padding-right:16px}
+
+/* panels: labels bold, details plain; the total and amount paid stand out (2026-11-28) */
+.cf-rows li > span{color:var(--ink);font-weight:700}
+.cf-rows li > b{font-weight:400}
+.cf-rows li.cf-t > span{font-weight:700}
+.cf-rows li.cf-big{background:#eef3ea;margin:0 -18px;padding:12px 18px}
+.cf-rows li.cf-big > span{font-size:16px}
+.cf-rows li.cf-big > b{font-size:20px;font-weight:700;color:var(--forest)}
+.cf-rows li.cf-big + li.cf-big{border-top-color:#d5e2d1}
+.cf-rows li.cf-big:last-child{border-radius:0 0 13px 13px}
+.cf .done-ico{margin:0 auto 22px}

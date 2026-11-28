@@ -88,9 +88,11 @@ function bookingView(cfg, b, today) {
     session: ses ? { name: ses.name, start: ses.start, end: ses.end, arrive: ses.arrive || ses.start } : null, stay: st, guests: b.guests,
     arrive: E.arriveAt ? E.arriveAt(cfg, b) : '', arriveMins: E.arriveBefore ? E.arriveBefore(cfg) : 15,
     lead: (b.customer || {}).first || '',
-    guestList: (b.guestList || []).map((g, i) => ({ name: (g.name || (i ? '' : `${(b.customer || {}).first || ''} ${(b.customer || {}).last || ''}`)).trim().split(' ')[0] || `Guest ${i + 1}`,
+    guestList: (b.guestList || []).map((g, i) => ({ name: (g.name || (i ? '' : `${(b.customer || {}).first || ''} ${(b.customer || {}).last || ''}`)).trim() || `Guest ${i + 1}`,   // full names (2026-11-28): guests with the same first name are told apart
       food: g.food ? fn(g.food) : '', consult: g.consult === 'done',
       items: (b.items || []).filter(x => x.guest === i).sort((a, z) => ((a.date || b.date) + a.start).localeCompare((z.date || b.date) + z.start)).map(x => ({ name: E.itemName ? E.itemName(cfg, x) : tn(x.tid), date: x.date || b.date, start: x.start, min: x.min })) })),
+    stayLines: E.stayLines ? E.stayLines(cfg, b, (b.guestList || []).map((g, i) => (g.name || (i ? '' : `${(b.customer || {}).first || ''} ${(b.customer || {}).last || ''}`)).trim() || `Guest ${i + 1}`)) : [],
+    whenText: E.whenText ? E.whenText(cfg, b) : '', session2: ses ? ses.name : '',
     total: q.total, paid, due: Math.round((q.total - paid) * 100) / 100, balanceDue: q.balanceDue || null,
     policy: (cfg.policies || {})[kind] || '', terms: terms ? { text: terms.text, refund: terms.refund, canMove: terms.canMove, days: terms.days } : null,
     consult, business: { name: (cfg.business || {}).name, phone: (cfg.business || {}).phone, email: (cfg.business || {}).email, address: (cfg.business || {}).address }
@@ -131,6 +133,7 @@ async function file(env, path, rec, message) {
   return r.ok;
 }
 
+export { bookingView };   // for previews of the manage page (2026-11-28)
 export default {
   async fetch(request, env) {
     const url = new URL(request.url), origin = request.headers.get('Origin') || '';

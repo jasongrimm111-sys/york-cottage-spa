@@ -204,7 +204,7 @@
   const day0 = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const add = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
   const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const nice = (d, o = {}) => d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', ...o });
+  const nice = (d, o = {}) => d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', ...o }).replace(',', '');   // "Sun 29 Nov 2026" (no comma)
   const today = day0(new Date()), first = add(today, 1), last = add(today, 365);
 
   const nightOK = (rule, d) => {
@@ -673,7 +673,7 @@
           <div class="bk-2">${f('first', 'First name', 'text', 'given-name')}${f('last', 'Last name', 'text', 'family-name')}</div>
           ${f('email', 'Email', 'email', 'email', 'Please enter a valid email address, e.g. name@example.com')}
           <div class="bk-field" data-fd="phone"><label for="bk_phone">Mobile</label><div class="bk-phone"><select id="bk_dial" aria-label="Dialling code">${DIAL.map(([c, l]) => `<option value="${c}" ${c === (S.d.dial || '+44') ? 'selected' : ''}>${l}</option>`).join('')}</select><input id="bk_phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="7700 900123" value="${esc(S.d.phoneNum != null ? S.d.phoneNum : S.d.phone || '')}"></div><span class="err">Please check your mobile number, e.g. 7700 900123</span></div>
-          ${L.cfg && L.cfg.sms && L.cfg.sms.on ? `<div class="bk-field"><label>How should we keep you updated?</label><div class="seg-pick">${[['email', 'Email'], ['sms', 'Text message'], ['both', 'Both']].map(([k, t]) => `<button type="button" class="${(S.notify || 'email') === k ? 'on' : ''}" data-notify="${k}">${t}</button>`).join('')}</div><small class="cal-note">Booking confirmation, reminders and any changes. We’ll always email your receipt.</small></div>` : ''}
+          ${L.cfg && L.cfg.sms && L.cfg.sms.on ? `<label class="excl-q sms-q ${S.notify === 'both' ? 'on' : ''}"><input type="checkbox" id="bkSms" ${S.notify === 'both' ? 'checked' : ''}><span><b>Text me as well</b><small>We’ll always email your confirmation, reminders and any changes. Tick this to get them by text message too.</small></span></label>` : ''}
           <div class="bk-field"><label for="bk_notes">Dietary needs, celebrations or anything else <span class="opt">optional</span></label><textarea id="bk_notes" rows="2" placeholder="e.g. one vegan, a birthday">${esc(S.d.notes)}</textarea></div>
         </div>
         <div class="det-card soft"><div class="bk-group" style="margin-top:0">Before you book</div>
@@ -761,17 +761,49 @@
       <button type="button" class="bk-backlink" data-gostep="${CHOICES}">Change treatments or times</button></div>`;
   }
 
+  // a heading over a soft panel of rows (the same look as the emails): rows are
+  // { l, v } label + detail · { sub } a guest's name · { t, v } a time + what · { note } a quiet line
+  const cfPanel = (title, rows) => !rows.length ? '' : `<section class="cf-sec"><div class="cf-h">${title}</div><ul class="cf-rows">${rows.map(r =>
+    r.sub ? `<li class="cf-sub">${esc(r.sub)}</li>` : r.t ? `<li class="cf-t"><span>${esc(r.t)}</span><b>${esc(r.v)}</b></li>` : r.note ? `<li class="cf-note">${r.html ? r.note : esc(r.note)}</li>`
+      : `<li class="${r.big ? 'cf-big' : ''}"><span>${esc(r.l)}</span><b>${r.html ? r.v : esc(r.v)}</b></li>`).join('')}</ul></section>`;
   function doneView(){
-    const p = P[S.p], ask = p.kind === 'ask', pr = price();
-    return `<div class="done-ico"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5L20 7"/></svg></div>
+    const p = P[S.p], ask = p.kind === 'ask', pr = price(), stay = !!p.rule;
+    const paidLine = S.paid && S.paid.voucher ? `${gbp(S.paid.voucher.amount)} from gift voucher ${esc(S.paid.voucher.code)}${S.paid.voucher.left > 0 ? ` (${gbp(S.paid.voucher.left)} left on it)` : ''}` : '';
+    const paid = S.paid && S.paid.amount ? (S.paid.method === 'klarna' ? `${gbp(Math.floor(S.paid.amount / 3 * 100) / 100)} (first of 3 Klarna payments)` : `${gbp(S.paid.amount)} by card`) : '';
+    // your booking
+    const book = [{ l: 'Booking', v: p.name + (S.len && lens().length > 1 ? ' · ' + (S.len === 'full' ? 'Full day' : 'Half day') : '') },
+      { l: endDate() ? 'Dates' : 'Date', v: endDate() ? `${nice(S.date)} → ${nice(endDate(), { year: 'numeric' })} · ${S.nights} night${S.nights > 1 ? 's' : ''}` : nice(S.date, { year: 'numeric' }) },
+      S.session && !p.only && { l: 'Session', v: sesLabel() },
+      S.session && !p.only && YE && L.cfg && (() => { const x = YE.session(L.cfg, sesId(S.p, S.session, S.date)); return x && x.arrive ? { l: 'Please arrive', v: x.arrive } : null; })(),
+      { l: 'Guests', v: String(S.guests) + (S.guests > 1 ? ' (' + Array.from({ length: S.guests }, (_, i) => gName(i)).join(', ') + ')' : '') },
+      exclOn() && { l: 'Just for you', v: 'No other spa guests' },
+      pr && { l: 'Total', v: gbp(pr.total), big: true },
+      paidLine && { l: 'Gift voucher', v: paidLine, html: true },
+      paid && { l: 'Paid today', v: paid, big: true },
+      pr && pr.bal > 0 && { l: 'Still to pay', v: `${gbp(pr.bal)} by ${nice(pr.balDue, { year: 'numeric' })}` }].filter(Boolean);
+    // your stay
+    const sl = stay && YE && L.cfg && YE.stayLines ? YE.stayLines(L.cfg, engineBooking(), Array.from({ length: S.guests }, (_, i) => gName(i))) : [];
+    const stayRows = sl.map(x => x.label ? { l: x.label, v: x.text } : { note: x.text });
+    // treatment times, guest by guest
+    const tRows = [], items = S.plan || [], multi = items.some(i => i.date && i.date !== iso(S.date));
+    for (let g = 0; g < S.guests; g++) { const its = items.filter(i => i.guest === g).sort((a, b) => ((a.date || '') + a.start).localeCompare((b.date || '') + b.start)); if (!its.length) continue;
+      if (S.guests > 1) tRows.push({ sub: gName(g) });
+      its.forEach(i => tRows.push({ t: (multi ? fdShort(i.date) + ' ' : '') + i.start, v: `${YE ? YE.itemName(L.cfg, i) : ''} (${i.min} min)` })); }
+    if (p.kind === 'treat' && YE && L.cfg) { const first = items.filter(i => i.start && (!i.date || i.date === iso(S.date))).map(i => i.start).sort()[0];
+      if (first) { const m = YE.arriveBefore(L.cfg); book.splice(2, 0, { l: 'Please arrive', v: `By ${YE.HM(Math.max(0, YE.T(first) - m))} (${m} minutes before your first treatment)` }); } }
+    // next steps
+    const next = ask ? (S.ticket ? [`Your request is with the team (reference ${esc(S.ticket.id)}).`, 'We’ll check the date and reply with a price, by email.', 'Confirm and pay to secure your booking.'] : [`We couldn’t send your request just now${S.sendErr ? ' (' + esc(S.sendErr) + ')' : ''}. Please call us on 01933 580 100 and quote ${esc(S.ref)}.`])
+      : [`Your confirmation is on its way to <b>${esc(S.d.email)}</b>, with everything on this page and directions.`,
+        p.treat || treatCost().n ? 'Each guest fills in a short consultation form before the visit. We’ll email the link.' : 'Bring your swimwear: towels and robes are waiting for you.',
+        pr && pr.bal > 0 ? `Your balance of ${gbp(pr.bal)} is due by ${nice(pr.balDue, { year: 'numeric' })}. We’ll send a reminder.` : '',
+        'Need to change something? Use Manage your booking in the email.'].filter(Boolean);
+    return `<div class="cf"><div class="done-ico"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5L20 7"/></svg></div>
       <h2>${ask ? (S.ticket ? 'Request <em>sent</em>' : 'Request <em>not sent</em>') : 'You’re <em>booked</em>'}, ${esc(S.d.first)}</h2>
-      <p class="bk-sub">${ask ? 'Your reference is below.' : `${S.paid && S.paid.voucher ? `${gbp(S.paid.voucher.amount)} taken from gift voucher ${esc(S.paid.voucher.code)}${S.paid.voucher.left > 0 ? ` (${gbp(S.paid.voucher.left)} left on it for next time)` : ''}. ` : ''}${S.paid && !S.paid.amount ? '' : S.paid ? (S.paid.method === 'klarna' ? `First Klarna payment of ${gbp(Math.floor(S.paid.amount / 3 * 100) / 100)} taken, 2 more to follow. ` : `${gbp(S.paid.amount)} paid by card. `) : ''}We’ve emailed your confirmation to ${esc(S.d.email)}.<br><span style="font-size:13px">Stripe test payment ${S.paid ? S.paid.id : ''} · no money was taken.</span>`}</p>
-      <div class="ref">${S.ref}</div>
-      ${S.plan && S.plan.length ? `<div class="pay" style="margin:14px auto;max-width:460px;text-align:left"><div class="bk-group" style="margin-top:0">Your treatment times</div><p>${timesList(S.plan)}</p>${P[S.p].kind === 'treat' && YE && L.cfg ? (() => { const first = S.plan.filter(i => i.start && (!i.date || i.date === iso(S.date))).map(i => i.start).sort()[0]; if (!first) return ''; const m = YE.arriveBefore(L.cfg), t = YE.T(first) - m; return `<p><b>Please arrive by ${YE.HM(Math.max(0, t))}</b>, ${m} minutes before your first treatment, for your consultation and to change.</p>`; })() : ''}<p class="cal-note">Set by our booking system around your ${P[S.p].rule ? 'stay' : 'visit'}. We’ll email these too.</p></div>` : ''}
-      <ol class="next">${ask
-        ? (S.ticket ? `<li>Your request is with the team (reference ${esc(S.ticket.id)}).</li><li>We’ll check the date and reply with a price, by email.</li><li>Confirm and pay to secure your booking.</li>` : `<li>We couldn’t send your request just now${S.sendErr ? ' (' + esc(S.sendErr) + ')' : ''}. Please call us on 01933 580 100 and quote ${esc(S.ref)}.</li>`)
-        : `<li>Look out for your confirmation email with session times and directions.</li><li>${p.treat || treatCost().n ? 'Complete the short consultation form for each guest before your visit.' : 'Bring your swimwear; towels and robes are waiting for you.'}</li>${pr && pr.bal ? `<li>Your balance of ${gbp(pr.bal)} is due by ${nice(pr.balDue, { year:'numeric' })}.</li>` : ''}<li>${p.rule ? (stayTimes(S.p, S.date, S.nights)[0] || ['Check-in', ''])[0] + ' ' + (stayTimes(S.p, S.date, S.nights)[0] || ['', 'from 16:00'])[1] + ' on ' + nice(S.date) + '.' : 'Arrive a few minutes before your session (' + sesLabel() + ') on ' + nice(S.date) + '.'}</li>`}</ol>
-      <div class="hero-cta">${ask && S.ticket ? `<a class="btn btn-solid" href="ticket.html?t=${S.ticket.id}&k=${S.ticket.k}">See your request <span class="arrow">&rarr;</span></a>` : ''}<button class="btn btn-ghost" data-close>Back to the site</button></div>`;
+      <p class="bk-sub">Your booking reference</p><div class="ref">${S.ref}</div>
+      ${ask ? '' : `<p class="cf-test">Stripe test payment ${S.paid ? esc(S.paid.id) : ''} · no money was taken.</p>`}
+      ${ask ? '' : cfPanel('Your booking', book)}${cfPanel('Your stay', stayRows)}${cfPanel('Your treatment times', tRows)}
+      <section class="cf-sec"><div class="cf-h">What happens next</div><ol class="cf-next">${next.map(x => `<li>${x}</li>`).join('')}</ol></section>
+      <div class="hero-cta">${ask && S.ticket ? `<a class="btn btn-solid" href="ticket.html?t=${S.ticket.id}&k=${S.ticket.k}">See your request <span class="arrow">&rarr;</span></a>` : ''}<button class="btn btn-ghost" data-close>Back to the site</button></div></div>`;
   }
 
   // ---------- validation ----------
@@ -891,7 +923,7 @@
     body.querySelectorAll('[data-tp]').forEach(b => b.onclick = () => { const [k, d, t] = b.dataset.tp.split('|'); S.times = S.times || {}; S.times[k] = { date: d, start: t }; draw(); });
     body.querySelectorAll('[data-tpd]').forEach(b => b.onclick = () => { const [k, d] = b.dataset.tpd.split('|'); S.tpDate = S.tpDate || {}; S.tpDate[k] = d; draw(); });
     body.querySelectorAll('[data-gt]').forEach(b => b.onclick = () => { (S.seen = S.seen || {})[S.tg] = 1; S.tg = +b.dataset.gt; draw(); });
-    body.querySelectorAll('[data-notify]').forEach(b => b.onclick = () => { S.notify = b.dataset.notify; body.querySelectorAll('[data-notify]').forEach(x => x.classList.toggle('on', x === b)); });
+    const sm = $('#bkSms', body); if (sm) sm.onchange = () => { S.notify = sm.checked ? 'both' : 'email'; sm.closest('label').classList.toggle('on', sm.checked); };
     { const pi = $('#bk_phone', body), pd = $('#bk_dial', body);
       const full = () => { const n = String(S.d.phoneNum || '').trim().replace(/^0+(?=\d)/, ''); S.d.phone = n ? `${S.d.dial || '+44'} ${n}` : ''; };
       if (pi) { pi.oninput = () => { S.d.phoneNum = pi.value; full(); pi.closest('.bk-field').classList.remove('bad'); }; pi.onblur = () => { const n = pi.value.trim().replace(/^0+(?=\d)/, ''); if (n !== pi.value) { pi.value = n; S.d.phoneNum = n; full(); } }; }

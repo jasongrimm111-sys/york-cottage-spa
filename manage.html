@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=171128za3">
+<link rel="stylesheet" href="site.css?v=171128zb1">
 <style>
   body{background:var(--cream)}
   .pp{max-width:680px;margin:0 auto;padding:40px 18px 80px}
@@ -22,6 +22,12 @@
   .gpick button{border:1px solid var(--line);border-radius:99px;padding:8px 16px;background:#fff;font:inherit;cursor:pointer}
   .gpick button.on{background:var(--forest);color:#fff;border-color:var(--forest)}
   .lockline{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);margin-top:12px}
+.mb-change{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:#fbf8f3;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.mb-change span{font-weight:600}
+.mb-lbl{display:block;font-weight:700;font-size:14px;margin:12px 0 6px}
+.mb-sel{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.mb-send{display:flex;align-items:center;gap:14px;margin-top:10px}
+.mb-back{background:none;border:0;font:inherit;color:var(--muted);text-decoration:underline;cursor:pointer;white-space:nowrap}
 </style>
 <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="img/favicon-48.png" sizes="48x48" type="image/png">
@@ -63,7 +69,7 @@
   const el = document.getElementById('mb'), q = new URLSearchParams(location.search);
   const ref = (q.get('ref') || '').replace(/[^A-Z0-9-]/gi, '').toUpperCase().slice(0, 12), m = (q.get('m') || '').replace(/[^0-9-]/g, '').slice(0, 7), k = (q.get('k') || '').replace(/[^a-z0-9]/gi, '').slice(0, 40);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const gbp = n => '£' + (+n || 0).toFixed(2).replace(/\.00$/, '');
+  const gbp = n => '£' + (+n || 0).toLocaleString('en-GB', { minimumFractionDigits: Math.round((+n || 0) * 100) % 100 ? 2 : 0, maximumFractionDigits: 2 });   // £3,999
   const fd = (iso, o) => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', o || { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const fds = iso => fd(iso, { weekday: 'short', day: 'numeric', month: 'short' });
   if (!ref || !m || !k) { el.innerHTML = '<h1>This link isn’t complete</h1><p class="bk-sub">Please use the “Manage your booking” link in your booking email.</p>'; return; }
@@ -87,28 +93,47 @@
       'DTSTART;TZID=Europe/London:' + start, 'DTEND;TZID=Europe/London:' + end, 'SUMMARY:' + B.product + ' at York Cottage Spa', 'LOCATION:' + (B.business.address || '').replace(/,/g, '\\,'), 'DESCRIPTION:Booking ' + B.ref, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/calendar' })); a.download = 'york-cottage-' + B.ref + '.ics'; a.click();
   };
+  // a heading over a soft panel of rows, the same as the confirmation page and emails (2026-11-28)
+  const panel = (title, rows) => !rows.length ? '' : `<section class="cf-sec"><div class="cf-h">${title}</div><ul class="cf-rows">${rows.map(r =>
+    r.sub ? `<li class="cf-sub">${esc(r.sub)}</li>` : r.t ? `<li class="cf-t"><span>${esc(r.t)}</span><b>${esc(r.v)}</b></li>` : r.note ? `<li class="cf-note">${esc(r.note)}</li>` : `<li><span>${esc(r.l)}</span><b>${r.html ? r.v : esc(r.v)}</b></li>`).join('')}</ul></section>`;
   const draw = () => {
     const when = B.session ? `${fd(B.date)} · ${esc(B.session.name)} ${B.session.start}–${B.session.end}` : B.nights ? `${fd(B.date)} → ${fd(B.end)} · ${B.nights} night${B.nights > 1 ? 's' : ''}` : fd(B.date);
-    const times = B.session ? `<p class="cal-note">Please arrive at ${B.session.arrive}.</p>` : B.stay ? `<p class="cal-note">Check-in from ${B.stay.checkIn} · check-out ${B.stay.checkOut}</p>` : B.arrive ? `<p class="cal-note">Please arrive by <b>${B.arrive}</b>, ${B.arriveMins} minutes before your first treatment.</p>` : '';
+    const times = B.session ? `<p class="cal-note">Please arrive at ${B.session.arrive}.</p>` : B.stay ? `<p class="cal-note">Check-in from ${B.stay.checkIn} · Check-out by ${B.stay.checkOut}</p>` : B.arrive ? `<p class="cal-note">Please arrive by <b>${B.arrive}</b>, ${B.arriveMins} minutes before your first treatment.</p>` : '';
     const guests = B.guestList.map(g => `<div class="mb-g"><b>${esc(g.name)}${g.food ? ` <span class="cal-note" style="font-weight:400">· ${esc(g.food)}</span>` : ''}</b>${g.items.length ? `<ul>${g.items.map(i => `<li><time>${B.nights ? fds(i.date) + ' ' : ''}${i.start}</time><span>${esc(i.name)}</span></li>`).join('')}</ul>` : '<p class="cal-note">No treatments booked</p>'}</div>`).join('');
     const consult = B.consult && live && !past ? `<div class="mb-sec"><h2>Consultation forms</h2><p class="cal-note">Each guest having a treatment fills in a short form before the visit.</p>
       <ul style="list-style:none;padding:0;margin:8px 0">${B.guestList.map(g => `<li style="padding:3px 0">${g.consult ? '<span class="mb-tick">✓</span>' : '○'} ${esc(g.name)}${g.consult ? ' · done' : ''}</li>`).join('')}</ul>
       ${B.guestList.some(g => !g.consult) ? `<div class="mb-acts"><a href="${esc(B.consult)}">Fill in a form</a></div>` : ''}</div>` : '';
-    const money = `<div class="mb-sec"><h2>Payment</h2><div class="mb-money"><span>Total</span><b>${gbp(B.total)}</b><span>Paid</span><b>${gbp(B.paid)}</b>${B.due > 0 ? `<span>Still to pay${B.balanceDue ? ' by ' + fd(B.balanceDue, { day: 'numeric', month: 'long' }) : ''}</span><b>${gbp(B.due)}</b>` : ''}</div></div>`;
-    const OPTS = [['move', 'Move to another date'], ['add', 'Add treatments or guests'], ['cancel', 'Cancel'], ['other', 'Ask a question']];
+    // payment, as a panel with the total standing out (2026-11-28)
+    const money = `<section class="cf-sec"><div class="cf-h">Payment</div><ul class="cf-rows"><li class="cf-big"><span>Total</span><b>${gbp(B.total)}</b></li><li class="cf-big"><span>Paid</span><b>${gbp(B.paid)}</b></li>${B.due > 0 ? `<li><span>Still to pay</span><b>${gbp(B.due)}${B.balanceDue ? ' by ' + fd(B.balanceDue, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(',', '') : ''}</b></li>` : ''}</ul></section>`;
+    const OPTS = [['other', 'Something else, or a question'], ['move', 'Move to another date'], ['add', 'Add treatments or guests'], ['cancel', 'Cancel my booking']];
     const PH = { move: 'Which dates would suit you?', add: 'What would you like to add?', cancel: 'Anything we should know? (optional)', other: 'Your question' };
-    const req = !live || past ? '' : `<div class="mb-sec mb-req"><h2>Need to change something?</h2>
-      ${sent ? `<div class="mb-ok">Thanks, we’ve got your request and will reply by email, usually within a day. <a href="ticket.html?t=${sent.id}&k=${sent.k}">See your request</a></div>` : `
-      <div class="mb-acts">${OPTS.map(([k2, t]) => `<button type="button" data-k="${k2}" class="${mode === k2 ? 'on' : ''}">${t}</button>`).join('')}</div>
-      ${mode ? `${mode === 'cancel' || mode === 'move' ? `<p class="cal-note" style="margin-top:10px">${B.terms ? esc(B.terms.text) + '. ' : ''}${esc(B.policy)}</p>` : ''}
-      <textarea id="msg" rows="3" placeholder="${PH[mode]}"></textarea>
-      <button class="btn btn-solid" id="send">${mode === 'cancel' ? 'Ask to cancel' : 'Send request'} <span class="arrow">→</span></button><p class="cal-note" id="err"></p>` : ''}`}</div>`;
+    // one button, one form: what they'd like to change goes in a menu (move, add, cancel, something else)
+    const req = !live || past ? '' : `<div class="mb-sec mb-req">
+      ${sent ? `<div class="mb-ok">Thanks, we’ve got your message and will reply by email, usually within a day. <a href="ticket.html?t=${sent.id}&k=${sent.k}">See your message</a></div>`
+      : !mode ? `<div class="mb-change"><span>Need to make a change to this booking?</span><button type="button" class="btn btn-solid" id="contact">Contact us <span class="arrow">→</span></button></div>`
+      : `<h2>Contact us about this booking</h2>
+      <label class="mb-lbl" for="kind">What would you like to change?</label>
+      <select id="kind" class="mb-sel">${OPTS.map(([k2, t]) => `<option value="${k2}" ${mode === k2 ? 'selected' : ''}>${t}</option>`).join('')}</select>
+      ${mode === 'cancel' || mode === 'move' ? `<p class="cal-note" style="margin-top:10px">${B.terms ? esc(B.terms.text) + '. ' : ''}${esc(B.policy)}</p>` : ''}
+      <label class="mb-lbl" for="msg">Your message</label>
+      <textarea id="msg" rows="4" placeholder="${PH[mode]}"></textarea>
+      <div class="mb-send"><button class="btn btn-solid" id="send">${mode === 'cancel' ? 'Ask to cancel' : 'Send'} <span class="arrow">→</span></button><button type="button" class="mb-back" id="never">Never mind</button></div><p class="cal-note" id="err"></p>`}</div>`;
+    // your booking / your stay / treatment times, as panels
+    const bookRows = [{ l: 'Booking', v: B.product }, { l: B.nights ? 'Dates' : 'Date', v: B.whenText || when.replace(/<[^>]+>/g, '') },
+      B.session && { l: 'Please arrive', v: B.session.arrive }, !B.session && !B.stay && B.arrive && { l: 'Please arrive', v: `By ${B.arrive} (${B.arriveMins} minutes before your first treatment)` },
+      { l: 'Guests', v: String(B.guests) }].filter(Boolean);
+    const stayRows = (B.stayLines || []).map(x => x.label ? { l: x.label, v: x.text } : { note: x.text });
+    if (!stayRows.length && B.stay) stayRows.push({ l: 'Check-in', v: 'From ' + B.stay.checkIn }, { l: 'Check-out', v: 'By ' + B.stay.checkOut });
+    const tRows = []; B.guestList.forEach(g => { if (!g.items.length && !g.food) return; if (B.guests > 1) tRows.push({ sub: g.name + (g.food ? ' · ' + g.food : '') }); else if (g.food) tRows.push({ l: 'Lunch', v: g.food });
+      g.items.forEach(i => tRows.push({ t: (B.nights ? fds(i.date) + ' ' : '') + i.start, v: `${i.name} (${i.min} min)` })); });
     el.innerHTML = `<div class="eyebrow">Booking ${esc(B.ref)}<span class="mb-st ${live ? '' : 'cancelled'}">${live ? (past ? 'Visited' : 'Confirmed') : 'Cancelled'}</span></div>
-      <h1>${esc(B.product)}</h1><p class="mb-when">${when}</p>${times}
+      <h1>${esc(B.product)}</h1><p class="mb-when">${B.whenText ? esc(B.whenText) : when}</p>${(B.stayLines || []).length ? "" : times}
       ${live && !past ? `<div class="mb-acts"><button type="button" id="cal">Add to my calendar</button><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(B.business.address || 'York Cottage Spa Bozeat')}" target="_blank" rel="noopener">Directions</a></div>` : ''}
-      <div class="mb-sec"><h2>${B.guests > 1 ? `${B.guests} guests` : 'Your visit'}</h2>${guests}</div>${consult}${money}${req}`;
+      ${panel('Your booking', bookRows)}${panel('Your stay', stayRows)}${panel(B.guests > 1 ? 'Each guest’s treatments' : 'Your treatments', tRows)}${consult}${money}${req}`;
     const c = document.getElementById('cal'); if (c) c.onclick = ics;
-    el.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { mode = mode === b.dataset.k ? null : b.dataset.k; draw(); });
+    const ct = document.getElementById('contact'); if (ct) ct.onclick = () => { mode = 'other'; draw(); document.getElementById('msg')?.focus(); };
+    const kd = document.getElementById('kind'); if (kd) kd.onchange = () => { const m0 = document.getElementById('msg').value; mode = kd.value; draw(); document.getElementById('msg').value = m0; };
+    const nv = document.getElementById('never'); if (nv) nv.onclick = () => { mode = null; draw(); };
     const s = document.getElementById('send'); if (s) s.onclick = async () => {
       const msg = document.getElementById('msg').value.trim(), err = document.getElementById('err');
       if (mode !== 'cancel' && msg.length < 2) { err.textContent = 'Please add a few words so we know what you need.'; return; }
